@@ -20,7 +20,7 @@ config("libopenthread-platform_config") {
 }
 
 copy("copy_openthread_system") {
-  sources = [ "${openthread_root}/examples/platforms/openthread-system.h" ]
+    sources = [ "${openthread_root}/examples/platforms/openthread-system.h" ]
 
   outputs =
       [ "${root_gen_dir}/include/openthread/platform/{{source_file_part}}" ]

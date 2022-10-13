@@ -1,0 +1,67 @@
+# Copyright (c) 2020 Project CHIP Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build_overrides/chip.gni")
+import("//build_overrides/openthread.gni")
+import("//build_overrides/rt582_sdk.gni")
+
+import("${rt582_sdk_build_root}/rt582_sdk.gni")
+
+openthread_rt582_root = "${chip_root}/third_party/openthread/ot-rt582"
+
+config("openthread_rt582_config") {
+  include_dirs = [ "${chip_root}/examples/platform/rt582" ]
+}
+
+source_set("openthread_core_config_rt582") {
+  sources = [
+    # "${openthread_rt582_root}/openthread/examples/platforms/rt58x/openthread-core-RT58x-config-check.h",
+    # "${openthread_rt582_root}/openthread/examples/platforms/rt58x/openthread-core-RT58x-config.h",
+    "${chip_root}/examples/platform/rt582/project_include/OpenThreadConfig.h",
+  ]
+  public_deps = [ "${rt582_sdk_build_root}:rt582_sdk" ]
+
+  public_configs = [ ":openthread_rt582_config" ]
+  
+}
+
+source_set("libopenthread-rt582") {
+  sources = [
+    "${openthread_rt582_root}/openthread/examples/platforms/rt58x/src/alarm.c",
+    "${openthread_rt582_root}/openthread/examples/platforms/rt58x/src/entropy.c",
+    "${openthread_rt582_root}/openthread/examples/platforms/rt58x/src/flash.c",
+    "${openthread_rt582_root}/openthread/examples/platforms/rt58x/src/logging.c",
+    "${openthread_rt582_root}/openthread/examples/platforms/rt58x/src/mac_frame.cpp",
+    "${openthread_rt582_root}/openthread/examples/platforms/rt58x/src/misc.c",
+    "${openthread_rt582_root}/openthread/examples/platforms/rt58x/src/radio.c",
+    "${openthread_rt582_root}/openthread/examples/platforms/rt58x/src/soft_source_match_table.c",
+    "${openthread_rt582_root}/openthread/examples/platforms/rt58x/src/system.c",
+    "${openthread_rt582_root}/openthread/examples/platforms/rt58x/src/uart.c",
+  ]
+  sources += [
+    "${openthread_root}/examples/apps/cli/cli_uart.cpp",
+    "${openthread_root}/src/cli/cli_config.h",
+  ]
+  include_dirs = [ "${openthread_root}/examples/apps",
+    # "${openthread_rt582_root}/openthread/examples/platforms/rt58x/",
+    "${chip_root}/examples/platform/rt582/project_include/",
+   ]
+
+  public_deps = [
+    ":openthread_core_config_rt582",
+    "${openthread_root}/src/core:libopenthread_core_headers",
+    "..:libopenthread-platform",
+    "..:libopenthread-platform-utils",
+  ]
+}
