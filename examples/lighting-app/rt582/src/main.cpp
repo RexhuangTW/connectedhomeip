@@ -59,6 +59,8 @@ int main(void)
     info( "chip-rt582-light-example starting\n");
     info( "==================================================\n");
 
+    chip::Platform::MemoryInit();
+
 #if CONFIG_ENABLE_CHIP_SHELL
     chip::LaunchShell();
 #endif
@@ -82,16 +84,19 @@ int main(void)
 
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
+    info("init thread\n");
     if (ThreadStackMgr().InitThreadStack() != CHIP_NO_ERROR)
     {
         err("Failed to initialize Thread stack\n");
     }
+    info("start thread\n");
     if (ThreadStackMgr().StartThreadTask() != CHIP_NO_ERROR)
     {
         err("Failed to launch Thread task\n");
     }
 #endif
-
+    info("start rtos scheduler\n");
+    vTaskStartScheduler();
     // Should never get here.
     
     return 0;

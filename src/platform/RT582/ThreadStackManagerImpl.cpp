@@ -36,7 +36,7 @@
 #include <lib/support/CHIPPlatformMemory.h>
 #define __WEAK __attribute__((__WEAK__))
 
-
+#include "util_log.h"
 namespace chip {
 namespace DeviceLayer {
 
@@ -49,10 +49,22 @@ CHIP_ERROR ThreadStackManagerImpl::_InitThreadStack(void)
     return InitThreadStack(NULL);
 }
 
-CHIP_ERROR ThreadStackManagerImpl::InitThreadStack(otInstance * otInst)
+CHIP_ERROR ThreadStackManagerImpl::_StartThreadTask()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
+    GenericThreadStackManagerImpl_FreeRTOS<ThreadStackManagerImpl>::_StartThreadTask();
+exit:
+    return err;
+}
+void ThreadStackManagerImpl::ProcessThreadActivity()
+{
+    otTaskletsProcess(OTInstance());
+    otSysProcessDrivers(OTInstance());
+}
+CHIP_ERROR ThreadStackManagerImpl::InitThreadStack(otInstance * otInst)
+{
 
+    CHIP_ERROR err = CHIP_NO_ERROR;
     // Initialize the generic implementation base classes.
     err = GenericThreadStackManagerImpl_FreeRTOS<ThreadStackManagerImpl>::DoInit();
     SuccessOrExit(err);
@@ -101,75 +113,3 @@ extern "C" void otPlatFree(void * aPtr)
 {
     CHIPPlatformMemoryFree(aPtr);
 }
-
-extern "C" __WEAK void sl_openthread_init(void)
-{
-    // Place holder for enabling Silabs specific features available only through Simplicity Studio
-}
-
-/**
- * @brief Openthread UART implementation for the CLI is conflicting
- *        with the UART implemented for Pigweed RPC as they use the same UART port
- *
- *        We now only build the uart as implemented in
- *        connectedhomeip/examples/platform/efr32/uart.c
- *        and remap OT functions to use our uart api.
- *
- *        For now OT CLI isn't usable when the examples are built with pw_rpc
- */
-
-#ifndef PW_RPC_ENABLED
-#include "uart.h"
-#endif
-
-extern "C" otError otPlatUartEnable(void)
-{
-#ifdef PW_RPC_ENABLED
-    return OT_ERROR_NOT_IMPLEMENTED;
-#else
-    uartConsoleInit();
-    return OT_ERROR_NONE;
-#endif
-}
-
-#if CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI
-
-extern "C" otError otPlatUartSend(const uint8_t * aBuf, uint16_t aBufLength)
-{
-#ifdef PW_RPC_ENABLED
-    return OT_ERROR_NOT_IMPLEMENTED;
-#else
-    if (uartConsoleWrite((const char *) aBuf, aBufLength) > 0)
-    {
-        otPlatUartSendDone();
-        return OT_ERROR_NONE;
-    }
-    return OT_ERROR_FAILED;
-#endif
-}
-
-extern "C" void efr32UartProcess(void)
-{
-#if !defined(PW_RPC_ENABLED) && !defined(ENABLE_CHIP_SHELL)
-    uint8_t tempBuf[128] = { 0 };
-    // will read the data available up to 128bytes
-    uint16_t count = uartConsoleRead((char *) tempBuf, 128);
-    if (count > 0)
-    {
-        // ot process Received data for CLI cmds
-        otPlatUartReceived(tempBuf, count);
-    }
-#endif
-}
-
-extern "C" __WEAK otError otPlatUartFlush(void)
-{
-    return OT_ERROR_NOT_IMPLEMENTED;
-}
-
-extern "C" __WEAK otError otPlatUartDisable(void)
-{
-    return OT_ERROR_NOT_IMPLEMENTED;
-}
-
-#endif // CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI

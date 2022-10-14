@@ -80,10 +80,6 @@ template("rt582_sdk") {
     # To fix this, these files are also manually depended upon in the source set
     # declared in rt582_mbedtls_config further down this file.
     defines = [
-      "__STARTUP_CLEAR_BSS",
-      "__HEAP_SIZE=0",
-
-      #"__STACK_SIZE=0",
     ]
 
     if (defined(invoker.enable_sleepy_device)) {
@@ -110,9 +106,12 @@ template("rt582_sdk") {
     }
 
     cflags += [
-      "-Wno-maybe-uninitialized",
-      "-Wno-shadow",
-      "-Wno-error",
+      "-Wno-unknown-pragmas",
+      "-Wno-sign-compare",
+      "-Wno-unused-function",
+      "-Wno-unused-parameter",
+      "-Wno-empty-body",
+      "-w",      
     ]
 
     if (defined(invoker.defines)) {

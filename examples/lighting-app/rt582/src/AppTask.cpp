@@ -142,6 +142,7 @@ CHIP_ERROR AppTask::Init()
 {
     info("AppTask::Init Lighting-App\n");
     CHIP_ERROR err = CHIP_NO_ERROR;
+#if 0
 #ifdef DISPLAY_ENABLED
     GetLCD().Init((uint8_t *) "Lighting-App");
 #endif
@@ -164,7 +165,7 @@ CHIP_ERROR AppTask::Init()
     sLightLED.Init(LIGHT_LED);
     sLightLED.Set(LightMgr().IsLightOn());
 #endif // ENABLE_WSTK_LEDS
-
+#endif
     return err;
 }
 
@@ -190,13 +191,18 @@ void AppTask::AppTaskMain(void * pvParameter)
 
 
     while (true)
-    {
+    {   
+        
+        info("z\n");
+        vTaskDelay(10);
+        #if 0
         BaseType_t eventReceived = xQueueReceive(sAppEventQueue, &event, pdMS_TO_TICKS(10));
         while (eventReceived == pdTRUE)
         {
             sAppTask.DispatchEvent(&event);
             eventReceived = xQueueReceive(sAppEventQueue, &event, 0);
         }
+        #endif
     }
 }
 

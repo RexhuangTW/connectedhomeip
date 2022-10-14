@@ -73,6 +73,12 @@ public:
     using ThreadStackManager::InitThreadStack;
     CHIP_ERROR InitThreadStack(otInstance * otInst);
 
+    using ThreadStackManager::ProcessThreadActivity;
+    void ProcessThreadActivity();
+
+protected:
+    CHIP_ERROR _StartThreadTask();
+    
 private:
     // ===== Methods that implement the ThreadStackManager abstract interface.
 

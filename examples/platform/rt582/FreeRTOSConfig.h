@@ -202,11 +202,7 @@ extern uint32_t SystemCoreClock;
 #define configSUPPORT_DYNAMIC_ALLOCATION (1)
 
 #ifndef configTOTAL_HEAP_SIZE
-#ifdef SL_WIFI
-#define configTOTAL_HEAP_SIZE ((size_t)(34 * 1024))
-#else
-#define configTOTAL_HEAP_SIZE ((size_t)(20 * 1024))
-#endif
+#define configTOTAL_HEAP_SIZE ((size_t)(30 * 1024))
 #endif // configTOTAL_HEAP_SIZE
 
 /* Optional functions - most linkers will remove unused functions anyway. */
@@ -235,7 +231,7 @@ extern uint32_t SystemCoreClock;
     if ((x) == 0)                                                                                                                  \
     {                                                                                                                              \
         taskDISABLE_INTERRUPTS();                                                                                                  \
-        printf("\nFREERTOS ASSERT ( %s )\n", #x);                                                                                  \
+        printf("\nFREERTOS ASSERT ( %s ) %s %s %d\n", #x, __FILE__, __func__, __LINE__);                                                                                  \
         for (;;)                                                                                                                   \
             ;                                                                                                                      \
     }

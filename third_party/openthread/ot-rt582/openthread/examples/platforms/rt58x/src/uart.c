@@ -52,32 +52,34 @@ void UartProcessReceive(void)
     u32_byte_cnt = bsp_console_stdin_str((char *) uart_buff, 1);
     if (u32_byte_cnt)
     {
+        otTaskletsSignalPending();
         otPlatUartReceived(uart_buff, u32_byte_cnt);
+        otTaskletsSignalPending();
     }
 }
 
-// otError otPlatUartFlush(void)
-// {
-//     bsp_console_stdio_flush();
-//     return OT_ERROR_NONE;
-// }
+otError otPlatUartFlush(void)
+{
+    bsp_console_stdio_flush();
+    return OT_ERROR_NONE;
+}
 
-// otError otPlatUartEnable(void)
-// {
-//     return OT_ERROR_NONE;
-// }
+otError otPlatUartEnable(void)
+{
+    return OT_ERROR_NONE;
+}
 
-// otError otPlatUartDisable(void)
-// {
-//     return OT_ERROR_NONE;
-// }
+otError otPlatUartDisable(void)
+{
+    return OT_ERROR_NONE;
+}
 
-// otError otPlatUartSend(const uint8_t * aBuf, uint16_t aBufLength)
-// {
+otError otPlatUartSend(const uint8_t * aBuf, uint16_t aBufLength)
+{
 
-//     bsp_console_stdout_string((char *) aBuf, aBufLength);
+    bsp_console_stdout_string((char *) aBuf, aBufLength);
 
-//     otPlatUartSendDone();
-// exit:
-//     return OT_ERROR_NONE;
-// }
+    otPlatUartSendDone();
+exit:
+    return OT_ERROR_NONE;
+}
