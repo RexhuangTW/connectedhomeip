@@ -17,10 +17,6 @@
 #include <string.h>
 #include <task.h>
 
-#ifdef PW_RPC_ENABLED
-#include "PigweedLogger.h"
-#endif
-
 #include "util_log.h"
 
 // RTT Buffer size and name
@@ -62,96 +58,27 @@
 #if CHIP_SYSTEM_CONFIG_USE_LWIP
 #define LOG_LWIP "<lwip  > "
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
-#define LOG_EFR32 "<efr32 > "
+#define LOG_RT582 "<rt582 > "
 // If a new category string LOG_* is created, add it in the MaxStringLength arguments below
 #if CHIP_SYSTEM_CONFIG_USE_LWIP
-static constexpr size_t kMaxCategoryStrLen = chip::MaxStringLength(LOG_ERROR, LOG_WARN, LOG_INFO, LOG_DETAIL, LOG_LWIP, LOG_EFR32);
+static constexpr size_t kMaxCategoryStrLen = chip::MaxStringLength(LOG_ERROR, LOG_WARN, LOG_INFO, LOG_DETAIL, LOG_LWIP, LOG_RT582);
 #else
-static constexpr size_t kMaxCategoryStrLen = chip::MaxStringLength(LOG_ERROR, LOG_WARN, LOG_INFO, LOG_DETAIL, LOG_EFR32);
+static constexpr size_t kMaxCategoryStrLen = chip::MaxStringLength(LOG_ERROR, LOG_WARN, LOG_INFO, LOG_DETAIL, LOG_RT582);
 #endif // CHIP_SYSTEM_CONFIG_USE_LWIP
 
-#if EFR32_LOG_ENABLED
-static bool sLogInitialized = false;
-#endif
 #if LOG_RTT_BUFFER_INDEX != 0
 static uint8_t sLogBuffer[LOG_RTT_BUFFER_SIZE];
 static uint8_t sCmdLineBuffer[LOG_RTT_BUFFER_SIZE];
 #endif
 
-#if EFR32_LOG_ENABLED
 /**
  * Print a log message to RTT
  */
 static void PrintLog(const char * msg)
 {
-    if (sLogInitialized)
-    {
-        size_t sz;
-        sz = strlen(msg);
-        SEGGER_RTT_WriteNoLock(LOG_RTT_BUFFER_INDEX, msg, sz);
-#ifdef PW_RPC_ENABLED
-        PigweedLogger::putString(msg, sz);
-#endif
-
-        const char * newline = "\r\n";
-        sz                   = strlen(newline);
-        SEGGER_RTT_WriteNoLock(LOG_RTT_BUFFER_INDEX, newline, sz);
-#ifdef PW_RPC_ENABLED
-        PigweedLogger::putString(newline, sz);
-#endif
-    }
-}
-#endif // EFR32_LOG_ENABLED
-
-/**
- * Initialize Segger RTT for logging
- */
-extern "C" void efr32InitLog(void)
-{
-#if EFR32_LOG_ENABLED
-#if LOG_RTT_BUFFER_INDEX != 0
-    SEGGER_RTT_ConfigUpBuffer(LOG_RTT_BUFFER_INDEX, LOG_RTT_BUFFER_NAME, sLogBuffer, LOG_RTT_BUFFER_SIZE,
-                              SEGGER_RTT_MODE_NO_BLOCK_TRIM);
-
-    SEGGER_RTT_ConfigDownBuffer(LOG_RTT_BUFFER_INDEX, LOG_RTT_BUFFER_NAME, sCmdLineBuffer, LOG_RTT_BUFFER_SIZE,
-                                SEGGER_RTT_MODE_NO_BLOCK_SKIP);
-#else
-    SEGGER_RTT_SetFlagsUpBuffer(LOG_RTT_BUFFER_INDEX, SEGGER_RTT_MODE_NO_BLOCK_TRIM);
-#endif
-
-#ifdef PW_RPC_ENABLED
-    PigweedLogger::init();
-#endif
-    sLogInitialized = true;
-#endif // EFR32_LOG_ENABLED
+    info("%s\r\n", msg);
 }
 
-/**
- * General-purpose logging function
- */
-extern "C" void efr32Log(const char * aFormat, ...)
-{
-    va_list v;
-
-    va_start(v, aFormat);
-#if EFR32_LOG_ENABLED
-    char formattedMsg[CHIP_CONFIG_LOG_MESSAGE_MAX_SIZE];
-    static_assert(sizeof(formattedMsg) > kMaxCategoryStrLen); // Greater than to at least accommodate a ending Null Character
-
-    strcpy(formattedMsg, LOG_EFR32);
-    size_t prefixLen = strlen(formattedMsg);
-    size_t len       = vsnprintf(formattedMsg + prefixLen, sizeof formattedMsg - prefixLen, aFormat, v);
-
-    if (len >= sizeof formattedMsg - prefixLen)
-    {
-        formattedMsg[sizeof formattedMsg - 1] = '\0';
-    }
-
-    PrintLog(formattedMsg);
-#endif // EFR32_LOG_ENABLED
-
-    va_end(v);
-}
 
 namespace chip {
 namespace DeviceLayer {
@@ -176,7 +103,6 @@ namespace Platform {
  */
 void LogV(const char * module, uint8_t category, const char * aFormat, va_list v)
 {
-#if EFR32_LOG_ENABLED && _CHIP_USE_LOGGING
     if (IsCategoryEnabled(category))
     {
         char formattedMsg[CHIP_CONFIG_LOG_MESSAGE_MAX_SIZE];
@@ -219,29 +145,48 @@ void LogV(const char * module, uint8_t category, const char * aFormat, va_list v
 
     // Let the application know that a log message has been emitted.
     chip::DeviceLayer::OnLogOutput();
-#endif // EFR32_LOG_ENABLED && _CHIP_USE_LOGGING
 }
 
 } // namespace Platform
 } // namespace Logging
 } // namespace chip
 
-#if CHIP_SYSTEM_CONFIG_USE_LWIP
-
 /**
- * LwIP log output function.
+ * Platform logging function for OpenThread
  */
-extern "C" void LwIPLog(const char * aFormat, ...)
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
+extern "C" void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char * aFormat, ...)
 {
+    (void) aLogRegion;
     va_list v;
 
     va_start(v, aFormat);
-#if EFR32_LOG_ENABLED
     char formattedMsg[CHIP_CONFIG_LOG_MESSAGE_MAX_SIZE];
 
-    strcpy(formattedMsg, LOG_LWIP);
+    switch (aLogLevel)
+    {
+    case OT_LOG_LEVEL_CRIT:
+        strcpy(formattedMsg, LOG_ERROR "[ot] ");
+        break;
+    case OT_LOG_LEVEL_WARN:
+        strcpy(formattedMsg, LOG_WARN "[ot] ");
+        break;
+    case OT_LOG_LEVEL_NOTE:
+        strcpy(formattedMsg, LOG_INFO "[ot] ");
+        break;
+    case OT_LOG_LEVEL_INFO:
+        strcpy(formattedMsg, LOG_INFO "[ot] ");
+        break;
+    case OT_LOG_LEVEL_DEBG:
+        strcpy(formattedMsg, LOG_DETAIL "[ot] ");
+        break;
+    default:
+        strcpy(formattedMsg, LOG_DETAIL "[ot] ");
+        break;
+    }
+
     size_t prefixLen = strlen(formattedMsg);
-    size_t len       = vsnprintf(formattedMsg + prefixLen, sizeof formattedMsg - prefixLen, aFormat, v);
+    size_t len       = vsnprintf(formattedMsg + prefixLen, sizeof(formattedMsg) - prefixLen, aFormat, v);
 
     if (len >= sizeof formattedMsg - prefixLen)
     {
@@ -258,67 +203,6 @@ extern "C" void LwIPLog(const char * aFormat, ...)
 
     // Let the application know that a log message has been emitted.
     chip::DeviceLayer::OnLogOutput();
-#endif // EFR32_LOG_ENABLED
-    va_end(v);
-}
-#endif // CHIP_SYSTEM_CONFIG_USE_LWIP
-/**
- * Platform logging function for OpenThread
- */
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
-extern "C" void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char * aFormat, ...)
-{
-    (void) aLogRegion;
-    va_list v;
-
-    va_start(v, aFormat);
-#if EFR32_LOG_ENABLED
-    char formattedMsg[CHIP_CONFIG_LOG_MESSAGE_MAX_SIZE];
-
-    if (sLogInitialized)
-    {
-        switch (aLogLevel)
-        {
-        case OT_LOG_LEVEL_CRIT:
-            strcpy(formattedMsg, LOG_ERROR "[ot] ");
-            break;
-        case OT_LOG_LEVEL_WARN:
-            strcpy(formattedMsg, LOG_WARN "[ot] ");
-            break;
-        case OT_LOG_LEVEL_NOTE:
-            strcpy(formattedMsg, LOG_INFO "[ot] ");
-            break;
-        case OT_LOG_LEVEL_INFO:
-            strcpy(formattedMsg, LOG_INFO "[ot] ");
-            break;
-        case OT_LOG_LEVEL_DEBG:
-            strcpy(formattedMsg, LOG_DETAIL "[ot] ");
-            break;
-        default:
-            strcpy(formattedMsg, LOG_DETAIL "[ot] ");
-            break;
-        }
-
-        size_t prefixLen = strlen(formattedMsg);
-        size_t len       = vsnprintf(formattedMsg + prefixLen, sizeof(formattedMsg) - prefixLen, aFormat, v);
-
-        if (len >= sizeof formattedMsg - prefixLen)
-        {
-            formattedMsg[sizeof formattedMsg - 1] = '\0';
-        }
-
-        PrintLog(formattedMsg);
-
-#if configCHECK_FOR_STACK_OVERFLOW
-        // Force a stack overflow check.
-        if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
-            taskYIELD();
-#endif
-    }
-
-    // Let the application know that a log message has been emitted.
-    chip::DeviceLayer::OnLogOutput();
-#endif // EFR32_LOG_ENABLED
     va_end(v);
 }
 #endif // CHIP_ENABLE_OPENTHREAD
