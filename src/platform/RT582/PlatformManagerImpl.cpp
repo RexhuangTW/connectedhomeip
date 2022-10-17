@@ -23,7 +23,7 @@
  */
 /* this file behaves like a config.h, comes first */
 #include <platform/internal/CHIPDeviceLayerInternal.h>
-
+#include <crypto/CHIPCryptoPAL.h>
 #include <platform/RT582/DiagnosticDataProviderImpl.h>
 #include <platform/FreeRTOS/SystemTimeSupport.h>
 #include <platform/KeyValueStoreManager.h>
@@ -39,11 +39,18 @@
 #include "FreeRTOSConfig.h"
 
 #include "util_log.h"
+#include "cm3_mcu.h"
 
 namespace chip {
 namespace DeviceLayer {
 
 PlatformManagerImpl PlatformManagerImpl::sInstance;
+
+static int app_entropy_source(void * data, unsigned char * output, size_t len, size_t * olen)
+{
+    *olen = len;
+    return 0;
+}
 
 CHIP_ERROR PlatformManagerImpl::_InitChipStack(void)
 {
@@ -56,10 +63,12 @@ CHIP_ERROR PlatformManagerImpl::_InitChipStack(void)
 
     ReturnErrorOnFailure(System::Clock::InitClock_RealTime());
 
+    err = chip::Crypto::add_entropy_source(app_entropy_source, NULL, 16);
+    SuccessOrExit(err);
+
     // Call _InitChipStack() on the generic implementation base class
     // to finish the initialization process.
     err = Internal::GenericPlatformManagerImpl_FreeRTOS<PlatformManagerImpl>::_InitChipStack();
-    info("CCCCCCCCCCCC");
     SuccessOrExit(err);
 
 exit:
