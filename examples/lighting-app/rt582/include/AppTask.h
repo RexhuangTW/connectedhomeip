@@ -53,79 +53,29 @@
  * AppTask Declaration
  *********************************************************/
 
-class AppTask : public BaseApplication
+class AppTask
 {
 
 public:
-    AppTask() = default;
-
-    static AppTask & GetAppTask() { return sAppTask; }
-
-    /**
-     * @brief AppTask task main loop function
-     *
-     * @param pvParameter FreeRTOS task parameter
-     */
-    static void AppTaskMain(void * pvParameter);
-
     CHIP_ERROR StartAppTask();
-
-    // /**
-    //  * @brief Event handler when a button is pressed
-    //  * Function posts an event for button processing
-    //  *
-    //  * @param buttonHandle APP_LIGHT_SWITCH or APP_FUNCTION_BUTTON
-    //  * @param btnAction button action - SL_SIMPLE_BUTTON_PRESSED,
-    //  *                  SL_SIMPLE_BUTTON_RELEASED or SL_SIMPLE_BUTTON_DISABLED
-    //  */
-    // void ButtonEventHandler(const sl_button_t * buttonHandle, uint8_t btnAction) override;
-
-    /**
-     * @brief Callback called by the identify-server when an identify command is received
-     *
-     * @param identify identify structure the command applies on
-     */
-    static void OnIdentifyStart(Identify * identify);
-
-    /**
-     * @brief Callback called by the identify-server when an identify command is stopped or finished
-     *
-     * @param identify identify structure the command applies on
-     */
-    static void OnIdentifyStop(Identify * identify);
+    static void AppTaskMain(void * pvParameter);
 
     void PostLightActionRequest(int32_t aActor, LightingManager::Action_t aAction);
 
 private:
-    static AppTask sAppTask;
+    friend AppTask & GetAppTask(void);
 
-    static void ActionInitiated(LightingManager::Action_t aAction, int32_t aActor);
-    static void ActionCompleted(LightingManager::Action_t aAction);
-    static void LightActionEventHandler(AppEvent * aEvent);
-
-    static void UpdateClusterState(intptr_t context);
-
-    /**
-     * @brief AppTask initialisation function
-     *
-     * @return CHIP_ERROR
-     */
     CHIP_ERROR Init();
+    static void InitServer(intptr_t arg);
 
-    /**
-     * @brief PB0 Button event processing function
-     *        Press and hold will trigger a factory reset timer start
-     *        Press and release will restart BLEAdvertising if not commisionned
-     *
-     * @param aEvent button event being processed
-     */
-    static void ButtonHandler(AppEvent * aEvent);
+    bool mFunctionTimerActive;
+    bool mSyncClusterToButtonAction;
 
-    /**
-     * @brief PB1 Button event processing function
-     *        Function triggers a switch action sent to the CHIP task
-     *
-     * @param aEvent button event being processed
-     */
-    static void SwitchActionEventHandler(AppEvent * aEvent);
+    static AppTask sAppTask;    
 };
+
+
+inline AppTask & GetAppTask(void)
+{
+    return AppTask::sAppTask;
+}

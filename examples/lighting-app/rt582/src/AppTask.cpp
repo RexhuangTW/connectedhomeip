@@ -21,11 +21,6 @@
 #include "AppConfig.h"
 #include "AppEvent.h"
 
-#ifdef ENABLE_WSTK_LEDS
-#include "LEDWidget.h"
-// #include "sl_simple_led_instances.h"
-#endif // ENABLE_WSTK_LEDS
-
 #include <app-common/zap-generated/attribute-id.h>
 #include <app-common/zap-generated/attribute-type.h>
 #include <app-common/zap-generated/cluster-id.h>
@@ -49,25 +44,27 @@
 
 #include "util_log.h"
 
-#ifdef ENABLE_WSTK_LEDS
-#define SYSTEM_STATE_LED &sl_led_led0
-#define LIGHT_LED &sl_led_led1
-#endif // ENABLE_WSTK_LEDS
-
-#define APP_FUNCTION_BUTTON &sl_button_btn0
-#define APP_LIGHT_SWITCH &sl_button_btn1
-
 using namespace chip;
 using namespace ::chip::DeviceLayer;
 
-namespace {
+#define APP_TASK_STACK_SIZE (3 * 1024)
+#define APP_TASK_PRIORITY 2
+#define APP_EVENT_QUEUE_SIZE 10
 
-#ifdef ENABLE_WSTK_LEDS
-LEDWidget sLightLED;
-#endif // ENABLE_WSTK_LEDS
+
+namespace {
+TaskHandle_t sAppTaskHandle;
+QueueHandle_t sAppEventQueue;
+
+uint8_t sAppEventQueueBuffer[APP_EVENT_QUEUE_SIZE * sizeof(AppEvent)];
+
+StaticQueue_t sAppEventQueueStruct;
+
+StackType_t appStack[APP_TASK_STACK_SIZE / sizeof(StackType_t)];
+StaticTask_t appTaskStruct;
+
 
 EmberAfIdentifyEffectIdentifier sIdentifyEffect = EMBER_ZCL_IDENTIFY_EFFECT_IDENTIFIER_STOP_EFFECT;
-
 /**********************************************************
  * Identify Callbacks
  *********************************************************/
@@ -77,10 +74,6 @@ void OnTriggerIdentifyEffectCompleted(chip::System::Layer * systemLayer, void * 
 {
     ChipLogProgress(Zcl, "Trigger Identify Complete");
     sIdentifyEffect = EMBER_ZCL_IDENTIFY_EFFECT_IDENTIFIER_STOP_EFFECT;
-
-#if CHIP_DEVICE_CONFIG_ENABLE_SED == 1
-    AppTask::GetAppTask().StopStatusLEDTimer();
-#endif
 }
 } // namespace
 
@@ -92,14 +85,10 @@ void OnTriggerIdentifyEffect(Identify * identify)
 
     if (identify->mCurrentEffectIdentifier == EMBER_ZCL_IDENTIFY_EFFECT_IDENTIFIER_CHANNEL_CHANGE)
     {
-        ChipLogProgress(Zcl, "IDENTIFY_EFFECT_IDENTIFIER_CHANNEL_CHANGE - Not supported, use effect varriant %d",
+        ChipLogProgress(Zcl, "IDENTIFY_EFFECT_IDENTIFIER_CHANNEL_CHANGE - Not supported, use effect variant %d",
                         identify->mEffectVariant);
         sIdentifyEffect = static_cast<EmberAfIdentifyEffectIdentifier>(identify->mEffectVariant);
     }
-
-#if CHIP_DEVICE_CONFIG_ENABLE_SED == 1
-    AppTask::GetAppTask().StartStatusLEDTimer();
-#endif
 
     switch (sIdentifyEffect)
     {
@@ -122,11 +111,10 @@ void OnTriggerIdentifyEffect(Identify * identify)
         ChipLogProgress(Zcl, "No identifier effect");
     }
 }
-
 Identify gIdentify = {
     chip::EndpointId{ 1 },
-    AppTask::GetAppTask().OnIdentifyStart,
-    AppTask::GetAppTask().OnIdentifyStop,
+    [](Identify *) { ChipLogProgress(Zcl, "onIdentifyStart"); },
+    [](Identify *) { ChipLogProgress(Zcl, "onIdentifyStop"); },
     EMBER_ZCL_IDENTIFY_IDENTIFY_TYPE_VISIBLE_LED,
     OnTriggerIdentifyEffect,
 };
@@ -142,36 +130,40 @@ CHIP_ERROR AppTask::Init()
 {
     info("AppTask::Init Lighting-App\n");
     CHIP_ERROR err = CHIP_NO_ERROR;
-#if 0
-#ifdef DISPLAY_ENABLED
-    GetLCD().Init((uint8_t *) "Lighting-App");
-#endif
 
-    err = BaseApplication::Init(&gIdentify);
-    if (err != CHIP_NO_ERROR)
-    {
-        return err;
-    }
+    PrintOnboardingCodes(chip::RendezvousInformationFlag(chip::RendezvousInformationFlag::kBLE));
 
     err = LightMgr().Init();
     if (err != CHIP_NO_ERROR)
     {
         return err;
     }
-
-    LightMgr().SetCallbacks(ActionInitiated, ActionCompleted);
-
-#ifdef ENABLE_WSTK_LEDS
-    sLightLED.Init(LIGHT_LED);
-    sLightLED.Set(LightMgr().IsLightOn());
-#endif // ENABLE_WSTK_LEDS
-#endif
     return err;
 }
 
 CHIP_ERROR AppTask::StartAppTask()
 {
-    return BaseApplication::StartAppTask(AppTaskMain);
+    sAppEventQueue = xQueueCreateStatic(APP_EVENT_QUEUE_SIZE, sizeof(AppEvent), 
+                                    sAppEventQueueBuffer, &sAppEventQueueStruct);
+    if (sAppEventQueue == nullptr)
+    {
+        ChipLogError(NotSpecified, "Failed to allocate app event queue");
+        return CHIP_ERROR_NO_MEMORY;
+    }
+
+    // Start App task.
+    sAppTaskHandle = xTaskCreateStatic(AppTaskMain, APP_TASK_NAME, 
+                                    ArraySize(appStack), nullptr, 1, appStack, &appTaskStruct);
+    if (sAppTaskHandle == nullptr)
+    {
+        return CHIP_ERROR_NO_MEMORY;
+    }
+
+    return CHIP_NO_ERROR;
+}
+
+void AppTask::InitServer(intptr_t arg)
+{
 }
 
 void AppTask::AppTaskMain(void * pvParameter)
@@ -185,131 +177,8 @@ void AppTask::AppTaskMain(void * pvParameter)
         return ;
     }
 
-#if !(defined(CHIP_DEVICE_CONFIG_ENABLE_SED) && CHIP_DEVICE_CONFIG_ENABLE_SED)
-    sAppTask.StartStatusLEDTimer();
-#endif
-
-
     while (true)
     {   
-        
-        info("z\n");
-        vTaskDelay(10);
-        #if 0
         BaseType_t eventReceived = xQueueReceive(sAppEventQueue, &event, pdMS_TO_TICKS(10));
-        while (eventReceived == pdTRUE)
-        {
-            sAppTask.DispatchEvent(&event);
-            eventReceived = xQueueReceive(sAppEventQueue, &event, 0);
-        }
-        #endif
-    }
-}
-
-void AppTask::OnIdentifyStart(Identify * identify)
-{
-    ChipLogProgress(Zcl, "onIdentifyStart");
-
-#if CHIP_DEVICE_CONFIG_ENABLE_SED == 1
-    sAppTask.StartStatusLEDTimer();
-#endif
-}
-
-void AppTask::OnIdentifyStop(Identify * identify)
-{
-    ChipLogProgress(Zcl, "onIdentifyStop");
-
-#if CHIP_DEVICE_CONFIG_ENABLE_SED == 1
-    sAppTask.StopStatusLEDTimer();
-#endif
-}
-
-void AppTask::LightActionEventHandler(AppEvent * aEvent)
-{
-    bool initiated = false;
-    LightingManager::Action_t action;
-    int32_t actor;
-    CHIP_ERROR err = CHIP_NO_ERROR;
-
-    if (aEvent->Type == AppEvent::kEventType_Light)
-    {
-        action = static_cast<LightingManager::Action_t>(aEvent->LightEvent.Action);
-        actor  = aEvent->LightEvent.Actor;
-    }
-    else if (aEvent->Type == AppEvent::kEventType_Button)
-    {
-        action = (LightMgr().IsLightOn()) ? LightingManager::OFF_ACTION : LightingManager::ON_ACTION;
-        actor  = AppEvent::kEventType_Button;
-    }
-    else
-    {
-        err = APP_ERROR_UNHANDLED_EVENT;
-    }
-
-    if (err == CHIP_NO_ERROR)
-    {
-        initiated = LightMgr().InitiateAction(actor, action);
-
-        if (!initiated)
-        {
-        }
-    }
-}
-
-void AppTask::ActionInitiated(LightingManager::Action_t aAction, int32_t aActor)
-{
-    // Action initiated, update the light led
-    bool lightOn = aAction == LightingManager::ON_ACTION;
-
-#ifdef ENABLE_WSTK_LEDS
-    sLightLED.Set(lightOn);
-#endif // ENABLE_WSTK_LEDS
-
-#ifdef DISPLAY_ENABLED
-    sAppTask.GetLCD().WriteDemoUI(lightOn);
-#endif
-
-    if (aActor == AppEvent::kEventType_Button)
-    {
-        sAppTask.mSyncClusterToButtonAction = true;
-    }
-}
-
-void AppTask::ActionCompleted(LightingManager::Action_t aAction)
-{
-    // action has been completed bon the light
-    if (aAction == LightingManager::ON_ACTION)
-    {
-    }
-    else if (aAction == LightingManager::OFF_ACTION)
-    {
-    }
-
-    if (sAppTask.mSyncClusterToButtonAction)
-    {
-        chip::DeviceLayer::PlatformMgr().ScheduleWork(UpdateClusterState, reinterpret_cast<intptr_t>(nullptr));
-        sAppTask.mSyncClusterToButtonAction = false;
-    }
-}
-
-void AppTask::PostLightActionRequest(int32_t aActor, LightingManager::Action_t aAction)
-{
-    AppEvent event;
-    event.Type              = AppEvent::kEventType_Light;
-    event.LightEvent.Actor  = aActor;
-    event.LightEvent.Action = aAction;
-    event.Handler           = LightActionEventHandler;
-    PostEvent(&event);
-}
-
-void AppTask::UpdateClusterState(intptr_t context)
-{
-    uint8_t newValue = LightMgr().IsLightOn();
-
-    // write the new on/off value
-    EmberAfStatus status = OnOffServer::Instance().setOnOffValue(1, newValue, false);
-
-    if (status != EMBER_ZCL_STATUS_SUCCESS)
-    {
     }
 }

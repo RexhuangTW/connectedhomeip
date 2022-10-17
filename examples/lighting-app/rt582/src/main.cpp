@@ -21,21 +21,15 @@
 
 #include "AppConfig.h"
 #include "init_rt582Platform.h"
-// #include "sl_simple_button_instances.h"
-// #include "sl_system_kernel.h"
 #include <DeviceInfoProviderImpl.h>
 #include <app/server/Server.h>
 #include <credentials/DeviceAttestationCredsProvider.h>
 #include <matter_config.h>
-#ifdef EFR32_ATTESTATION_CREDENTIALS
-#include <examples/platform/efr32/EFR32DeviceAttestationCreds.h>
-#else
 #include <credentials/examples/DeviceAttestationCredsExample.h>
-#endif
 
 
 
-#define BLE_DEV_NAME "SiLabs-Light"
+#define BLE_DEV_NAME "Rafael-Light"
 using namespace ::chip;
 using namespace ::chip::Inet;
 using namespace ::chip::DeviceLayer;
@@ -60,13 +54,18 @@ int main(void)
     info( "==================================================\n");
 
     chip::Platform::MemoryInit();
+    
+    if (PlatformMgr().InitChipStack()!= CHIP_NO_ERROR)
+    {
+        err("PlatformMgr().InitChipStack() failed\n");
+    }
 
 #if CONFIG_ENABLE_CHIP_SHELL
     chip::LaunchShell();
 #endif
 
     info("StartAppTask...\n");
-    if (AppTask::GetAppTask().StartAppTask() != CHIP_NO_ERROR)
+    if (GetAppTask().StartAppTask() != CHIP_NO_ERROR)
     {
         err("GetAppTask().StartAppTask() failed\n");
     }
@@ -89,6 +88,15 @@ int main(void)
     {
         err("Failed to initialize Thread stack\n");
     }
+
+#if CHIP_DEVICE_CONFIG_THREAD_FTD
+    if (ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_Router) != CHIP_NO_ERROR) 
+#else  // !CHIP_DEVICE_CONFIG_THREAD_FTD
+    if (ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_MinimalEndDevice) != CHIP_NO_ERROR) 
+#endif // CHIP_DEVICE_CONFIG_THREAD_FTD
+    {
+        err("Failed to SetThreadDeviceType\n");
+    }    
     info("start thread\n");
     if (ThreadStackMgr().StartThreadTask() != CHIP_NO_ERROR)
     {

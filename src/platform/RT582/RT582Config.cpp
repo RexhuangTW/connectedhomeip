@@ -23,29 +23,8 @@
  */
 /* this file behaves like a config.h, comes first */
 #include <platform/internal/CHIPDeviceLayerInternal.h>
-
 #include <platform/RT582/RT582Config.h>
-
 #include <lib/core/CHIPEncoding.h>
-#include <platform/internal/testing/ConfigUnitTest.h>
-
-#include "FreeRTOS.h"
-
-#define RT582_SEM_TIMEOUT_ms 5
-static SemaphoreHandle_t nvm_Sem;
-static StaticSemaphore_t nvm_SemStruct;
-
-void nvm3_lockBegin(void)
-{
-    VerifyOrDie(nvm_Sem != NULL);
-    xSemaphoreTake(nvm_Sem, RT582_SEM_TIMEOUT_ms);
-}
-
-void nvm3_lockEnd(void)
-{
-    VerifyOrDie(nvm_Sem != NULL);
-    xSemaphoreGive(nvm_Sem);
-}
 
 namespace chip {
 namespace DeviceLayer {
@@ -58,19 +37,11 @@ namespace Internal {
 
 CHIP_ERROR RT582Config::Init()
 {
-    nvm_Sem = xSemaphoreCreateBinaryStatic(&nvm_SemStruct);
-
-    if (nvm_Sem == NULL)
-    {
-        return CHIP_ERROR_NO_MEMORY;
-    }
-
     return ChipError(0);
 }
 
 void RT582Config::DeInit()
 {
-    vSemaphoreDelete(nvm_Sem);
 }
 
 CHIP_ERROR RT582Config::ReadConfigValue(Key key, bool & val)
@@ -337,18 +308,7 @@ bool RT582Config::ValidConfigKey(Key key)
 void RT582Config::RunConfigUnitTest()
 {
     // Run common unit test.
-    ::chip::DeviceLayer::Internal::RunConfigUnitTest<RT582Config>();
-}
-
-void RT582Config::RepackNvm3Flash(void)
-{
-    // Repack nvm3 flash if nvm3 space < headroom threshold.
-    // Note- checking periodically during idle periods should prevent
-    // forced repack events on any write operation.
-}
-CHIP_ERROR RT582Config::xx1233(uint32_t t123t)
-{
-    return ChipError(0);
+    //::chip::DeviceLayer::Internal::RunConfigUnitTest<RT582Config>();
 }
 } // namespace Internal
 } // namespace DeviceLayer

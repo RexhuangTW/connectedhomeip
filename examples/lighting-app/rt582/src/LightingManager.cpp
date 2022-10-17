@@ -198,7 +198,6 @@ void LightingManager::TimerEventHandler(TimerHandle_t xTimer)
     {
         event.Handler = ActuatorMovementTimerEventHandler;
     }
-    AppTask::GetAppTask().PostEvent(&event);
 }
 
 void LightingManager::AutoTurnOffTimerEventHandler(AppEvent * aEvent)

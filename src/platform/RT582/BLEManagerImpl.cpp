@@ -16,32 +16,20 @@
  *    limitations under the License.
  */
 
-/**
- *    @file
- *          Provides an implementation of the BLEManager singleton object
- *          for the Silicon Labs EFR32 platforms.
- */
-
 /* this file behaves like a config.h, comes first */
 #include <platform/internal/CHIPDeviceLayerInternal.h>
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 
-// #include "sl_component_catalog.h"
 
 #include <platform/internal/BLEManager.h>
 
 #include "FreeRTOS.h"
-// #include "rail.h"
-// #include "sl_bt_api.h"
-// #include "sl_bt_stack_config.h"
-// #include "sl_bt_stack_init.h"
-// #include "timers.h"
+#include "timers.h"
 #include <ble/CHIPBleServiceData.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/CommissionableDataProvider.h>
 #include <platform/DeviceInstanceInfoProvider.h>
-// #include <platform/EFR32/freertos_bluetooth.h>
 
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
 #include <setup_payload/AdditionalDataPayloadGenerator.h>

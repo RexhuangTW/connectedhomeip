@@ -32,177 +32,54 @@
 using namespace ::chip;
 using namespace ::chip::DeviceLayer::Internal;
 
-#define CONVERT_KEYMAP_INDEX_TO_NVM3KEY(index) (RT582Config::kConfigKey_KvsFirstKeySlot + index)
-#define CONVERT_NVM3KEY_TO_KEYMAP_INDEX(nvm3Key) (nvm3Key - RT582Config::kConfigKey_KvsFirstKeySlot)
-
 namespace chip {
 namespace DeviceLayer {
 namespace PersistedStorage {
 
 KeyValueStoreManagerImpl KeyValueStoreManagerImpl::sInstance;
-char mKvsStoredKeyString[KeyValueStoreManagerImpl::kMaxEntries][PersistentStorageDelegate::kKeyLengthMax + 1];
 
-CHIP_ERROR KeyValueStoreManagerImpl::Init(void)
+CHIP_ERROR KeyValueStoreManagerImpl::_Get(const char * key, void * value, size_t value_size, size_t * read_bytes_size,
+                                          size_t offset_bytes) const
 {
-    CHIP_ERROR err;
-    err = RT582Config::Init();
-    SuccessOrExit(err);
+    CHIP_ERROR err = CHIP_NO_ERROR;
 
-    memset(mKvsStoredKeyString, 0, sizeof(mKvsStoredKeyString));
-    size_t outLen;
-    err = RT582Config::ReadConfigValueBin(RT582Config::kConfigKey_KvsStringKeyMap, reinterpret_cast<uint8_t *>(mKvsStoredKeyString),
-                                          sizeof(mKvsStoredKeyString), outLen);
+    VerifyOrExit((key != NULL) && (value != NULL), err = CHIP_ERROR_INVALID_ARGUMENT);
 
-    if (err == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND) // Initial boot
-    {
-        err = CHIP_NO_ERROR;
-    }
+    /*
+        TODO
+    */
 
 exit:
     return err;
 }
 
-bool KeyValueStoreManagerImpl::IsValidKvsNvm3Key(uint32_t nvm3Key) const
-{
-    return ((RT582Config::kConfigKey_KvsFirstKeySlot <= nvm3Key) && (nvm3Key <= RT582Config::kConfigKey_KvsLastKeySlot));
-}
-
-CHIP_ERROR KeyValueStoreManagerImpl::MapKvsKeyToNvm3(const char * key, uint32_t & nvm3Key, bool isSlotNeeded) const
-{
-    CHIP_ERROR err;
-    uint8_t firstEmptyKeySlot = kMaxEntries;
-    for (uint8_t keyIndex = 0; keyIndex < kMaxEntries; keyIndex++)
-    {
-        if (strcmp(key, mKvsStoredKeyString[keyIndex]) == 0)
-        {
-            nvm3Key = CONVERT_KEYMAP_INDEX_TO_NVM3KEY(keyIndex);
-            VerifyOrDie(IsValidKvsNvm3Key(nvm3Key) == true);
-            return CHIP_NO_ERROR;
-        }
-
-        if (isSlotNeeded && (firstEmptyKeySlot == kMaxEntries) && (mKvsStoredKeyString[keyIndex][0] == 0))
-        {
-            firstEmptyKeySlot = keyIndex;
-        }
-    }
-
-    if (isSlotNeeded)
-    {
-        if (firstEmptyKeySlot != kMaxEntries)
-        {
-            nvm3Key = CONVERT_KEYMAP_INDEX_TO_NVM3KEY(firstEmptyKeySlot);
-            VerifyOrDie(IsValidKvsNvm3Key(nvm3Key) == true);
-            err = CHIP_NO_ERROR;
-        }
-        else
-        {
-            err = CHIP_ERROR_PERSISTED_STORAGE_FAILED;
-        }
-    }
-    else
-    {
-        err = CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND;
-    }
-    return err;
-}
-
-void KeyValueStoreManagerImpl::ForceKeyMapSave()
-{
-    OnScheduledKeyMapSave(nullptr, nullptr);
-}
-
-void KeyValueStoreManagerImpl::OnScheduledKeyMapSave(System::Layer * systemLayer, void * appState)
-{
-    RT582Config::WriteConfigValueBin(RT582Config::kConfigKey_KvsStringKeyMap,
-                                     reinterpret_cast<const uint8_t *>(mKvsStoredKeyString), sizeof(mKvsStoredKeyString));
-}
-
-void KeyValueStoreManagerImpl::ScheduleKeyMapSave(void)
-{
-    /*
-        During commissioning, the key map will be modified multiples times subsequently.
-        Commit the key map in nvm once it as stabilized.
-    */
-    SystemLayer().StartTimer(
-        std::chrono::duration_cast<System::Clock::Timeout>(System::Clock::Seconds32(RT582_KVS_SAVE_DELAY_SECONDS)),
-        KeyValueStoreManagerImpl::OnScheduledKeyMapSave, NULL);
-}
-
-CHIP_ERROR KeyValueStoreManagerImpl::_Get(const char * key, void * value, size_t value_size, size_t * read_bytes_size,
-                                          size_t offset_bytes) const
-{
-    VerifyOrReturnError(key != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-
-    uint32_t nvm3Key;
-    CHIP_ERROR err = MapKvsKeyToNvm3(key, nvm3Key);
-    VerifyOrReturnError(err == CHIP_NO_ERROR, err);
-
-    size_t outLen;
-    err = RT582Config::ReadConfigValueBin(nvm3Key, reinterpret_cast<uint8_t *>(value), value_size, outLen, offset_bytes);
-    if (read_bytes_size)
-    {
-        *read_bytes_size = outLen;
-    }
-
-    return err;
-}
-
 CHIP_ERROR KeyValueStoreManagerImpl::_Put(const char * key, const void * value, size_t value_size)
 {
-    VerifyOrReturnError(key != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
+    CHIP_ERROR err = CHIP_NO_ERROR;
 
-    uint32_t nvm3Key;
-    CHIP_ERROR err = MapKvsKeyToNvm3(key, nvm3Key, /* isSlotNeeded */ true);
-    VerifyOrReturnError(err == CHIP_NO_ERROR, err);
+    VerifyOrExit((key != NULL) && (value != NULL), err = CHIP_ERROR_INVALID_ARGUMENT);
 
-    err = RT582Config::WriteConfigValueBin(nvm3Key, reinterpret_cast<const uint8_t *>(value), value_size);
-    if (err == CHIP_NO_ERROR)
-    {
-        uint32_t keyIndex = nvm3Key - RT582Config::kConfigKey_KvsFirstKeySlot;
-        Platform::CopyString(mKvsStoredKeyString[keyIndex], key);
-        ScheduleKeyMapSave();
-    }
+    /*
+        TODO
+    */
 
+exit:
     return err;
 }
 
 CHIP_ERROR KeyValueStoreManagerImpl::_Delete(const char * key)
 {
-    VerifyOrReturnError(key != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
-
-    uint32_t nvm3Key;
-    CHIP_ERROR err = MapKvsKeyToNvm3(key, nvm3Key);
-    VerifyOrReturnError(err == CHIP_NO_ERROR, err);
-
-    err = RT582Config::ClearConfigValue(nvm3Key);
-    if (err == CHIP_NO_ERROR)
-    {
-        uint32_t keyIndex = CONVERT_NVM3KEY_TO_KEYMAP_INDEX(nvm3Key);
-        memset(mKvsStoredKeyString[keyIndex], 0, sizeof(mKvsStoredKeyString[keyIndex]));
-        ScheduleKeyMapSave();
-    }
-
-    return err;
-}
-
-CHIP_ERROR KeyValueStoreManagerImpl::ErasePartition(void)
-{
-    // Iterate over all the Matter Kvs nvm3 records and delete each one...
     CHIP_ERROR err = CHIP_NO_ERROR;
-    for (uint32_t nvm3Key = RT582Config::kMinConfigKey_MatterKvs; nvm3Key < RT582Config::kMaxConfigKey_MatterKvs; nvm3Key++)
-    {
-        err = RT582Config::ClearConfigValue(nvm3Key);
 
-        if (err != CHIP_NO_ERROR)
-        {
-            break;
-        }
-    }
+    VerifyOrExit(key != NULL, err = CHIP_ERROR_INVALID_ARGUMENT);
 
-    memset(mKvsStoredKeyString, 0, sizeof(mKvsStoredKeyString));
+    /*
+        TODO
+    */
+
+exit:
     return err;
 }
-
 } // namespace PersistedStorage
 } // namespace DeviceLayer
 } // namespace chip

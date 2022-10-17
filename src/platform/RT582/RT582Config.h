@@ -33,9 +33,6 @@
 #define KVS_MAX_ENTRIES 75 // Available key slot count for Kvs Key mapping.
 #endif
 
-// Delay before Key/Value is actually saved in NVM
-#define RT582_KVS_SAVE_DELAY_SECONDS 5
-
 static_assert((KVS_MAX_ENTRIES <= 255), "Implementation supports up to 255 Kvs entries");
 static_assert((KVS_MAX_ENTRIES >= 30), "Mininimal Kvs entries requirement is not met");
 
@@ -156,14 +153,12 @@ public:
     static bool ValidConfigKey(Key key);
 
     static void RunConfigUnitTest(void);
-    static void RepackNvm3Flash(void);
 
 protected:
     static constexpr uint8_t GetPDMId(uint32_t key);
     static constexpr uint8_t GetRecordKey(uint32_t key);
 
 private:
-    static CHIP_ERROR xx1233(uint32_t t123t);
 };
 /**
  * Extract a PDM id from a Key value.

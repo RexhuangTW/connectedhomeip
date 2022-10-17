@@ -16,16 +16,9 @@
  *    limitations under the License.
  */
 
-/**
- *    @file
- *          Provides an implementation of the ConfigurationManager object
- *          for EFR32 platforms using the Silicon Labs SDK.
- */
-
 #pragma once
 
 #include <platform/internal/GenericConfigurationManagerImpl.h>
-
 #include <platform/RT582/RT582Config.h>
 
 namespace chip {
@@ -39,12 +32,6 @@ class ConfigurationManagerImpl : public Internal::GenericConfigurationManagerImp
 public:
     // This returns an instance of this class.
     static ConfigurationManagerImpl & GetDefaultInstance();
-
-    CHIP_ERROR GetBootReason(uint32_t & bootReason);
-    CHIP_ERROR GetRebootCount(uint32_t & rebootCount);
-    CHIP_ERROR IncreaseBootCount(void);
-    CHIP_ERROR GetTotalOperationalHours(uint32_t & totalOperationalHours);
-    CHIP_ERROR StoreTotalOperationalHours(uint32_t totalOperationalHours);
 
 private:
     // ===== Members that implement the ConfigurationManager public interface.
@@ -73,17 +60,12 @@ private:
     void RunConfigUnitTest(void) override;
 
     // ===== Private members reserved for use by this class only.
-    uint32_t rebootCause;
     static void DoFactoryReset(intptr_t arg);
 };
-
-#ifndef SL_WIFI
 inline CHIP_ERROR ConfigurationManagerImpl::GetPrimaryWiFiMACAddress(uint8_t * buf)
 {
     return CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE;
 }
-#endif /* SL_WIFI */
-
 /**
  * Returns the platform-specific implementation of the ConfigurationManager object.
  *
