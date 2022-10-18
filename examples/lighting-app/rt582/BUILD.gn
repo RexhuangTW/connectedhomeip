@@ -194,7 +194,7 @@ rt582_executable("lighting_app") {
 
   # Attestation Credentials
   if (chip_build_platform_attestation_credentials_provider) {
-    deps += [ "${examples_plat_dir}:rt582-attestation-credentials" ]
+    deps += [ "${chip_root}/src/platform/RT582:rt582-attestation-credentials" ]
   }
 
   output_dir = root_out_dir

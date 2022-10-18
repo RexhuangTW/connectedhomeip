@@ -40,7 +40,7 @@ static_library("RT582") {
     "CHIPDevicePlatformConfig.h",
     "CHIPDevicePlatformEvent.h",
     "CHIPMem-Platform.cpp",
-    "CHIPPlatformConfig.h", #  add
+    "CHIPPlatformConfig.h", 
     "ConfigurationManagerImpl.cpp",
     "ConfigurationManagerImpl.h",
     "ConnectivityManagerImpl.cpp",
@@ -57,7 +57,7 @@ static_library("RT582") {
     "Logging.cpp",
     "PlatformManagerImpl.cpp",
     "PlatformManagerImpl.h",
-    "SystemPlatformConfig.h", # add
+    "SystemPlatformConfig.h", 
   ]
   include_dirs = []
   deps = [ ]
@@ -100,4 +100,30 @@ static_library("RT582") {
   public_configs =
     [ "${chip_root}/src/lib/address_resolve:default_address_resolve_config" ]
 
+}
+
+
+config("attestation-credentials-config") {
+  include_dirs = [ "${chip_root}" ]
+
+  defines = [
+    # Set to 1 to enable RT582 attestation credentials
+    "RT582_ATTESTATION_CREDENTIALS=1",
+  ]
+}
+
+source_set("rt582-attestation-credentials") {
+  sources = [
+    "FactoryDataParser.c",
+    "FactoryDataParser.h",
+    "FactoryDataProvider.cpp",
+    "FactoryDataProvider.h",
+  ]
+
+  public_deps = [
+    "${chip_root}/src/credentials",
+    "${chip_root}/src/platform:platform_base",
+  ]
+
+  public_configs = [ ":attestation-credentials-config" ]
 }

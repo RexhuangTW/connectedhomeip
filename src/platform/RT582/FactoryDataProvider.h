@@ -35,15 +35,16 @@ struct InternalFlashFactoryData
 {
     CHIP_ERROR GetFactoryDataPartition(uint8_t *& data, size_t & dataSize)
     {
-        data     = reinterpret_cast<uint8_t *>(PM_FACTORY_DATA_ADDRESS);
-        dataSize = PM_FACTORY_DATA_SIZE;
+        // data     = reinterpret_cast<uint8_t *>(PM_FACTORY_DATA_ADDRESS);
+        // dataSize = PM_FACTORY_DATA_SIZE;
         return CHIP_NO_ERROR;
     }
 
     CHIP_ERROR ProtectFactoryDataPartitionAgainstWrite()
     {
-        int ret = fprotect_area(PM_FACTORY_DATA_ADDRESS, PM_FACTORY_DATA_SIZE);
-        return System::MapErrorZephyr(ret);
+        // int ret = fprotect_area(PM_FACTORY_DATA_ADDRESS, PM_FACTORY_DATA_SIZE);
+        // return System::MapErrorZephyr(ret);
+        return CHIP_NO_ERROR;
     }
 };
 
@@ -51,23 +52,23 @@ struct ExternalFlashFactoryData
 {
     CHIP_ERROR GetFactoryDataPartition(uint8_t *& data, size_t & dataSize)
     {
-        int ret = flash_read(mFlashDevice, PM_FACTORY_DATA_ADDRESS, mFactoryDataBuffer, PM_FACTORY_DATA_SIZE);
+        // int ret = flash_read(mFlashDevice, PM_FACTORY_DATA_ADDRESS, mFactoryDataBuffer, PM_FACTORY_DATA_SIZE);
 
-        if (ret != 0)
-        {
-            return CHIP_ERROR_READ_FAILED;
-        }
+        // if (ret != 0)
+        // {
+        //     return CHIP_ERROR_READ_FAILED;
+        // }
 
-        data     = mFactoryDataBuffer;
-        dataSize = PM_FACTORY_DATA_SIZE;
+        // data     = mFactoryDataBuffer;
+        // dataSize = PM_FACTORY_DATA_SIZE;
 
         return CHIP_NO_ERROR;
     }
 
     CHIP_ERROR ProtectFactoryDataPartitionAgainstWrite() { return CHIP_ERROR_NOT_IMPLEMENTED; }
 
-    const struct device * mFlashDevice = DEVICE_DT_GET(DT_CHOSEN(zephyr_flash_controller));
-    uint8_t mFactoryDataBuffer[PM_FACTORY_DATA_SIZE];
+    // const struct device * mFlashDevice = DEVICE_DT_GET(DT_CHOSEN(zephyr_flash_controller));
+    uint8_t mFactoryDataBuffer[2]; //PM_FACTORY_DATA_SIZE
 };
 
 template <class FlashFactoryData>
@@ -109,8 +110,8 @@ public:
     CHIP_ERROR GetEnableKey(MutableByteSpan & enableKey);
 
 private:
-    static constexpr uint16_t kFactoryDataPartitionSize    = PM_FACTORY_DATA_SIZE;
-    static constexpr uint32_t kFactoryDataPartitionAddress = PM_FACTORY_DATA_ADDRESS;
+    static constexpr uint16_t kFactoryDataPartitionSize    = 100; // PM_FACTORY_DATA_SIZE
+    static constexpr uint32_t kFactoryDataPartitionAddress = 100; //PM_FACTORY_DATA_ADDRESS
     static constexpr uint8_t kDACPrivateKeyLength          = 32;
     static constexpr uint8_t kDACPublicKeyLength           = 65;
 

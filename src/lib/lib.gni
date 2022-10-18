@@ -22,5 +22,5 @@ declare_args() {
   chip_build_default_attestation_verifier = true
 
   # Set to true to enable device-specific attestation credentials
-  chip_build_platform_attestation_credentials_provider = false
+  chip_build_platform_attestation_credentials_provider = true # false
 }

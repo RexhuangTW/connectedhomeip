@@ -36,6 +36,7 @@
 #include <ble/BLEEndPoint.h>
 #include <lib/core/CHIPError.h>
 #include <platform/CHIPDeviceLayer.h>
+#include <platform/RT582/FactoryDataProvider.h>
 
 /**********************************************************
  * Defines
@@ -71,7 +72,10 @@ private:
     bool mFunctionTimerActive;
     bool mSyncClusterToButtonAction;
 
-    static AppTask sAppTask;    
+    static AppTask sAppTask;   
+    
+    // CHIP_FACTORY_DATA
+    chip::DeviceLayer::FactoryDataProvider<chip::DeviceLayer::InternalFlashFactoryData> mFactoryDataProvider;
 };
 
 
