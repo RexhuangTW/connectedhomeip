@@ -142,7 +142,6 @@ void LogV(const char * module, uint8_t category, const char * aFormat, va_list v
 
         PrintLog(formattedMsg);
     }
-
     // Let the application know that a log message has been emitted.
     chip::DeviceLayer::OnLogOutput();
 }

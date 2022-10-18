@@ -47,46 +47,25 @@ static chip::DeviceLayer::DeviceInfoProviderImpl gExampleDeviceInfoProvider;
 // ================================================================================
 int main(void)
 {
-    init_rt582Platform();
-
-    info( "==================================================\n");
-    info( "chip-rt582-light-example starting\n");
-    info( "==================================================\n");
-
     chip::Platform::MemoryInit();
     
     if (PlatformMgr().InitChipStack()!= CHIP_NO_ERROR)
     {
-        err("PlatformMgr().InitChipStack() failed\n");
+        ChipLogError(NotSpecified, "PlatformMgr().InitChipStack() failed");
     }
+
+    init_rt582Platform();
+    info( "==================================================\n");
+    info( "chip-rt582-light-example starting\n");
+    info( "==================================================\n");
 
 #if CONFIG_ENABLE_CHIP_SHELL
     chip::LaunchShell();
 #endif
 
-    info("StartAppTask...\n");
-    if (GetAppTask().StartAppTask() != CHIP_NO_ERROR)
-    {
-        err("GetAppTask().StartAppTask() failed\n");
-    }
-
-#if 0
-    DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
-
-    CHIPDeviceManager & deviceMgr = CHIPDeviceManager::GetInstance();
-    CHIP_ERROR error              = deviceMgr.Init(&EchoCallbacks);
-    if (error != CHIP_NO_ERROR)
-    {
-        err("device.Init() failed: %s\n");
-    }
-#endif
-
-
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
-    info("init thread\n");
     if (ThreadStackMgr().InitThreadStack() != CHIP_NO_ERROR)
     {
-        err("Failed to initialize Thread stack\n");
+        ChipLogError(NotSpecified, "Failed to initialize Thread stack");
     }
 
 #if CHIP_DEVICE_CONFIG_THREAD_FTD
@@ -95,17 +74,25 @@ int main(void)
     if (ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_MinimalEndDevice) != CHIP_NO_ERROR) 
 #endif // CHIP_DEVICE_CONFIG_THREAD_FTD
     {
-        err("Failed to SetThreadDeviceType\n");
+        ChipLogError(NotSpecified, "Failed to SetThreadDeviceType");
     }    
-    info("start thread\n");
+
+    if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "Error during PlatformMgr().StartEventLoopTask();");
+    }
+    
     if (ThreadStackMgr().StartThreadTask() != CHIP_NO_ERROR)
     {
-        err("Failed to launch Thread task\n");
+        ChipLogError(NotSpecified, "Failed to launch Thread task");
     }
-#endif
-    info("start rtos scheduler\n");
+
+    if (GetAppTask().StartAppTask() != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "GetAppTask().StartAppTask() failed");
+    }
+    
     vTaskStartScheduler();
     // Should never get here.
-    
     return 0;
 }

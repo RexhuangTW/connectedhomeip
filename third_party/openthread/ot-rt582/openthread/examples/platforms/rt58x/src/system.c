@@ -46,68 +46,21 @@
 #include "project_config.h"
 
 #include "platform-rt58x.h"
-/* Utility Library APIs */
-#include "util_log.h"
-#include "util_printf.h"
-/* BSP APIs */
-#include "bsp.h"
-#include "bsp_button.h"
-#include "bsp_console.h"
-#include "bsp_led.h"
-#include "bsp_uart.h"
+
+
 //=============================================================================
 //                Functions
 //=============================================================================
-
-static void init_default_pin_mux(void)
-{
-    int i, j;
-
-    /*set all pin to gpio, except GPIO16, GPIO17 */
-    for (i = 0; i < 32; i++)
-    {
-        if ((i != 16) && (i != 17))
-        {
-            pin_set_mode(i, MODE_GPIO);
-        }
-    }
-    /*uart0 pinmux*/
-    pin_set_mode(16, MODE_UART); /*GPIO16 as UART0 RX*/
-    pin_set_mode(17, MODE_UART); /*GPIO17 as UART0 TX*/
-
-    return;
-}
 void otSysInit(int argc, char * argv[])
 {
     OT_UNUSED_VARIABLE(argc);
     OT_UNUSED_VARIABLE(argv);
 
-    for (int i = 0; i < 8; i++)
-    {
-        gpio_cfg_output(i);
-        gpio_pin_clear(i);
-    }
+    rt58x_alarm_init();
 
-    gpio_cfg_output(20);
-    gpio_cfg_output(21);
-    gpio_pin_write(20, 0);
-    gpio_pin_write(21, 0);
-
-    NVIC_SetPriority(Uart0_IRQn, 0x06);
-    NVIC_SetPriority(CommSubsystem_IRQn, 0x01);
-    init_default_pin_mux();
-
-    dma_init();
-
-    bsp_init(BSP_INIT_DEBUG_CONSOLE, NULL);
-    utility_register_stdout(bsp_console_stdout_char, bsp_console_stdout_string);
-
-    util_log_init();
+    random_number_init();
 
     rafael_rfb_init();
-
-    rt58x_alarm_init();
-    random_number_init();
 }
 
 bool otSysPseudoResetWasRequested(void)
@@ -119,7 +72,7 @@ void otSysDeinit(void) {}
 
 void otSysProcessDrivers(otInstance * aInstance)
 {
-    UartProcessReceive();
+   //UartProcessReceive();
     rt58x_alarm_process(aInstance);
     platformRadioProcess();
 }

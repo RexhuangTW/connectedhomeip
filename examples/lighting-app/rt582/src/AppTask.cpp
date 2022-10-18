@@ -31,7 +31,7 @@
 #include <app/util/attribute-storage.h>
 
 #include <assert.h>
-
+#include <DeviceInfoProviderImpl.h>
 #include <setup_payload/QRCodeSetupPayloadGenerator.h>
 #include <setup_payload/SetupPayload.h>
 
@@ -42,6 +42,7 @@
 
 #include <platform/CHIPDeviceLayer.h>
 
+#include "uart.h"
 #include "util_log.h"
 
 using namespace chip;
@@ -58,6 +59,10 @@ uint8_t sTestEventTriggerEnableKey[TestEventTriggerDelegate::kEnableKeyLength] =
 
 
 namespace {
+
+bool sIsThreadProvisioned = false;
+bool sIsThreadEnabled     = false;
+bool sHaveBLEConnections  = false;        
 TaskHandle_t sAppTaskHandle;
 QueueHandle_t sAppEventQueue;
 
@@ -131,32 +136,36 @@ using namespace ::chip::DeviceLayer;
 
 AppTask AppTask::sAppTask;
 
+void LockOpenThreadTask(void)
+{
+    chip::DeviceLayer::ThreadStackMgr().LockThreadStack();
+}
+
+void UnlockOpenThreadTask(void)
+{
+    chip::DeviceLayer::ThreadStackMgr().UnlockThreadStack();
+}
+
 CHIP_ERROR AppTask::Init()
 {
-    info("AppTask::Init Lighting-App\n");
     CHIP_ERROR err = CHIP_NO_ERROR;
 
-    // CHIP_FACTORY_DATA
-    ReturnErrorOnFailure(mFactoryDataProvider.Init());
-    SetDeviceInstanceInfoProvider(&mFactoryDataProvider);
-    SetDeviceAttestationCredentialsProvider(&mFactoryDataProvider);
-    SetCommissionableDataProvider(&mFactoryDataProvider);
+    PlatformMgr().ScheduleWork(InitServer, 0);
+    
 
+#if 0    
     // Read EnableKey from the factory data.
     MutableByteSpan enableKey(sTestEventTriggerEnableKey);
-    err = mFactoryDataProvider.GetEnableKey(enableKey);
-    if (err != CHIP_NO_ERROR)
-    {
-        // LOG_ERR("mFactoryDataProvider.GetEnableKey() failed. Could not delegate a test event trigger");
-        // memset(sTestEventTriggerEnableKey, 0, sizeof(sTestEventTriggerEnableKey));
-    }
+    mFactoryDataProvider.GetEnableKey(enableKey);
 
     err = LightMgr().Init();
     if (err != CHIP_NO_ERROR)
     {
         return err;
     }
-    PrintOnboardingCodes(chip::RendezvousInformationFlag(chip::RendezvousInformationFlag::kBLE));
+
+    ConfigurationMgr().LogDeviceConfig();
+#endif
 
     return err;
 }
@@ -178,14 +187,42 @@ CHIP_ERROR AppTask::StartAppTask()
     {
         return CHIP_ERROR_NO_MEMORY;
     }
+    // CHIP_FACTORY_DATA
+    ReturnErrorOnFailure(mFactoryDataProvider.Init());
+    SetDeviceInstanceInfoProvider(&mFactoryDataProvider);
+    SetCommissionableDataProvider(&mFactoryDataProvider);
 
+    SetDeviceAttestationCredentialsProvider(&mFactoryDataProvider);    
+    PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
     return CHIP_NO_ERROR;
 }
-
 void AppTask::InitServer(intptr_t arg)
 {
-}
+    static chip::CommonCaseDeviceServerInitParams initParams;
+    (void) initParams.InitializeStaticResourcesBeforeServerInit();
 
+    auto & infoProvider = chip::DeviceLayer::DeviceInfoProviderImpl::GetDefaultInstance();
+    infoProvider.SetStorageDelegate(initParams.persistentStorageDelegate);
+    chip::DeviceLayer::SetDeviceInfoProvider(&infoProvider);
+
+    chip::Inet::EndPointStateOpenThread::OpenThreadEndpointInitParam nativeParams;
+    nativeParams.lockCb                = LockOpenThreadTask;
+    nativeParams.unlockCb              = UnlockOpenThreadTask;
+    nativeParams.openThreadInstancePtr = chip::DeviceLayer::ThreadStackMgrImpl().OTInstance();
+    initParams.endpointNativeParams    = static_cast<void *>(&nativeParams);
+    chip::Server::GetInstance().Init(initParams);
+    // Open commissioning after boot if no fabric was available
+    if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0)
+    {
+        PlatformMgr().ScheduleWork(OpenCommissioning, 0);
+    }
+}
+void AppTask::OpenCommissioning(intptr_t arg)
+{
+    // Enable BLE advertisements
+    chip::Server::GetInstance().GetCommissioningWindowManager().OpenBasicCommissioningWindow();
+    ChipLogProgress(NotSpecified, "BLE advertising started. Waiting for Pairing.");
+}
 void AppTask::AppTaskMain(void * pvParameter)
 {
     AppEvent event;
@@ -200,5 +237,18 @@ void AppTask::AppTaskMain(void * pvParameter)
     while (true)
     {   
         BaseType_t eventReceived = xQueueReceive(sAppEventQueue, &event, pdMS_TO_TICKS(10));
+        // Collect connectivity and configuration state from the CHIP stack. Because
+        // the CHIP event loop is being run in a separate task, the stack must be
+        // locked while these values are queried.  However we use a non-blocking
+        // lock request (TryLockCHIPStack()) to avoid blocking other UI activities
+        // when the CHIP task is busy (e.g. with a long crypto operation).
+        if (PlatformMgr().TryLockChipStack())
+        {
+            sIsThreadProvisioned = ConnectivityMgr().IsThreadProvisioned();
+            sIsThreadEnabled     = ConnectivityMgr().IsThreadEnabled();
+            sHaveBLEConnections  = (ConnectivityMgr().NumBLEConnections() != 0);
+            PlatformMgr().UnlockChipStack();
+        }
+        uartConsoleProc();
     }
 }

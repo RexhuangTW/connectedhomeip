@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import("//build_overrides/chip.gni")
-import("//build_overrides/rt582_sdk.gni")
 import("//build_overrides/jlink.gni")
 import("//build_overrides/mbedtls.gni")
+import("//build_overrides/rt582_sdk.gni")
 
 import("${chip_root}/src/lib/lib.gni")
 
@@ -74,13 +74,13 @@ template("rt582_sdk") {
       "${rt582_sdk_root}/Portable/freertos/repo/portable/CCS/ARM_CM3",
       "${chip_root}/third_party/openthread/ot-rt582/openthread/third_party/mbedtls/repo/include",
     ]
+
     # Note that we're setting the mbedTLS and PSA configuration files through a
     # define. This means the build system by default does not pick up changes in
     # the content of these, only when changing the filename itself.
     # To fix this, these files are also manually depended upon in the source set
     # declared in rt582_mbedtls_config further down this file.
-    defines = [
-    ]
+    defines = [ "USE_FREERTOS" ]
 
     if (defined(invoker.enable_sleepy_device)) {
       if (invoker.enable_sleepy_device) {
@@ -111,7 +111,7 @@ template("rt582_sdk") {
       "-Wno-unused-function",
       "-Wno-unused-parameter",
       "-Wno-empty-body",
-      "-w",      
+      "-w",
     ]
 
     if (defined(invoker.defines)) {
@@ -144,9 +144,11 @@ template("rt582_sdk") {
       "${rt582_sdk_root}/Portable/Utility/util_string.c",
       "${rt582_sdk_root}/Portable/bsp/bsp.c",
       "${rt582_sdk_root}/Portable/bsp/bsp_button.c",
-      "${rt582_sdk_root}/Portable/bsp/bsp_console.c",
+
+      #      "${rt582_sdk_root}/Portable/bsp/bsp_console.c",
       "${rt582_sdk_root}/Portable/bsp/bsp_led.c",
-      "${rt582_sdk_root}/Portable/bsp/bsp_uart.c",
+
+      #      "${rt582_sdk_root}/Portable/bsp/bsp_uart.c",
       "${rt582_sdk_root}/Portable/bsp/bsp_uart_drv.c",
       "${rt582_sdk_root}/RFB/rfb.c",
       "${rt582_sdk_root}/RFB/rfb_comm_15p4Mac.c",

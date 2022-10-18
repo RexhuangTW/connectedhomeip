@@ -34,6 +34,7 @@
 #include <openthread/platform/entropy.h>
 
 #include <lib/support/CHIPPlatformMemory.h>
+
 #define __WEAK __attribute__((__WEAK__))
 
 #include "util_log.h"
@@ -49,18 +50,6 @@ CHIP_ERROR ThreadStackManagerImpl::_InitThreadStack(void)
     return InitThreadStack(NULL);
 }
 
-CHIP_ERROR ThreadStackManagerImpl::_StartThreadTask()
-{
-    CHIP_ERROR err = CHIP_NO_ERROR;
-    GenericThreadStackManagerImpl_FreeRTOS<ThreadStackManagerImpl>::_StartThreadTask();
-exit:
-    return err;
-}
-void ThreadStackManagerImpl::ProcessThreadActivity()
-{
-    otTaskletsProcess(OTInstance());
-    otSysProcessDrivers(OTInstance());
-}
 CHIP_ERROR ThreadStackManagerImpl::InitThreadStack(otInstance * otInst)
 {
 
@@ -78,6 +67,11 @@ exit:
 bool ThreadStackManagerImpl::IsInitialized()
 {
     return sInstance.mThreadStackLock != NULL;
+}
+
+void ThreadStackManagerImpl::TaskletsSignalPending()
+{
+    ThreadStackMgrImpl().SignalThreadActivityPending();
 }
 
 } // namespace DeviceLayer

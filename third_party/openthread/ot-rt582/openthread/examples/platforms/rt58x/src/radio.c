@@ -1334,7 +1334,9 @@ static void rafael_tx_done(uint8_t u8_tx_status)
     sTransmitError = u8_tx_status;
     //sTxWait = false;
     sTxDone = true;
-    gpio_pin_write(20, 1);    
+    gpio_pin_write(20, 1);
+
+    otSysEventSignalPending();
 }
 
 /**
@@ -1385,6 +1387,7 @@ static void rafael_rx_done(uint16_t packet_length, uint8_t *rx_data_address,
             }
         }
     }
+    otSysEventSignalPending();
 
 }
 void rafael_radio_short_addr_ctrl(uint8_t ctrl_type, uint8_t *short_addr)
@@ -1399,7 +1402,6 @@ void rafael_radio_extend_addr_ctrl(uint8_t ctrl_type, uint8_t *extend_addr)
 
 void rafael_rfb_init(void)
 {
-
     /* Init MAC rx buffer */
     for (uint32_t i = 0; i < MAC_RX_BUFFERS; i++)
     {

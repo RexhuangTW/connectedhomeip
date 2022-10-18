@@ -74,6 +74,7 @@ CHIP_ERROR FactoryDataProvider<FlashFactoryData>::Init()
         ChipLogError(DeviceLayer, "Failed to parse factory data");
         return CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND;
     }
+    mFactoryData.passcode = 0x5585;
 
     // // Check if factory data version is correct
     // if (mFactoryData.version != CONFIG_CHIP_FACTORY_DATA_VERSION)

@@ -38,8 +38,10 @@
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 
-#include "util_log.h"
+#include "uart.h"
+
 #include "cm3_mcu.h"
+
 
 namespace chip {
 namespace DeviceLayer {
@@ -51,15 +53,40 @@ static int app_entropy_source(void * data, unsigned char * output, size_t len, s
     *olen = len;
     return 0;
 }
+static void init_default_pin_mux(void)
+{
+    int i, j;
 
+    /*set all pin to gpio, except GPIO16, GPIO17 */
+    for (i = 0; i < 32; i++)
+    {
+        if ((i != 16) && (i != 17))
+        {
+            pin_set_mode(i, MODE_GPIO);
+        }
+    }
+    /*uart0 pinmux*/
+    pin_set_mode(16, MODE_UART); /*GPIO16 as UART0 RX*/
+    pin_set_mode(17, MODE_UART); /*GPIO17 as UART0 TX*/
+
+    return;
+}
 CHIP_ERROR PlatformManagerImpl::_InitChipStack(void)
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
 
     // Initialize the configuration system.
     /*
-        TODO
+        TODO        
     */
+
+    NVIC_SetPriority(Uart0_IRQn, 0x06);
+    NVIC_SetPriority(CommSubsystem_IRQn, 0x01);
+    init_default_pin_mux();
+
+    uartConsoleInit();
+
+    dma_init();
 
     ReturnErrorOnFailure(System::Clock::InitClock_RealTime());
 
@@ -74,5 +101,6 @@ CHIP_ERROR PlatformManagerImpl::_InitChipStack(void)
 exit:
     return err;
 }
+
 } // namespace DeviceLayer
 } // namespace chip

@@ -69,15 +69,7 @@ using namespace ::chip::DeviceLayer;
 // ================================================================================
 // Matter Networking Callbacks
 // ================================================================================
-void LockOpenThreadTask(void)
-{
-    chip::DeviceLayer::ThreadStackMgr().LockThreadStack();
-}
 
-void UnlockOpenThreadTask(void)
-{
-    chip::DeviceLayer::ThreadStackMgr().UnlockThreadStack();
-}
 #endif // CHIP_ENABLE_OPENTHREAD
 
 // ================================================================================
@@ -85,6 +77,7 @@ void UnlockOpenThreadTask(void)
 // ================================================================================
 extern "C" void vApplicationIdleHook(void)
 {
+    //otTaskletsSignalPending(0);
     // FreeRTOS Idle callback
 
     // Check CHIP Config nvm3 and repack flash if necessary.

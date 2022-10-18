@@ -63,11 +63,12 @@ void ConfigurationManagerImpl::InitiateFactoryReset()
 CHIP_ERROR ConfigurationManagerImpl::ReadPersistedStorageValue(::chip::Platform::PersistedStorage::Key persistedStorageKey,
                                                                uint32_t & value)
 {
-    // This method reads CHIP Persisted Counter type nvm3 objects.
-    // (where persistedStorageKey represents an index to the counter).
     CHIP_ERROR err;
+    uintmax_t recordKey = persistedStorageKey + RT582Config::kConfigKey_GroupKeyBase;
 
-    err = RT582Config::ReadConfigValueCounter(persistedStorageKey, value);
+    VerifyOrExit(recordKey <= RT582Config::kConfigKey_GroupKeyMax, err = CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND);
+
+    err = ReadConfigValue(persistedStorageKey, value);
     if (err == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND)
     {
         err = CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND;
@@ -81,15 +82,13 @@ exit:
 CHIP_ERROR ConfigurationManagerImpl::WritePersistedStorageValue(::chip::Platform::PersistedStorage::Key persistedStorageKey,
                                                                 uint32_t value)
 {
-    // This method reads CHIP Persisted Counter type nvm3 objects.
-    // (where persistedStorageKey represents an index to the counter).
     CHIP_ERROR err;
 
-    err = RT582Config::WriteConfigValueCounter(persistedStorageKey, value);
-    if (err == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND)
-    {
-        err = CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND;
-    }
+    uintmax_t recordKey = persistedStorageKey + RT582Config::kConfigKey_GroupKeyBase;
+
+    VerifyOrExit(recordKey <= RT582Config::kConfigKey_GroupKeyMax, err = CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND);
+
+    err = WriteConfigValue(persistedStorageKey, value);
     SuccessOrExit(err);
 
 exit:

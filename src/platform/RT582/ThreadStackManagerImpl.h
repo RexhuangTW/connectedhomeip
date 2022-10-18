@@ -58,7 +58,6 @@ class ThreadStackManagerImpl final : public ThreadStackManager,
     // this class.
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
     friend Internal::GenericThreadStackManagerImpl_OpenThread<ThreadStackManagerImpl>;
-    friend Internal::GenericThreadStackManagerImpl_OpenThread<ThreadStackManagerImpl>;
     friend Internal::GenericThreadStackManagerImpl_FreeRTOS<ThreadStackManagerImpl>;
 #endif
 
@@ -71,13 +70,19 @@ public:
     // ===== Platform-specific members that may be accessed directly by the application.
 
     using ThreadStackManager::InitThreadStack;
-    CHIP_ERROR InitThreadStack(otInstance * otInst);
+    CHIP_ERROR InitThreadStack(otInstance * otInst);    
 
-    using ThreadStackManager::ProcessThreadActivity;
-    void ProcessThreadActivity();
+    void TaskletsSignalPending();
+
+    //using ThreadStackManager::ProcessThreadActivity;
+    //void ProcessThreadActivity();
 
 protected:
-    CHIP_ERROR _StartThreadTask();
+    //CHIP_ERROR _StartThreadTask();
+
+    //void _LockThreadStack();
+    //bool _TryLockThreadStack();
+    //void _UnlockThreadStack();   
     
 private:
     // ===== Methods that implement the ThreadStackManager abstract interface.

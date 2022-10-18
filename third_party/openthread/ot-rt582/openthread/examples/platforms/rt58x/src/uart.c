@@ -46,21 +46,22 @@
 
 void UartProcessReceive(void)
 {
+    #if 0
     uint32_t u32_byte_cnt = 0;
     uint8_t uart_buff[4];
 
     u32_byte_cnt = bsp_console_stdin_str((char *) uart_buff, 1);
     if (u32_byte_cnt)
     {
-        otTaskletsSignalPending();
         otPlatUartReceived(uart_buff, u32_byte_cnt);
-        otTaskletsSignalPending();
     }
+    #endif
 }
 
 otError otPlatUartFlush(void)
 {
-    bsp_console_stdio_flush();
+    
+   // bsp_console_stdio_flush();
     return OT_ERROR_NONE;
 }
 
@@ -77,7 +78,8 @@ otError otPlatUartDisable(void)
 otError otPlatUartSend(const uint8_t * aBuf, uint16_t aBufLength)
 {
 
-    bsp_console_stdout_string((char *) aBuf, aBufLength);
+    uartConsoleWrite(aBuf, aBufLength);
+    //bsp_console_stdout_string((char *) aBuf, aBufLength);
 
     otPlatUartSendDone();
 exit:
