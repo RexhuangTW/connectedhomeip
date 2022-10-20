@@ -119,6 +119,7 @@ rt582_executable("lighting_app") {
     "${chip_root}/src/lib",
     "${chip_root}/src/setup_payload", 
     "${chip_root}/third_party/rafael/sdk/Portable/freertos",
+    "${chip_root}/src/lib/shell:shell_core",
   ]
 
   # OpenThread Settings

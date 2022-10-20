@@ -16,12 +16,6 @@
  *    limitations under the License.
  */
 
-/**
- *    @file
- *          Provides an implementation of the PlatformManager object
- *          for EFR32 platforms using the Silicon Labs SDK.
- */
-
 #pragma once
 
 #include <platform/internal/GenericPlatformManagerImpl_FreeRTOS.h>

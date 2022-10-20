@@ -66,8 +66,7 @@ private:
     friend AppTask & GetAppTask(void);
 
     CHIP_ERROR Init();
-    static void InitServer(intptr_t arg);
-    static void OpenCommissioning(intptr_t arg);
+    static void ChipEventHandler(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg);
 
     bool mFunctionTimerActive;
     bool mSyncClusterToButtonAction;

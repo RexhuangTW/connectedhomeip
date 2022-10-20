@@ -48,6 +48,10 @@
 
 #include <lib/core/CHIPError.h>
 
+#if CONFIG_ENABLE_CHIP_SHELL
+#include <shell/launch_shell.h>
+#endif
+
 #include "uart.h"
 #include "util_log.h"
 
@@ -59,12 +63,6 @@ using namespace ::chip::DeviceLayer;
 #define APP_TASK_STACK_SIZE (3 * 1024)
 #define APP_TASK_PRIORITY 2
 #define APP_EVENT_QUEUE_SIZE 10
-
-// NOTE! This key is for test/certification only and should not be available in production devices!
-// If CONFIG_CHIP_FACTORY_DATA is enabled, this value is read from the factory data.
-static uint8_t sTestEventTriggerEnableKey[TestEventTriggerDelegate::kEnableKeyLength] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
-                                                                                   0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
-
 
 namespace {
 
@@ -81,6 +79,11 @@ static StaticQueue_t sAppEventQueueStruct;
 static StackType_t appStack[APP_TASK_STACK_SIZE / sizeof(StackType_t)];
 static StaticTask_t appTaskStruct;
 
+// NOTE! This key is for test/certification only and should not be available in production devices!
+// If CONFIG_CHIP_FACTORY_DATA is enabled, this value is read from the factory data.
+static uint8_t sTestEventTriggerEnableKey[TestEventTriggerDelegate::kEnableKeyLength] 
+                = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+                    0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
 
 static EmberAfIdentifyEffectIdentifier sIdentifyEffect = EMBER_ZCL_IDENTIFY_EFFECT_IDENTIFIER_STOP_EFFECT;
 static DeviceInfoProviderImpl gExampleDeviceInfoProvider;
@@ -95,8 +98,6 @@ void OnTriggerIdentifyEffectCompleted(chip::System::Layer * systemLayer, void * 
     sIdentifyEffect = EMBER_ZCL_IDENTIFY_EFFECT_IDENTIFIER_STOP_EFFECT;
 }
 } // namespace
-
-
 
 void OnTriggerIdentifyEffect(Identify * identify)
 {
@@ -156,48 +157,84 @@ void UnlockOpenThreadTask(void)
 
 CHIP_ERROR AppTask::Init()
 {
-    CHIP_ERROR err = CHIP_NO_ERROR;
-
-    PlatformMgr().ScheduleWork(InitServer, 0);
-    
-
-#if 0    
-    // Read EnableKey from the factory data.
-    MutableByteSpan enableKey(sTestEventTriggerEnableKey);
-    mFactoryDataProvider.GetEnableKey(enableKey);
-
-    err = LightMgr().Init();
+    CHIP_ERROR err = chip::Platform::MemoryInit();
     if (err != CHIP_NO_ERROR)
     {
+        ChipLogError(NotSpecified, "Platform::MemoryInit() failed");
         return err;
     }
 
-    ConfigurationMgr().LogDeviceConfig();
+    err = PlatformMgr().InitChipStack();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "PlatformMgr().InitChipStack() failed");
+        return err;
+    }
+
+#if CONFIG_ENABLE_CHIP_SHELL
+    chip::LaunchShell();
 #endif
 
-    return err;
-}
+    err = ThreadStackMgr().InitThreadStack();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
+        return err;
+    }
 
-CHIP_ERROR AppTask::StartAppTask()
-{
-    uint32_t pass_code = CHIP_DEVICE_CONFIG_USE_TEST_SETUP_PIN_CODE;
-    uint16_t discriminator = 1234;
+    err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_Router);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "ConnectivityMgr().SetThreadDeviceType() failed");
+        return err;
+    }
 
-    SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
-
+    // Initialize CHIP server
 #if CONFIG_CHIP_FACTORY_DATA
     ReturnErrorOnFailure(mFactoryDataProvider.Init());
     SetDeviceInstanceInfoProvider(&mFactoryDataProvider);
     SetCommissionableDataProvider(&mFactoryDataProvider);
     SetDeviceAttestationCredentialsProvider(&mFactoryDataProvider);    
 #else
+    uint32_t pass_code = CHIP_DEVICE_CONFIG_USE_TEST_SETUP_PIN_CODE;
+    uint16_t discriminator = 1234;
     GetCommissionableDataProvider()->SetSetupPasscode(pass_code);
     GetCommissionableDataProvider()->SetSetupDiscriminator(discriminator);
     SetDeviceAttestationCredentialsProvider(Examples::GetExampleDACProvider());
 #endif
 
+
+#if 1
+    static chip::CommonCaseDeviceServerInitParams initParams;
+    (void) initParams.InitializeStaticResourcesBeforeServerInit();
+
+    chip::Inet::EndPointStateOpenThread::OpenThreadEndpointInitParam nativeParams;
+    nativeParams.lockCb                = LockOpenThreadTask;
+    nativeParams.unlockCb              = UnlockOpenThreadTask;
+    nativeParams.openThreadInstancePtr = chip::DeviceLayer::ThreadStackMgrImpl().OTInstance();
+    initParams.endpointNativeParams    = static_cast<void *>(&nativeParams);
+    err = chip::Server::GetInstance().Init(initParams);
+    if(err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "chip::Server::init faild %s", ErrorStr(err));
+    }
+#endif
+    gExampleDeviceInfoProvider.SetStorageDelegate(&Server::GetInstance().GetPersistentStorage());
+    SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
+
     PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
 
+    PlatformMgr().AddEventHandler(ChipEventHandler, 0);
+
+    if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "Error during PlatformMgr().StartEventLoopTask();");
+    }
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR AppTask::StartAppTask()
+{
     sAppEventQueue = xQueueCreateStatic(APP_EVENT_QUEUE_SIZE, sizeof(AppEvent), 
                                     sAppEventQueueBuffer, &sAppEventQueueStruct);
     if (sAppEventQueue == nullptr)
@@ -216,46 +253,7 @@ CHIP_ERROR AppTask::StartAppTask()
 
     return CHIP_NO_ERROR;
 }
-void AppTask::InitServer(intptr_t arg)
-{
-    CHIP_ERROR err = CHIP_NO_ERROR;
-    // Init ZCL Data Model and CHIP App Server
-    static chip::CommonCaseDeviceServerInitParams initParams;
-    (void) initParams.InitializeStaticResourcesBeforeServerInit();
 
-    chip::Inet::EndPointStateOpenThread::OpenThreadEndpointInitParam nativeParams;
-    nativeParams.lockCb                = LockOpenThreadTask;
-    nativeParams.unlockCb              = UnlockOpenThreadTask;
-    nativeParams.openThreadInstancePtr = chip::DeviceLayer::ThreadStackMgrImpl().OTInstance();
-    initParams.endpointNativeParams    = static_cast<void *>(&nativeParams);
-
-    err = chip::Server::GetInstance().Init(initParams);
-
-    if(err != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "chip::Server::init faild %s", ErrorStr(err));
-    }
-
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
-    if (ConnectivityMgr().IsThreadProvisioned() &&
-        (chip::Server::GetInstance().GetFabricTable().FabricCount() != 0))
-    {
-        ChipLogProgress(NotSpecified, "Thread has been provisioned, publish the dns service now");
-        chip::app::DnssdServer::Instance().StartServer();
-    }
-#endif
-
-    // if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0)
-    // {
-    //     PlatformMgr().ScheduleWork(OpenCommissioning, 0);
-    // }
-}
-// void AppTask::OpenCommissioning(intptr_t arg)
-// {
-//     // Enable BLE advertisements
-//     chip::Server::GetInstance().GetCommissioningWindowManager().OpenBasicCommissioningWindow();
-//     ChipLogProgress(NotSpecified, "BLE advertising started. Waiting for Pairing.");
-// }
 void AppTask::AppTaskMain(void * pvParameter)
 {
     AppEvent event;
@@ -270,18 +268,22 @@ void AppTask::AppTaskMain(void * pvParameter)
     while (true)
     {   
         BaseType_t eventReceived = xQueueReceive(sAppEventQueue, &event, pdMS_TO_TICKS(10));
-        // Collect connectivity and configuration state from the CHIP stack. Because
-        // the CHIP event loop is being run in a separate task, the stack must be
-        // locked while these values are queried.  However we use a non-blocking
-        // lock request (TryLockCHIPStack()) to avoid blocking other UI activities
-        // when the CHIP task is busy (e.g. with a long crypto operation).
-        if (PlatformMgr().TryLockChipStack())
-        {
-            sIsThreadProvisioned = ConnectivityMgr().IsThreadProvisioned();
-            sIsThreadEnabled     = ConnectivityMgr().IsThreadEnabled();
-            sHaveBLEConnections  = (ConnectivityMgr().NumBLEConnections() != 0);
-            PlatformMgr().UnlockChipStack();
-        }
+
         uartConsoleProc();
+    }
+}
+
+void AppTask::ChipEventHandler(const ChipDeviceEvent * event, intptr_t /* arg */)
+{
+    switch (event->Type)
+    {
+    case DeviceEventType::kCHIPoBLEAdvertisingChange:
+        break;
+    case DeviceEventType::kThreadStateChange:
+        break;
+    case DeviceEventType::kThreadConnectivityChange:
+        break;
+    default:
+        break;
     }
 }

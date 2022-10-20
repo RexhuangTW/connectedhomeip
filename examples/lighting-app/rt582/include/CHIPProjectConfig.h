@@ -127,21 +127,6 @@
  */
 #define CHIP_DEVICE_CONFIG_EVENT_LOGGING_DEBUG_BUFFER_SIZE (512)
 
-/**
- *  @def CHIP_CONFIG_MRP_LOCAL_ACTIVE_RETRY_INTERVAL
- *
- *  @brief
- *    Active retransmit interval, or time to wait before retransmission after
- *    subsequent failures in milliseconds.
- *
- *  This is the default value, that might be adjusted by end device depending on its
- *  needs (e.g. sleeping period) using Service Discovery TXT record CRA key.
- *
- */
-#define CHIP_CONFIG_MRP_LOCAL_ACTIVE_RETRY_INTERVAL (2000_ms32)
-
-#define CHIP_DEVICE_CONFIG_ENABLE_EXTENDED_DISCOVERY 0
-
-
+#define CHIP_DEVICE_CONFIG_ENABLE_EXTENDED_DISCOVERY 1
 
 #define CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI 1

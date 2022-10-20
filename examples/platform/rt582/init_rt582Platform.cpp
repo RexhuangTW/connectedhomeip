@@ -44,7 +44,6 @@ extern "C" {
 #include <openthread/thread.h>
 #include <utils/uart.h>
 
-// #include "platform-efr32.h"
 
 #if OPENTHREAD_CONFIG_HEAP_EXTERNAL_ENABLE
 #include "openthread/heap.h"
@@ -52,26 +51,36 @@ extern "C" {
 #endif // CHIP_ENABLE_OPENTHREAD
 
 #include "init_rt582Platform.h"
-// #include "sl_component_catalog.h"
-// #include "sl_mbedtls.h"
-// #include "sl_system_init.h"
+#include "uart.h"
+#include "cm3_mcu.h"
 
-void initAntenna(void);
+static void init_default_pin_mux(void)
+{
+    int i, j;
+
+    /*set all pin to gpio, except GPIO16, GPIO17 */
+    for (i = 0; i < 32; i++)
+    {
+        if ((i != 16) && (i != 17))
+        {
+            pin_set_mode(i, MODE_GPIO);
+        }
+    }
+    /*uart0 pinmux*/
+    pin_set_mode(16, MODE_UART); /*GPIO16 as UART0 RX*/
+    pin_set_mode(17, MODE_UART); /*GPIO17 as UART0 TX*/
+
+    return;
+}
 
 void init_rt582Platform(void)
 {
-//     sl_system_init();
-//     sl_mbedtls_init();
+    NVIC_SetPriority(Uart0_IRQn, 0x06);
+    NVIC_SetPriority(CommSubsystem_IRQn, 0x01);
 
-// #if EFR32_LOG_ENABLED
-//     efr32InitLog();
-// #endif
-
-// #if CHIP_ENABLE_OPENTHREAD
-//     efr32RadioInit();
-//     efr32AlarmInit();
-// #endif // CHIP_ENABLE_OPENTHREAD
-
+    init_default_pin_mux();
+    dma_init();
+    uartConsoleInit();
     otSysInit(0, NULL);
 }
 
