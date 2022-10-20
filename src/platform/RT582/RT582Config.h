@@ -26,20 +26,21 @@ namespace DeviceLayer {
 namespace Internal {
 
 
-constexpr inline uint32_t RT582ConfigKey(uint8_t keyBaseOffset, uint8_t id)
+constexpr inline uint16_t RT582ConfigKey(uint8_t keyBaseOffset, uint8_t id)
 {
-    return static_cast<uint32_t>(keyBaseOffset) << 8 | id;
+    return static_cast<uint16_t>(keyBaseOffset) << 5 | (id & 0x1F);
 }
 
 class RT582Config
 {
 public:
-    using Key = uint32_t;
+    using Key = uint16_t;
 
     static constexpr uint8_t kMatterFactory_KeyBase = 0x0;
     static constexpr uint8_t kMatterConfig_KeyBase  = 0x1;
-    static constexpr uint8_t kMatterCounter_KeyBase = 0x2;
-    static constexpr uint8_t kMatterKvs_KeyBase     = 0x3;
+    //static constexpr uint8_t kMatterCounter_KeyBase = 0x2;
+    static constexpr uint8_t kMatterKvs_KeyBase     = 0x2;
+    static constexpr uint8_t kMatterKvs_KeyValue    = 0x3;
 
     // Key definitions for well-known configuration values.
     // Factory config keys
@@ -82,9 +83,12 @@ public:
     static constexpr Key kMinConfigKey_MatterFactory = RT582ConfigKey(kMatterFactory_KeyBase, 0x00);
     static constexpr Key kMaxConfigKey_MatterFactory = RT582ConfigKey(kMatterFactory_KeyBase, 0x0A);
     static constexpr Key kMinConfigKey_MatterConfig  = RT582ConfigKey(kMatterConfig_KeyBase, 0x00);
-    static constexpr Key kMaxConfigKey_MatterConfig  = RT582ConfigKey(kMatterConfig_KeyBase, 0x20);
+    static constexpr Key kMaxConfigKey_MatterConfig  = RT582ConfigKey(kMatterConfig_KeyBase, 0x10);
 
-    
+    static constexpr Key kMinConfigKey_KVSKey      = RT582ConfigKey(kMatterKvs_KeyBase, 0x00);
+    static constexpr Key kMaxConfigKey_KVSKey      = RT582ConfigKey(kMatterKvs_KeyBase, 0x1F);
+    static constexpr Key kMinConfigKey_KVSValue    = RT582ConfigKey(kMatterKvs_KeyValue, 0x00);
+    static constexpr Key kMaxConfigKey_KVSValue    = RT582ConfigKey(kMatterKvs_KeyValue, 0x1F);    
 
 
     static CHIP_ERROR Init(void);

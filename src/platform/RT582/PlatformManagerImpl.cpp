@@ -88,6 +88,8 @@ CHIP_ERROR PlatformManagerImpl::_InitChipStack(void)
 
     dma_init();
 
+    Internal::RT582Config::Init();
+
     ReturnErrorOnFailure(System::Clock::InitClock_RealTime());
 
     err = chip::Crypto::add_entropy_source(app_entropy_source, NULL, 16);

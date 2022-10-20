@@ -22,11 +22,11 @@
 #include "AppConfig.h"
 #include "init_rt582Platform.h"
 #include <DeviceInfoProviderImpl.h>
-#include <app/server/Server.h>
+
 #include <credentials/DeviceAttestationCredsProvider.h>
-#include <matter_config.h>
 #include <credentials/examples/DeviceAttestationCredsExample.h>
 
+#include <lib/core/CHIPError.h>
 
 
 #define BLE_DEV_NAME "Rafael-Light"
@@ -35,18 +35,15 @@ using namespace ::chip::Inet;
 using namespace ::chip::DeviceLayer;
 using namespace ::chip::Credentials;
 
-#define UNUSED_PARAMETER(a) (a = a)
 
-#include <lib/core/CHIPError.h>
-
-volatile int apperror_cnt;
-static chip::DeviceLayer::DeviceInfoProviderImpl gExampleDeviceInfoProvider;
+static DeviceInfoProviderImpl gExampleDeviceInfoProvider;
 
 // ================================================================================
 // Main Code
 // ================================================================================
 int main(void)
 {
+    CHIP_ERROR err;
     chip::Platform::MemoryInit();
     
     if (PlatformMgr().InitChipStack()!= CHIP_NO_ERROR)
@@ -87,9 +84,10 @@ int main(void)
         ChipLogError(NotSpecified, "Failed to launch Thread task");
     }
 
-    if (GetAppTask().StartAppTask() != CHIP_NO_ERROR)
+    err = GetAppTask().StartAppTask();
+    if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(NotSpecified, "GetAppTask().StartAppTask() failed");
+        ChipLogError(NotSpecified, "GetAppTask().StartAppTask() failed %s", ErrorStr(err));
     }
     
     vTaskStartScheduler();

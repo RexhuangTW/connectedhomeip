@@ -26,35 +26,88 @@
 #include <platform/RT582/RT582Config.h>
 #include <lib/core/CHIPEncoding.h>
 
-#define CONFIG_BASE_ADDR    0xF2000
+#include "util_log.h"
+#include "cm3_mcu.h"
+
+#define RT582CONFIG_BASE_ADDR       0xF4000
+#define RT582CONFIG_MAX_ID          0x80
+#define RT582CONFIG_ID_PER_SIZE     0x100
+#define RT582CONFIG_SECTOR_SIZE     0x1000
 
 namespace chip {
 namespace DeviceLayer {
 namespace Internal {
 
-static uint8_t config_nvram[0x1000];
-size_t read_nvram(uint32_t addr, size_t bufSize, uint8_t *buf)
+static uint8_t storage_backup[RT582CONFIG_SECTOR_SIZE];
+static size_t storage_read(uint32_t id, size_t bufSize, uint8_t *buf)
 {
-    memcpy(buf, &config_nvram[addr], bufSize);
-    return bufSize;
+    uint32_t sector_addr, id_addr, i, offset, chk, data_size;
+
+    id_addr = RT582CONFIG_BASE_ADDR+(RT582CONFIG_ID_PER_SIZE*id);
+    sector_addr = id_addr - (id_addr % RT582CONFIG_SECTOR_SIZE);
+
+    for(i=0;i<16;i++)
+    {
+        flash_read_page_syncmode((uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
+    }
+    offset = (RT582CONFIG_ID_PER_SIZE*id) % 1000;
+
+    if(bufSize < storage_backup[offset])
+        return 0xFFFFFFFF;
+
+    memcpy(buf, &storage_backup[offset+1], storage_backup[offset]);
+
+    if(chk == (bufSize-1))
+        return 0;
+        
+
+    return storage_backup[offset];
 }
 
-size_t write_nvram(uint32_t addr, size_t dataLen, uint8_t *data)
+size_t storage_write(uint32_t id, size_t dataLen, uint8_t *data)
 {
-    memcpy(&config_nvram[addr], data, dataLen);
+    uint32_t sector_addr, id_addr, i, offset;
 
+    id_addr = RT582CONFIG_BASE_ADDR+(RT582CONFIG_ID_PER_SIZE*id);
+    sector_addr = id_addr - (id_addr % RT582CONFIG_SECTOR_SIZE);
+
+    for(i=0;i<16;i++)
+    {
+        flash_read_page_syncmode((uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
+    }
+
+    flash_erase(FLASH_ERASE_SECTOR, sector_addr);
+
+    offset = (RT582CONFIG_ID_PER_SIZE*id) % 1000;
+
+    storage_backup[offset] = dataLen;
+    memcpy(&storage_backup[offset+1], data, dataLen);
+
+    for(i=0;i<16;i++)
+    {
+        flash_write_page(
+            (uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], 
+            (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
+    }
+
+    for(i=0;i<16;i++)
+    {
+        flash_read_page_syncmode((uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
+    }
     return dataLen;
 }
 
-void erase_nvram(void)
+void storage_erase(void)
 {
-    memset(config_nvram, 0xff, 0x1000);
+    flash_erase(FLASH_ERASE_SECTOR, RT582CONFIG_BASE_ADDR);
+    flash_erase(FLASH_ERASE_SECTOR, RT582CONFIG_BASE_ADDR + 0x1000);
+    flash_erase(FLASH_ERASE_SECTOR, RT582CONFIG_BASE_ADDR + 0x2000);
+    flash_erase(FLASH_ERASE_SECTOR, RT582CONFIG_BASE_ADDR + 0x3000);
 }
 
 CHIP_ERROR RT582Config::Init()
 {
-
-    memset(config_nvram, 0xff, 0x1000);
+    //storage_erase();
     return ChipError(0);
 }
 
@@ -80,7 +133,13 @@ CHIP_ERROR RT582Config::ReadConfigValueBin(Key key, uint8_t * buf, size_t bufSiz
 
 CHIP_ERROR RT582Config::ReadConfigValueBin(Key key, void * buf, size_t bufSize, size_t & outLen)
 {
-    outLen = read_nvram(key, bufSize, (uint8_t *)buf);
+    outLen = storage_read(key, bufSize, (uint8_t *)buf);
+
+    if(outLen == 0)
+       return CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND;
+
+    else if(outLen == 0xFFFFFFFF)
+        return CHIP_ERROR_BUFFER_TOO_SMALL;
 
     return CHIP_NO_ERROR;
 }
@@ -116,23 +175,26 @@ CHIP_ERROR RT582Config::WriteConfigValueBin(Key key, const uint8_t * data, size_
 
 CHIP_ERROR RT582Config::WriteConfigValueBin(Key key, const void * data, size_t dataLen)
 {
-    if (dataLen == 0)
-        return CHIP_NO_ERROR;
+    if (dataLen == 0 || dataLen >= 0xFF)
+    {
+        err("write error\n");
+        return CHIP_ERROR_INVALID_ARGUMENT;
+    }
 
-    write_nvram(key, dataLen, (uint8_t *)data);
+    storage_write(key, dataLen, (uint8_t *)data);
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR RT582Config::ClearConfigValue(Key key)
 {
-
-    erase_nvram();
+    storage_erase();
     return CHIP_NO_ERROR;
 }
 
 bool RT582Config::ConfigValueExists(Key key)
 {
     uint8_t val;
+
     return ChipError::IsSuccess(ReadConfigValue(key, val));
 }
 
