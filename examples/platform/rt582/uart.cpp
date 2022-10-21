@@ -15,6 +15,12 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+
+#include "AppConfig.h"
+#include "matter_shell.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "uart.h"
 #include <stddef.h>
 #include <stdio.h>
@@ -25,9 +31,8 @@
 #include "util_log.h"
 #include "util_printf.h"
 
-
-#define UART_CACHE_SIZE                 256
-#define UART_CACHE_MASK                 (UART_CACHE_SIZE - 1)
+#define UART_CACHE_SIZE 256
+#define UART_CACHE_MASK (UART_CACHE_SIZE - 1)
 
 typedef struct uart_io
 {
@@ -38,31 +43,36 @@ typedef struct uart_io
     uint8_t uart_cache[UART_CACHE_SIZE];
 } uart_io_t;
 
-static uart_io_t g_uart_rx_io = { .wr_idx = 0, .rd_idx = 0, };
+static uart_io_t g_uart_rx_io = {
+    .wr_idx = 0,
+    .rd_idx = 0,
+};
 
 void uart_isr_event_handle(void)
 {
     // receive data
     do
     {
-        uint32_t    wr_pos = g_uart_rx_io.wr_idx;
-        uint32_t    rd_pos = g_uart_rx_io.rd_idx;
-        uint32_t    pos = 0;
-        uint8_t     value[4] = {0};
-        uint32_t    rx_len = sizeof(value);
+        uint32_t wr_pos = g_uart_rx_io.wr_idx;
+        uint32_t rd_pos = g_uart_rx_io.rd_idx;
+        uint32_t pos = 0;
+        uint8_t value[4] = {0};
+        uint32_t rx_len = sizeof(value);
 
         bsp_uart_drv_recv(0, value, &rx_len);
 
-        if ( rx_len )
+        if (rx_len)
         {
             pos = (wr_pos + 1) % UART_CACHE_SIZE;
-            if ( pos == rd_pos )
+            if (pos == rd_pos)
             {
                 break;
             }
 
             g_uart_rx_io.uart_cache[wr_pos] = value[0];
-            g_uart_rx_io.wr_idx                = pos;
+            g_uart_rx_io.wr_idx = pos;
+
+            chip::NotifyShellProcessFromISR();
         }
     } while (0);
     return;
@@ -71,20 +81,20 @@ void uart_isr_event_handle(void)
 void uartConsoleInit(void)
 {
     int rval = 0;
-    bsp_uart_config_t   debug_console_drv_config;
+    bsp_uart_config_t debug_console_drv_config;
     uart_retarget_desc_t t_retarget_desc;
     do
     {
         /*uart0 pinmux*/
-        pin_set_mode(16, MODE_UART);     /*GPIO16 as UART0 RX*/
-        pin_set_mode(17, MODE_UART);     /*GPIO17 as UART0 TX*/
+        pin_set_mode(16, MODE_UART); /*GPIO16 as UART0 RX*/
+        pin_set_mode(17, MODE_UART); /*GPIO17 as UART0 TX*/
 
         /*init debug console uart0, 8bits 1 stopbit, none parity, no flow control.*/
         debug_console_drv_config.baud_rate = UART_BAUDRATE_115200;
         debug_console_drv_config.word_length = UART_DATA_BITS_8;
-        debug_console_drv_config.hwfc     = UART_HWFC_DISABLED;
-        debug_console_drv_config.parity   = UART_PARITY_NONE;
-        debug_console_drv_config.stop_bits  = UART_STOPBIT_ONE;
+        debug_console_drv_config.hwfc = UART_HWFC_DISABLED;
+        debug_console_drv_config.parity = UART_PARITY_NONE;
+        debug_console_drv_config.stop_bits = UART_STOPBIT_ONE;
         debug_console_drv_config.irq_priority = 6;
 
         rval = bsp_uart_drv_init(0, &debug_console_drv_config, uart_isr_event_handle);
@@ -98,19 +108,18 @@ void uartConsoleInit(void)
         uart_retarget_init(&t_retarget_desc);
     } while (0);
 
-
     utility_register_stdout(uart_retarget_stdout_char, uart_retarget_stdout_string);
 
-    util_log_init();    
+    util_log_init();
 }
 
-int16_t uartConsoleWrite(const char * Buf, uint16_t BufLength)
+int16_t uartConsoleWrite(const char *Buf, uint16_t BufLength)
 {
-    uart_retarget_stdout_string(Buf, BufLength);
-    return (int16_t) BufLength;
+    uart_retarget_stdout_string((char *)Buf, BufLength);
+    return (int16_t)BufLength;
 }
 
-int16_t uartConsoleRead(char * Buf, uint16_t BufLength)
+int16_t uartConsoleRead(char *Buf, uint16_t BufLength)
 {
 
     int16_t byte_cnt = 0;
@@ -121,18 +130,18 @@ int16_t uartConsoleRead(char * Buf, uint16_t BufLength)
 
     do
     {
-        while ( 1 )
+        while (1)
         {
-            if ( g_uart_rx_io.is_flushing )
+            if (g_uart_rx_io.is_flushing)
             {
                 wr_pos = rd_pos = byte_cnt = 0;
                 break;
             }
-            if ( rd_pos == wr_pos )
+            if (rd_pos == wr_pos)
             {
                 break;
             }
-            if ( BufLength == byte_cnt )
+            if (BufLength == byte_cnt)
             {
                 break;
             }
@@ -146,15 +155,6 @@ int16_t uartConsoleRead(char * Buf, uint16_t BufLength)
     return byte_cnt;
 }
 
-void uartConsoleProc(void)
-{
-    uint32_t u32_byte_cnt = 0;
-    uint8_t uart_buff[4];
-
-    u32_byte_cnt = uartConsoleRead((char *) uart_buff, 1);
-    if (u32_byte_cnt)
-    {        
-        otPlatUartReceived(uart_buff, u32_byte_cnt);
-        //otTaskletsSignalPending();
-    }    
+#ifdef __cplusplus
 }
+#endif

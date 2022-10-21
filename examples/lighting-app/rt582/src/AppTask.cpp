@@ -49,10 +49,6 @@
 #include <lib/core/CHIPError.h>
 #include <lib/core/CHIPError.h>
 
-#if CONFIG_ENABLE_CHIP_SHELL
-#include <lib/shell/Engine.h>
-#endif
-
 #include "uart.h"
 #include "util_log.h"
 
@@ -140,12 +136,6 @@ Identify gIdentify = {
     OnTriggerIdentifyEffect,
 };
 
-#if CONFIG_ENABLE_CHIP_SHELL
-void MatterShellTask(void * args)
-{
-    chip::Shell::Engine::Root().RunMainLoop();
-}
-#endif
 } // namespace
 
 constexpr EndpointId kNetworkCommissioningEndpointSecondary = 0xFFFE;
@@ -164,12 +154,7 @@ void UnlockOpenThreadTask(void)
 
 CHIP_ERROR AppTask::Init()
 {
-    CHIP_ERROR err = chip::Platform::MemoryInit();
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "Platform::MemoryInit() failed");
-        return err;
-    }
+    CHIP_ERROR err;
 
     err = PlatformMgr().InitChipStack();
     if (err != CHIP_NO_ERROR)
@@ -177,13 +162,6 @@ CHIP_ERROR AppTask::Init()
         ChipLogError(NotSpecified, "PlatformMgr().InitChipStack() failed");
         return err;
     }
-
-#if CONFIG_ENABLE_CHIP_SHELL
-    chip::Shell::Engine::Root().Init();
-    
-    ChipLogProgress(NotSpecified, "start CONFIG_ENABLE_CHIP_SHELL");
-    xTaskCreate(MatterShellTask, "matter_shell", 2048, NULL, tskIDLE_PRIORITY + 1, NULL);
-#endif
 
     err = ThreadStackMgr().InitThreadStack();
     if (err != CHIP_NO_ERROR)
@@ -279,7 +257,6 @@ void AppTask::AppTaskMain(void * pvParameter)
     {   
         BaseType_t eventReceived = xQueueReceive(sAppEventQueue, &event, pdMS_TO_TICKS(10));
 
-        // uartConsoleProc();
     }
 }
 

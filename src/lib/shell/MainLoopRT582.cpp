@@ -32,14 +32,12 @@ using chip::Shell::streamer_get;
 
 namespace {
 
-constexpr const char kShellPrompt[] = "RT582MatterCli > ";
+constexpr const char kShellPrompt[] = "CHIP_Cli > ";
 
 // max > 1
 void ReadLine(char * buffer, size_t max)
 {
     size_t line_sz = 0;
-
-    ChipLogProgress(NotSpecified, "ReadLine");
 
     // Read in characters until we get a line ending or EOT.
     for (bool done = false; !done;)
@@ -51,14 +49,11 @@ void ReadLine(char * buffer, size_t max)
             break;
         }
 
-        // chip::WaitForShellActivity();
-        // ChipLogProgress(NotSpecified, "!!!!!!!!!!!!!!");
+        //chip::WaitForShellActivity();
         if (streamer_read(streamer_get(), buffer + line_sz, 1) != 1)
         {
             continue;
         }
-
-        ChipLogProgress(NotSpecified, "---------------");
         // Process character we just read.
         switch (buffer[line_sz])
         {
@@ -154,9 +149,6 @@ int TokenizeLine(char * buffer, char ** tokens, int max_tokens)
 
 void ProcessShellLine(intptr_t args)
 {
-    ChipLogProgress(NotSpecified, "start ProcessShellLine");
-    ChipLogProgress(NotSpecified, "start ProcessShellLine");
-    ChipLogProgress(NotSpecified, "start ProcessShellLine");
     int argc;
     char * argv[CHIP_SHELL_MAX_TOKENS];
 
@@ -199,7 +191,8 @@ void Engine::RunMainLoop()
     {
         char * line = static_cast<char *>(Platform::MemoryAlloc(CHIP_SHELL_MAX_LINE_SIZE));
         ReadLine(line, CHIP_SHELL_MAX_LINE_SIZE);
-#if CONFIG_DEVICE_LAYER
+//#if CONFIG_DEVICE_LAYER
+#if 0
         DeviceLayer::PlatformMgr().ScheduleWork(ProcessShellLine, reinterpret_cast<intptr_t>(line));
 #else
         ProcessShellLine(reinterpret_cast<intptr_t>(line));

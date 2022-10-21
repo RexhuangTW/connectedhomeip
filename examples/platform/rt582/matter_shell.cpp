@@ -28,7 +28,7 @@ using chip::Shell::Engine;
 namespace {
 
 #define SHELL_TASK_STACK_SIZE 2048
-#define SHELL_TASK_PRIORITY 5
+#define SHELL_TASK_PRIORITY 0
 TaskHandle_t shellTaskHandle;
 StackType_t shellStack[SHELL_TASK_STACK_SIZE / sizeof(StackType_t)];
 StaticTask_t shellTaskStruct;

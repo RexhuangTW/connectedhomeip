@@ -28,6 +28,9 @@
 
 #include <lib/core/CHIPError.h>
 
+#if CONFIG_ENABLE_CHIP_SHELL
+#include "matter_shell.h"
+#endif
 
 #define BLE_DEV_NAME "Rafael-Light"
 using namespace ::chip;
@@ -43,6 +46,17 @@ int main(void)
     CHIP_ERROR err;
 
     init_rt582Platform();
+
+    err = chip::Platform::MemoryInit();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "Platform::MemoryInit() failed");
+        return 0;
+    }
+
+#if CONFIG_ENABLE_CHIP_SHELL
+    startShellTask();
+#endif
     info( "==================================================\n");
     info( "chip-rt582-lighting-example starting Version %d\r\n", CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION);
     info( "==================================================\n\n");
