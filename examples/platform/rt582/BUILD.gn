@@ -73,28 +73,3 @@ source_set("rt582-matter-shell") {
     ]
   }
 }
-
-# config("attestation-credentials-config") {
-#   include_dirs = [ "${chip_root}" ]
-
-#   defines = [
-#     # Set to 1 to enable RT582 attestation credentials
-#     "RT582_ATTESTATION_CREDENTIALS=1",
-#   ]
-# }
-
-# source_set("rt582-attestation-credentials") {
-#   sources = [
-#     "${chip_root}src/platform/RT582/FactoryDataParser.c",
-#     "${chip_root}src/platform/RT582/FactoryDataParser.h",
-#     "${chip_root}src/platform/RT582/FactoryDataProvider.cpp",
-#     "${chip_root}src/platform/RT582/FactoryDataProvider.h",
-#   ]
-
-#   public_deps = [
-#     "${chip_root}/src/credentials",
-#     "${chip_root}/src/platform:platform_base",
-#   ]
-
-#   public_configs = [ ":attestation-credentials-config" ]
-# }

@@ -119,7 +119,6 @@ rt582_executable("lighting_app") {
     "${chip_root}/src/lib",
     "${chip_root}/src/setup_payload", 
     "${chip_root}/third_party/rafael/sdk/Portable/freertos",
-    "${chip_root}/src/lib/shell:shell_core",
   ]
 
   # OpenThread Settings
@@ -130,6 +129,11 @@ rt582_executable("lighting_app") {
       "${examples_plat_dir}:rt582-matter-shell",
     ]
   }
+
+  deps += [
+    "${chip_root}/src/lib/shell:shell_core",
+    "${chip_root}/src/lib/shell",
+  ]
 
   if (chip_enable_ota_requestor) {
     defines += [ "RT582_OTA_ENABLED" ]
