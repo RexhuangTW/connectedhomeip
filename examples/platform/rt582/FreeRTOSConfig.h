@@ -32,6 +32,9 @@ extern "C" {
 #define configTIMER_QUEUE_LENGTH (10)
 #define configTIMER_TASK_STACK_DEPTH (1024)
 
+
+#define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY configMAX_SYSCALL_INTERRUPT_PRIORITY
+
 /* Interrupt priorities used by the kernel port layer itself.  These are generic
 to all Cortex-M ports, and do not rely on any particular library functions. */
 #define configKERNEL_INTERRUPT_PRIORITY (224)
@@ -69,9 +72,9 @@ extern uint32_t SystemCoreClock;
 #define configSUPPORT_STATIC_ALLOCATION (1)
 #define configSUPPORT_DYNAMIC_ALLOCATION (1)
 
-#ifndef configTOTAL_HEAP_SIZE
-#define configTOTAL_HEAP_SIZE ((size_t)(30 * 1024))
-#endif // configTOTAL_HEAP_SIZE
+//#ifndef configTOTAL_HEAP_SIZE
+#define configTOTAL_HEAP_SIZE ((size_t)(28 * 1024))
+//#endif // configTOTAL_HEAP_SIZE
 
 /* Optional functions - most linkers will remove unused functions anyway. */
 #define INCLUDE_vTaskPrioritySet (1)
@@ -110,6 +113,25 @@ extern uint32_t SystemCoreClock;
         for (;;)                                                                                                                   \
             ;                                                                                                                      \
     }
+
+typedef enum task_priority
+{
+    TASK_PRIORITY_IDLE      = 0,        /* lowest, special for idle task */
+
+    /* User task priority begin */
+    TASK_PRIORITY_APP,
+
+    TASK_PRIORITY_PROTOCOL_LOW,
+    TASK_PRIORITY_PROTOCOL_NORMAL,
+    TASK_PRIORITY_PROTOCOL_MEDIUM,
+    TASK_PRIORITY_PROTOCOL_HIGH,
+
+    TASK_PRIORITY_TIMER_RUNNING_TASK_PRIORITY = TASK_PRIORITY_PROTOCOL_NORMAL,
+    TASK_PRIORITY_TIMER_TASK_PRIORITY = TASK_PRIORITY_PROTOCOL_HIGH,
+
+    /* highest */
+    TASK_PRIORITY_SVC = configMAX_PRIORITIES - 1,
+} task_priority_t;
 
 /* Definitions that map the FreeRTOS port interrupt handlers to their CMSIS
 standard names. */

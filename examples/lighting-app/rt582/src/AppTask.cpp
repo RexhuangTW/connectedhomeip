@@ -162,7 +162,7 @@ CHIP_ERROR AppTask::Init()
         ChipLogError(NotSpecified, "PlatformMgr().InitChipStack() failed");
         return err;
     }
-
+#if 0
     err = ThreadStackMgr().InitThreadStack();
     if (err != CHIP_NO_ERROR)
     {
@@ -176,6 +176,13 @@ CHIP_ERROR AppTask::Init()
         ChipLogError(NotSpecified, "ConnectivityMgr().SetThreadDeviceType() failed");
         return err;
     }
+
+    err = ThreadStackMgr().StartThreadTask();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
+        return err;
+    }    
 
     // Initialize CHIP server
 #if CONFIG_CHIP_FACTORY_DATA
@@ -209,7 +216,7 @@ CHIP_ERROR AppTask::Init()
 #endif
     gExampleDeviceInfoProvider.SetStorageDelegate(&Server::GetInstance().GetPersistentStorage());
     SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
-
+#endif
     PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
 
     PlatformMgr().AddEventHandler(ChipEventHandler, 0);

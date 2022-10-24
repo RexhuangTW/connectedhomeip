@@ -7,11 +7,11 @@
 //                Private Definitions of const value
 //=============================================================================
 #ifndef configMAX_TASK_NAME_LEN
-#define MALLOC_DEBUG_INFO_TASK_SIZE         10
+#define MALLOC_DEBUG_INFO_TASK_SIZE 10
 #else
-#define MALLOC_DEBUG_INFO_TASK_SIZE         configMAX_TASK_NAME_LEN
+#define MALLOC_DEBUG_INFO_TASK_SIZE configMAX_TASK_NAME_LEN
 #endif
-#define MALLOC_DEBUG_INFO_SIZE              100
+#define MALLOC_DEBUG_INFO_SIZE 100
 
 //=============================================================================
 //                Private ENUM
@@ -23,13 +23,13 @@
 typedef struct MALLOC_DEBUG_LOG_ENTRY
 {
     char *func;
-    uint32_t file_line  : 16;   // max 0xFFFF = 65535
-    uint32_t malloc_len : 16;   // max 0xFFFF = 65535
+    uint32_t file_line : 16;  // max 0xFFFF = 65535
+    uint32_t malloc_len : 16; // max 0xFFFF = 65535
 
-    uint32_t malloc_offset  : 19;   // max 256k = 0x40000(19 bits)
-    uint32_t valid          : 1;
-    uint32_t                : 4;
-    uint32_t task_index     : 8;
+    uint32_t malloc_offset : 19; // max 256k = 0x40000(19 bits)
+    uint32_t valid : 1;
+    uint32_t : 4;
+    uint32_t task_index : 8;
 } malloc_log_entry_t;
 
 typedef struct MALLOC_DEBUG_LOG
@@ -52,7 +52,7 @@ static malloc_log_t g_malloc_log;
 //=============================================================================
 //                Public Global Variables
 //=============================================================================
-
+extern unsigned int _set_interrupt_priority(unsigned int);
 //=============================================================================
 //                Private Definition of Compare/Operation/Inline funciton/
 //=============================================================================
@@ -60,7 +60,6 @@ static malloc_log_t g_malloc_log;
 //=============================================================================
 //                Functions
 //=============================================================================
-
 
 //==================================
 //     Mutex functions
@@ -130,7 +129,8 @@ void sys_mutex_lock(sys_mutex_t *p_mutex)
     /*-----------------------------------*/
     /* B. Main Functionality             */
     /*-----------------------------------*/
-    while (xSemaphoreTake(*p_mutex, portMAX_DELAY) != pdPASS);
+    while (xSemaphoreTake(*p_mutex, portMAX_DELAY) != pdPASS)
+        ;
 
     /*-----------------------------------*/
     /* C. Result & Return                */
@@ -359,7 +359,8 @@ uint32_t sys_sem_wait(sys_sem_t *sem, uint32_t u32_timeout)
     else
     {
         // must block without a timeout
-        while (xSemaphoreTake(*sem, portMAX_DELAY) != pdTRUE);
+        while (xSemaphoreTake(*sem, portMAX_DELAY) != pdTRUE)
+            ;
 
         EndTime = xTaskGetTickCount();
         Elapsed = (EndTime - StartTime) * portTICK_RATE_MS;
@@ -445,7 +446,8 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
     /*-----------------------------------*/
     /* B. Main Functionality             */
     /*-----------------------------------*/
-    while (xQueueSendToBack(*mbox, &msg, portMAX_DELAY) != pdTRUE);
+    while (xQueueSendToBack(*mbox, &msg, portMAX_DELAY) != pdTRUE)
+        ;
 
     /*-----------------------------------*/
     /* C. Result & Return                */
@@ -558,7 +560,8 @@ uint32_t sys_mbox_fetch(sys_mbox_t *mbox, void **msg, uint32_t u32_timeout)
     else
     {
         // block forever for a message.
-        while (pdTRUE != xQueueReceive(*mbox, msg, portMAX_DELAY));
+        while (pdTRUE != xQueueReceive(*mbox, msg, portMAX_DELAY))
+            ;
 
         EndTime = xTaskGetTickCount();
         Elapsed = (EndTime - StartTime) * portTICK_RATE_MS;
@@ -689,7 +692,8 @@ void sys_queue_send(sys_queue_t *queue, void *msg)
     /*-----------------------------------*/
     /* B. Main Functionality             */
     /*-----------------------------------*/
-    while (xQueueSendToBack(*queue, msg, portMAX_DELAY) != pdTRUE);
+    while (xQueueSendToBack(*queue, msg, portMAX_DELAY) != pdTRUE)
+        ;
 
     /*-----------------------------------*/
     /* C. Result & Return                */
@@ -751,7 +755,8 @@ void sys_queue_sendtofront(sys_queue_t *queue, void *msg)
     /*-----------------------------------*/
     /* B. Main Functionality             */
     /*-----------------------------------*/
-    while (xQueueSendToFront(*queue, msg, portMAX_DELAY) != pdTRUE);
+    while (xQueueSendToFront(*queue, msg, portMAX_DELAY) != pdTRUE)
+        ;
 
     /*-----------------------------------*/
     /* C. Result & Return                */
@@ -881,7 +886,8 @@ uint32_t sys_queue_recv(sys_queue_t *queue, void *msg, uint32_t u32_timeout)
     else
     {
         // block forever for a message.
-        while (pdTRUE != xQueueReceive(*queue, msg, portMAX_DELAY));
+        while (pdTRUE != xQueueReceive(*queue, msg, portMAX_DELAY))
+            ;
 
         EndTime = xTaskGetTickCount();
         Elapsed = (EndTime - StartTime) * portTICK_RATE_MS;
@@ -960,8 +966,7 @@ sys_task_t sys_task_new(const char *name,
                         sys_thread_fn thread,
                         void *arg,
                         uint32_t u32_stacksize,
-                        uint32_t u32_priority
-                       )
+                        uint32_t u32_priority)
 {
     sys_task_t t_thread = NULL;
 
@@ -1096,7 +1101,7 @@ uint32_t sys_now_from_isr(void)
 /** task sleep
  * @param u32_ms sleep time in milliseconds
  */
-void sys_msleep(uint32_t u32_ms)  /* only has a (close to) 1 jiffy resolution. */
+void sys_msleep(uint32_t u32_ms) /* only has a (close to) 1 jiffy resolution. */
 {
     /*-----------------------------------*/
     /* A.Input Parameter Range Check     */
