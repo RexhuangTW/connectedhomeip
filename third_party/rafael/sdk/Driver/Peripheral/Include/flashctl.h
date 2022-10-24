@@ -561,10 +561,7 @@ uint32_t flash_read_otp_sec_page(uint32_t buf_addr);
  */
 
 /*check Flash command Finish*/
-__STATIC_INLINE uint32_t flash_check_busy()
-{
-    return ((FLASH->START)&BUSYBIT) ? 1 : 0 ;
-}
+uint32_t flash_check_busy();
 
 /**
  * @brief Get flash read page verification CRC8 value
@@ -655,5 +652,3 @@ __STATIC_INLINE void flush_cache(void)
 #endif
 
 #endif /* end of ___FLASHCTL_H__ */
-
-

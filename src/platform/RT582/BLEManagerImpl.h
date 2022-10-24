@@ -26,9 +26,6 @@
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 
 #include "FreeRTOS.h"
-// #include "gatt_db.h"
-// #include "sl_bgapi.h"
-// #include "sl_bt_api.h"
 #include "timers.h"
 
 namespace chip {
@@ -36,7 +33,6 @@ namespace DeviceLayer {
 namespace Internal {
 
 using namespace chip::Ble;
-
 /**
  * Concrete implementation of the BLEManager singleton object for the EFR32 platforms.
  */
@@ -112,8 +108,15 @@ private:
     PacketBufferHandle c3AdditionalDataBufferHandle;
 #endif
 
-    static void _BLETaskMain(void * arg);
-    static void app_evt_indication_cb(uint32_t data_len);
+    static void ble_evt_task(void * arg);
+    static void ble_evt_indication_cb(uint32_t data_len);
+    static void ble_evt_handler(void *p_param);
+
+    static int ble_init(void);
+    static bool app_request_set(uint8_t host_id, uint32_t request, bool from_isr);
+    static void app_evt_handler(void *p_param);
+    static int adv_init(void);
+    static int adv_enable(uint8_t host_id);
 
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     CHIP_ERROR EncodeAdditionalDataTlv();

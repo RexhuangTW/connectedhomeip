@@ -216,9 +216,9 @@ CHIP_ERROR AppTask::Init()
 #endif
     gExampleDeviceInfoProvider.SetStorageDelegate(&Server::GetInstance().GetPersistentStorage());
     SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
-#endif
-    PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
 
+    PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
+#endif
     PlatformMgr().AddEventHandler(ChipEventHandler, 0);
 
     if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
