@@ -602,4 +602,3 @@ void ble_svcs_gaps_handler(ble_evt_att_param_t *p_param)
         handle_gaps_server(index, p_param);
     }
 }
-

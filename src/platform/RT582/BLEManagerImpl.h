@@ -112,6 +112,8 @@ private:
     static void ble_evt_indication_cb(uint32_t data_len);
     static void ble_evt_handler(void *p_param);
 
+    static void ble_svcs_matter_evt_handler(void *p_matter_evt_param);
+    static int server_profile_init(uint8_t host_id);
     static int ble_init(void);
     static bool app_request_set(uint8_t host_id, uint32_t request, bool from_isr);
     static void app_evt_handler(void *p_param);

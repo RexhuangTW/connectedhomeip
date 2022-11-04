@@ -81,6 +81,7 @@ template("rt582_sdk") {
       "${rt582_sdk_root}/BLE/BLE_Service/GAPS/Include",
       "${rt582_sdk_root}/BLE/BLE_Service/GATTS/Include",
       "${rt582_sdk_root}/BLE/BLE_Service/DIS/Include",
+      "${rt582_sdk_root}/BLE/BLE_Service/Matter/Include",
       "${rt582_sdk_root}/BLE/HCI/Include",
       "${rt582_sdk_root}/BLE/Portable/Include",
 
@@ -213,6 +214,7 @@ template("rt582_sdk") {
       "${rt582_sdk_root}/BLE/BLE_Service/GAPS/ble_service_gaps.c",
       "${rt582_sdk_root}/BLE/BLE_Service/GATTS/ble_service_gatts.c",
       "${rt582_sdk_root}/BLE/BLE_Service/DIS/ble_service_dis.c",
+      "${rt582_sdk_root}/BLE/BLE_Service/Matter/ble_service_matter.c",
 
       "${rt582_sdk_root}/BLE/Portable/task_ble_app.c",
       "${rt582_sdk_root}/BLE/Portable/task_host.c",

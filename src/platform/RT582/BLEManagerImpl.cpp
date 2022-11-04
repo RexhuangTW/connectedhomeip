@@ -26,6 +26,7 @@
 #include "FreeRTOS.h"
 #include "timers.h"
 #include "task.h"
+
 #include <ble/CHIPBleServiceData.h>
 #include <lib/support/CodeUtils.h>
 #include <lib/support/logging/CHIPLogging.h>
@@ -39,7 +40,7 @@
 #include "task_hci.h"
 #include "ble_event.h"
 #include "ble_profile.h"
-
+#include "ble_att_gatt.h"
 #include "util_log.h"
 
 
@@ -100,7 +101,7 @@ static uint8_t g_rx_buffer[BLE_GATT_ATT_MTU_MIN];
 static uint8_t g_rx_buffer_length;
 static ble_cfg_t gt_app_cfg;
 static uint8_t g_advertising_host_id = BLE_HOSTID_RESERVED;
-static uint8_t g_trsp_mtu = BLE_GATT_ATT_MTU_MIN;
+static uint8_t g_mtu_size = BLE_GATT_ATT_MTU_MIN;
 const uint8_t UUID_CHIPoBLEService[]    = { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
                                          0x00, 0x10, 0x00, 0x00, 0xF6, 0xFF, 0x00, 0x00 };
 const uint8_t ShortUUID_CHIPoBLEService[]  = { 0xF6, 0xFF };
@@ -109,6 +110,31 @@ const ChipBleUUID ChipUUID_CHIPoBLEChar_RX = { { 0x18, 0xEE, 0x2E, 0xF5, 0x26, 0
 const ChipBleUUID ChipUUID_CHIPoBLEChar_TX = { { 0x18, 0xEE, 0x2E, 0xF5, 0x26, 0x3D, 0x45, 0x59, 0x95, 0x9F, 0x4F, 0x9C, 0x42, 0x9F,
                                                  0x9D, 0x12 } };
 
+static uint8_t g_use_slow_adv_interval = true;
+
+#define BLE_ERR_STATE_TRANSLATE(state)  (state == BLE_ERR_OK)?CHIP_NO_ERROR:\
+                                        (state == BLE_ERR_UNKNOW_TYPE)?CHIP_ERROR_WELL_EMPTY:\
+                                        (state == BLE_ERR_NOT_INIT)?CHIP_ERROR_WELL_UNINITIALIZED:\
+                                        (state == BLE_ERR_DUPLICATE_INIT)?CHIP_NO_ERROR:\
+                                        (state == BLE_ERR_DATA_MALLOC_FAIL)?CHIP_ERROR_NO_MEMORY:\
+                                        (state == BLE_ERR_QUEUE_MALLOC_FAIL)?CHIP_ERROR_NO_MEMORY:\
+                                        (state == BLE_ERR_THREAD_MALLOC_FAIL)?CHIP_ERROR_NO_MEMORY:\
+                                        (state == BLE_ERR_SEMAPHORE_MALLOC_FAIL)?CHIP_ERROR_NO_MEMORY:\
+                                        (state == BLE_ERR_WRONG_CONFIG)?CHIP_ERROR_MESSAGE_INCOMPLETE:\
+                                        (state == BLE_BUSY)?CHIP_ERROR_SENDING_BLOCKED:\            
+                                        (state == BLE_ERR_SENDTO_POINTER_NULL)?CHIP_ERROR_SENDING_BLOCKED:\ 
+                                        (state == BLE_ERR_SENDTO_FAIL)?CHIP_ERROR_SENDING_BLOCKED:\ 
+                                        (state == BLE_ERR_RECVFROM_POINTER_NULL)?CHIP_ERROR_SENDING_BLOCKED:\ 
+                                        (state == BLE_ERR_RECVFROM_NO_DATA)?CHIP_ERROR_SENDING_BLOCKED:\ 
+                                        (state == BLE_ERR_RECVFROM_FAIL)?CHIP_ERROR_SENDING_BLOCKED:\ 
+                                        (state == BLE_ERR_RECVFROM_LEN_NOT_ENOUGH)?CHIP_ERROR_MESSAGE_INCOMPLETE:\ 
+                                        (state == BLE_ERR_ALLOC_MEMORY_FAIL)?CHIP_ERROR_NO_MEMORY:\ 
+                                        (state == BLE_ERR_TIMER_OP)?CHIP_ERROR_TIMEOUT:\ 
+                                        (state == BLE_ERR_INVALID_STATE)?CHIP_ERROR_INCORRECT_STATE:\ 
+                                        (state == BLE_ERR_INVALID_PARAMETER)?CHIP_ERROR_MESSAGE_INCOMPLETE:\ 
+                                        (state == BLE_ERR_CMD_NOT_SUPPORTED)?CHIP_ERROR_NO_MESSAGE_HANDLER:\ 
+                                        (state == BLE_ERR_INVALID_HOST_ID)?CHIP_ERROR_NO_MESSAGE_HANDLER: \ 
+                                        (state == BLE_ERR_INVALID_HANDLE)?CHIP_ERROR_NO_MESSAGE_HANDLER:CHIP_ERROR_MESSAGE_INCOMPLETE                                                                       
 typedef enum
 {
     QUEUE_TYPE_APP_REQ,   /**< Application queue type: application request.*/
@@ -374,7 +400,7 @@ void BLEManagerImpl::ble_evt_handler(void *p_param)
     {
         ble_evt_mtu_t *p_mtu_param = (ble_evt_mtu_t *)&p_ble_evt_param->event_param.ble_evt_att_gatt.param.ble_evt_mtu;
 
-        g_trsp_mtu = p_mtu_param->mtu; // update to real mtu size
+        g_mtu_size = p_mtu_param->mtu; // update to real mtu size
 
         ChipLogDetail(DeviceLayer, "MTU Exchanged, ID:%d, size: %d", p_mtu_param->host_id, p_mtu_param->mtu);
     }
@@ -481,6 +507,108 @@ bool BLEManagerImpl::app_request_set(uint8_t host_id, uint32_t request, bool fro
     return true;
 }
 
+void BLEManagerImpl::ble_svcs_matter_evt_handler(void *p_matter_evt_param)
+{
+    ble_evt_att_param_t *p_param = (ble_evt_att_param_t *)p_matter_evt_param;
+    PacketBufferHandle data;
+    if (p_param->gatt_role == BLE_GATT_ROLE_SERVER)
+    {
+        /* ----------------- Handle event from client ----------------- */
+        switch (p_param->event)
+        {
+        case BLESERVICE_MATTER_CLIENT_TX_BUFFER_WRITE_EVENT:
+        {
+            ChipLogDetail(DeviceLayer, "get matter data...");
+            for (int i = 0; i < p_param->length; i++)
+            {
+                ChipLogDetail(DeviceLayer, "%02x", p_param->data[i]);
+            }
+        }
+        break;
+
+        case BLESERVICE_MATTER_ADDITIONAL_COMMISSIONING_RELATED_DATA_READ_EVENT:
+        {
+            ble_err_t status;
+            const uint8_t readDataRsp[] = "matter data";
+            ble_gatt_data_param_t gatt_data_param;
+
+            ChipLogDetail(DeviceLayer, "read matter data\n");
+            gatt_data_param.host_id = p_param->host_id;
+            gatt_data_param.handle_num = p_param->handle_num;
+            gatt_data_param.length = SIZE_STRING(readDataRsp);
+            gatt_data_param.p_data = (uint8_t *)readDataRsp;
+
+            status = ble_svcs_data_send(TYPE_BLE_GATT_READ_RSP, &gatt_data_param);
+            if (status != BLE_ERR_OK)
+            {
+                info_color(LOG_RED, "ble_gatt_read_rsp status: %d\n", status);
+            }
+            
+        }
+        break;
+
+        case BLESERVICE_MATTER_CLIENT_RX_BUFFER_INDICATE_CONFIRM_EVENT:
+        {
+             ChipLogDetail(DeviceLayer, "get matter indicate confirm"); 
+        }
+        break;
+
+        case BLESERVICE_MATTER_CLIENT_RX_BUFFER_CCCD_WRITE_EVENT:
+        {
+            ChipLogDetail(DeviceLayer, "get CCCD write event"); 
+        }
+        break;
+
+        default:
+            break;
+        }
+    }
+}
+int BLEManagerImpl::server_profile_init(uint8_t host_id)
+{
+    ble_err_t status;
+    ble_info_link0_t *p_profile_info = (ble_info_link0_t*)ble_app_link_info[host_id].profile_info;
+
+    ble_app_link_info[host_id].state = STATE_STANDBY;
+
+    do
+    {
+        // GAP Related
+        // -------------------------------------
+        status = ble_svcs_gaps_init(host_id, BLE_GATT_ROLE_SERVER, &(p_profile_info->svcs_info_gaps), NULL);
+        if (status != BLE_ERR_OK)
+        {
+            break;
+        }
+
+        // set GAP device name
+        status = ble_svcs_gaps_device_name_set((uint8_t *)DEVICE_NAME_STR, sizeof(DEVICE_NAME_STR));
+        if (status != BLE_ERR_OK)
+        {
+            break;
+        }
+
+        // GATT Related
+        // -------------------------------------
+        status = ble_svcs_gatts_init(host_id, BLE_GATT_ROLE_SERVER, &(p_profile_info->svcs_info_gatts), NULL);
+        if (status != BLE_ERR_OK)
+        {
+            break;
+        }
+
+        // DIS Related
+        // -------------------------------------
+        status = ble_svcs_dis_init(host_id, BLE_GATT_ROLE_SERVER, &(p_profile_info->svcs_info_dis), NULL);
+        if (status != BLE_ERR_OK)
+        {
+            break;
+        }
+        status = ble_svcs_matter_init(host_id, BLE_GATT_ROLE_SERVER, &(p_profile_info->svcs_info_matter), (ble_svcs_evt_matter_handler_t)ble_svcs_matter_evt_handler);
+
+    }while(0);
+
+    return status;
+}
 
 int BLEManagerImpl::ble_init(void)
 {
@@ -534,6 +662,11 @@ int BLEManagerImpl::ble_init(void)
             break;
         }
 
+        status = server_profile_init(0);
+        if (status != BLE_ERR_OK)
+        {
+            break;
+        }
     } while (0);
 
     return status;
@@ -542,7 +675,6 @@ int BLEManagerImpl::ble_init(void)
 void BLEManagerImpl::app_evt_handler(void *p_param)
 {
     app_req_param_t *p_app_param = (app_req_param_t *)p_param;
-
     ble_err_t status;
     uint8_t host_id;
     ble_info_link0_t *p_profile_info;
@@ -579,7 +711,7 @@ void BLEManagerImpl::app_evt_handler(void *p_param)
             }
         } while (0);
 
-        g_trsp_mtu = BLE_GATT_ATT_MTU_MIN;
+        g_mtu_size = BLE_GATT_ATT_MTU_MIN;
         break;
 
     default:
@@ -617,8 +749,16 @@ int BLEManagerImpl::adv_init(void)
     {
         adv_param.adv_type = ADV_TYPE_ADV_IND;
         adv_param.own_addr_type = addr_param.addr_type;
-        adv_param.adv_interval_min = BLE_CONFIG_MIN_INTERVAL;
-        adv_param.adv_interval_max = BLE_CONFIG_MAX_INTERVAL;
+        if (g_use_slow_adv_interval == true)
+        {
+            adv_param.adv_interval_min = CHIP_DEVICE_CONFIG_BLE_SLOW_ADVERTISING_INTERVAL_MIN;
+            adv_param.adv_interval_max = CHIP_DEVICE_CONFIG_BLE_SLOW_ADVERTISING_INTERVAL_MAX;       
+        }
+        else
+        {
+            adv_param.adv_interval_min = CHIP_DEVICE_CONFIG_BLE_FAST_ADVERTISING_INTERVAL_MIN;
+            adv_param.adv_interval_max = CHIP_DEVICE_CONFIG_BLE_FAST_ADVERTISING_INTERVAL_MAX;              
+        }
         adv_param.adv_channel_map = ADV_CHANNEL_ALL;
         adv_param.adv_filter_policy = ADV_FILTER_POLICY_ACCEPT_ALL;
 
@@ -708,35 +848,67 @@ exit:
 
 uint16_t BLEManagerImpl::_NumConnections(void)
 {
-    return 1;
+    return (ble_app_link_info[g_advertising_host_id].state == STATE_CONNECTED)?1:0;
 }
 
 bool BLEManagerImpl::_IsAdvertisingEnabled(void)
 {
-    return true;
+    
+    return (ble_app_link_info[g_advertising_host_id].state == STATE_ADVERTISING);
 }
 
 CHIP_ERROR BLEManagerImpl::_SetAdvertisingEnabled(bool val)
 {
-    //Need to implement
     CHIP_ERROR err = CHIP_NO_ERROR;
+    ble_adv_param_t adv_param;
+    ble_gap_addr_t addr_param;
+    ble_err_t status;
 
-    
-exit:
+    ble_cmd_device_addr_get(&addr_param);
+
+    adv_param.adv_type = ADV_TYPE_ADV_IND;
+    adv_param.own_addr_type = addr_param.addr_type;
+    if (g_use_slow_adv_interval == true)
+    {
+        adv_param.adv_interval_min = CHIP_DEVICE_CONFIG_BLE_SLOW_ADVERTISING_INTERVAL_MIN;
+        adv_param.adv_interval_max = CHIP_DEVICE_CONFIG_BLE_SLOW_ADVERTISING_INTERVAL_MAX;       
+    }
+    else
+    {
+        adv_param.adv_interval_min = CHIP_DEVICE_CONFIG_BLE_FAST_ADVERTISING_INTERVAL_MIN;
+        adv_param.adv_interval_max = CHIP_DEVICE_CONFIG_BLE_FAST_ADVERTISING_INTERVAL_MAX;              
+    }
+    adv_param.adv_channel_map = ADV_CHANNEL_ALL;
+    adv_param.adv_filter_policy = ADV_FILTER_POLICY_ACCEPT_ALL;
+
+    status = ble_cmd_adv_param_set(&adv_param);
+    if (status != BLE_ERR_OK)
+    {
+        info_color(LOG_RED, "adv_param() status = %d\n", status);
+        err = BLE_ERR_STATE_TRANSLATE(status);
+    }
+
+    if (status == BLE_ERR_OK)
+    {
+        status = ble_cmd_adv_enable(0);
+        if (status != BLE_ERR_OK)
+        {
+            info_color(LOG_RED, "adv_enable() status = %d\n", status);
+            err = BLE_ERR_STATE_TRANSLATE(status);
+        }
+    }
     return err;
 }
 
 CHIP_ERROR BLEManagerImpl::_SetAdvertisingMode(BLEAdvertisingMode mode)
 {
-    //Need to implement
-
     switch (mode)
     {
     case BLEAdvertisingMode::kFastAdvertising:
-        
+        g_use_slow_adv_interval = false;
         break;
     case BLEAdvertisingMode::kSlowAdvertising:
-        
+        g_use_slow_adv_interval = true;        
         break;
     default:
         return CHIP_ERROR_INVALID_ARGUMENT;
@@ -746,16 +918,29 @@ CHIP_ERROR BLEManagerImpl::_SetAdvertisingMode(BLEAdvertisingMode mode)
 
 CHIP_ERROR BLEManagerImpl::_GetDeviceName(char * buf, size_t bufSize)
 {
-    //Need to implement
+    ble_info_link0_t *p_profile_info = (ble_info_link0_t*)ble_app_link_info[0].profile_info;
 
+    if (p_profile_info->svcs_info_gaps.server_info.data.device_name_len >= bufSize)
+    {
+        return CHIP_ERROR_BUFFER_TOO_SMALL;
+    }
+    memcpy(buf, p_profile_info->svcs_info_gaps.server_info.data.device_name,
+            p_profile_info->svcs_info_gaps.server_info.data.device_name_len);
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR BLEManagerImpl::_SetDeviceName(const char * deviceName)
 {
-    //Need to implement
+    CHIP_ERROR err = CHIP_NO_ERROR;
+    ble_err_t status;
 
-    return CHIP_NO_ERROR;
+    status = ble_svcs_gaps_device_name_set((uint8_t *)deviceName, sizeof(deviceName));
+    if (status != BLE_ERR_OK)
+    {
+        info_color(LOG_RED, "device name set() status = %d\n", status);
+        err = BLE_ERR_STATE_TRANSLATE(status);
+    }    
+    return err;
 }
 
 void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
@@ -817,33 +1002,43 @@ bool BLEManagerImpl::UnsubscribeCharacteristic(BLE_CONNECTION_OBJECT conId, cons
 
 bool BLEManagerImpl::CloseConnection(BLE_CONNECTION_OBJECT conId)
 {
-    CHIP_ERROR err = CHIP_NO_ERROR;
+    ble_err_t status = BLE_ERR_OK;
 
+    status = ble_cmd_conn_terminate(0);
     ChipLogProgress(DeviceLayer, "Closing BLE GATT connection (con %u)", conId);
 
-    if (err != CHIP_NO_ERROR)
+    if (status != BLE_ERR_OK)
     {
-        ChipLogError(DeviceLayer, "sl_bt_connection_close() failed: %s", ErrorStr(err));
+        ChipLogError(DeviceLayer, "sl_bt_connection_close() failed: %d", status);
     }
 
-    return (err == CHIP_NO_ERROR);
+    return (status == BLE_ERR_OK);
 }
 
 uint16_t BLEManagerImpl::GetMTU(BLE_CONNECTION_OBJECT conId) const
-{
-    //Need to implement
-    return 0;
+{   
+    return g_mtu_size;
 }
 
 bool BLEManagerImpl::SendIndication(BLE_CONNECTION_OBJECT conId, const ChipBleUUID * svcId, const ChipBleUUID * charId,
                                     PacketBufferHandle data)
 {
-    CHIP_ERROR err              = CHIP_NO_ERROR;
+    ble_err_t status;
+    ble_gatt_data_param_t param;
+    ble_info_link0_t *p_profile_info = (ble_info_link0_t*)ble_app_link_info[0].profile_info;
+
+    param.host_id = 0;
+    param.handle_num = p_profile_info->svcs_info_matter.server_info.handles.hdl_client_rx_buffer;
+
+
+    param.p_data = data->Start();
+    param.length  = data->DataLength();
+    status = ble_svcs_data_send(TYPE_BLE_GATT_INDICATION, &param);
     //Need to implement
-exit:
-    if (err != CHIP_NO_ERROR)
+
+    if (status != BLE_ERR_OK)
     {
-        ChipLogError(DeviceLayer, "BLEManagerImpl::SendIndication() failed: %s", ErrorStr(err));
+        ChipLogError(DeviceLayer, "BLEManagerImpl::SendIndication() failed: %d", status);
         return false;
     }
 
@@ -873,7 +1068,6 @@ bool BLEManagerImpl::SendReadResponse(BLE_CONNECTION_OBJECT conId, BLE_READ_REQU
 
 void BLEManagerImpl::NotifyChipConnectionClosed(BLE_CONNECTION_OBJECT conId)
 {
-    // Nothing to do
 }
 
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING

@@ -20,6 +20,7 @@ const ble_att_param_t *const att_service_comb00[] =
         ATT_GAPS_SERVICE,
         ATT_GATTS_SERVICE,
         ATT_DIS_SERVICE,
+        ATT_MATTER_SERVICE,
 };
 
 /**************************************************************************

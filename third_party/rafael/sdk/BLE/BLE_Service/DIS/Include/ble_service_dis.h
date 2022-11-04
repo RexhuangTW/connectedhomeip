@@ -1,6 +1,9 @@
 #ifndef _BLE_SERVICE_DIS_H_
 #define _BLE_SERVICE_DIS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /**************************************************************************//**
  * @file  ble_service_dis.h
  * @brief Provide the Definition of DIS.
@@ -337,5 +340,7 @@ ble_err_t ble_svcs_dis_init(uint8_t host_id, ble_gatt_role_t role, ble_svcs_dis_
 ble_err_t ble_svcs_dis_handles_get(uint8_t host_id, ble_gatt_role_t role, ble_svcs_dis_info_t *p_info);
 
 
-
+#ifdef __cplusplus
+};
+#endif
 #endif //_BLE_SERVICE_DIS_H_

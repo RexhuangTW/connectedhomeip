@@ -660,4 +660,3 @@ int ble_event_msg_sendto(ble_tlv_t *pt_tlv);
 #endif
 
 #endif /* __BLE_API_H__*/
-
