@@ -60,6 +60,7 @@ sys_queue_t g_pci_tx_cmd_handle;
 sys_sem_t g_tx_cmd_sem;
 sys_sem_t g_tx_data_sem;
 
+sys_task_t  g_phci_tx_task;
 /**************************************************************************************************
  *    LOCAL TYPEDEFS
  *************************************************************************************************/
@@ -538,6 +539,36 @@ void task_tx_handle(void)
     }
 }
 
+
+void task_tx_delete(void)
+{
+#if (MODULE_ENABLE(SUPPORT_BLE))
+    /*-----------------------------------*/
+    /* A.Input Parameter Range Check     */
+    /*-----------------------------------*/
+
+    /*-----------------------------------*/
+    /* B. Main Functionality             */
+    /*-----------------------------------*/
+    do
+    {
+        sys_queue_free(&g_rfc_common_queue_handle);
+        sys_queue_free(&g_hci_tx_acl_handle);
+        sys_queue_free(&g_hci_tx_cmd_handle);
+
+        sys_queue_free(&g_tx_cmd_sem);
+        sys_queue_free(&g_tx_data_sem);
+
+        vTaskDelete(g_phci_tx_task);
+    } while (0);
+
+    /*-----------------------------------*/
+    /* C. Result & Return                */
+    /*-----------------------------------*/
+#endif
+}
+
+
 void task_tx_init(void)
 {
 #if (MODULE_ENABLE(SUPPORT_BLE)) && (MODULE_ENABLE(SUPPORT_ZB))
@@ -547,7 +578,7 @@ void task_tx_init(void)
 #elif (MODULE_ENABLE(SUPPORT_ZB))
     static char *task_name = {"TASK_PCI_TX"};
 #endif
-    sys_task_t t_task;
+
 
     HPCI_PRINTF(COMMON_INFO, "[COMMON_INFO] %s init\n", task_name);
 
@@ -567,12 +598,12 @@ void task_tx_init(void)
     sys_sem_new(&g_tx_cmd_sem, NUM_TX_CMD_Q, NUM_TX_CMD_Q);
     sys_sem_new(&g_tx_data_sem, NUM_TX_DATA_Q, NUM_TX_DATA_Q);
 
-    t_task = sys_task_new(task_name,
-                          (TaskFunction_t)task_tx_handle,
-                          NULL,
-                          CONFIG_TX_TASK_STACK_SIZE,
-                          CONFIG_TX_TASK_PRIORITY);
-    if (t_task == NULL)
+    g_phci_tx_task = sys_task_new(task_name,
+                                  (TaskFunction_t)task_tx_handle,
+                                  NULL,
+                                  CONFIG_TX_TASK_STACK_SIZE,
+                                  CONFIG_TX_TASK_PRIORITY);
+    if (g_phci_tx_task == NULL)
     {
         HPCI_PRINTF(COMMON_DEBUG_ERR, "[COMMON_DEBUG_ERR] hci create fail\n");
     }

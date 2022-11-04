@@ -567,6 +567,39 @@ void ble_host_timer_cb(TimerHandle_t xTimer)
     }
 }
 
+int8_t ble_delete_host_subsystem(void)
+{
+    int8_t err_code = ERR_OK;
+
+    /*-----------------------------------*/
+    /* A.Input Parameter Range Check     */
+    /*-----------------------------------*/
+
+    /*-----------------------------------*/
+    /* B. Main Functionality             */
+    /*-----------------------------------*/
+    do
+    {
+        sys_queue_free(&g_host_rx_handle);
+        sys_queue_free(&g_host_acl_tx_handle);
+        sys_queue_free(&g_host_to_app_handle);
+        sys_queue_free(&g_host_encrypt_handle);
+        sys_queue_free(&g_host_rx_cmd_sem);
+        sys_queue_free(&g_host_rx_data_sem);
+
+        vTaskDelete(ble_host_subsystem_task);
+
+        sys_queue_free(&g_cmd_transport_handle);
+
+        vTaskDelete(ble_cmd_transport_task);
+    } while (0);
+
+    /*-----------------------------------*/
+    /* C. Result & Return                */
+    /*-----------------------------------*/
+    return err_code;
+}
+
 /**@brief BLE host subsystem initialization. */
 int8_t ble_host_subsystem_init(void)
 {

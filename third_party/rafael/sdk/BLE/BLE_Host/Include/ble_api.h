@@ -632,6 +632,15 @@ typedef struct
 int ble_host_stack_init(ble_cfg_t *pt_cfg);
 
 
+/** @brief Set to BLE host stack delete.
+ *
+ * @ingroup ble_api
+ *
+ * @return @ref BLE_ERR_OK is success or an @ref ble_err_t "error".
+ */
+int ble_host_stack_deinit(void);
+
+
 /** @brief BLE event message receive function.
  *
  * @ingroup ble_api

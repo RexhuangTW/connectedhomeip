@@ -44,3 +44,15 @@ void task_pci_init(void)
     task_tx_init();
     task_rx_init();
 }
+
+
+void task_hci_delete(void)
+{
+#if (MODULE_ENABLE(SUPPORT_BLE))
+    task_tx_delete();
+    task_rx_delete();
+#endif
+}
+
+
+

@@ -72,6 +72,13 @@ extern sys_queue_t g_rfc_common_queue_handle;
 void task_tx_init(void);
 
 
+/**@brief Set to BLE HCI Tx task delete.
+ *
+ * @ingroup task_hci
+ *
+ * @return none
+ */
+void task_tx_delete(void);
 
 #ifdef __cplusplus
 };

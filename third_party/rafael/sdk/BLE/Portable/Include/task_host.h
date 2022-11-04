@@ -153,6 +153,13 @@ extern sys_sem_t g_host_rx_data_sem;
  */
 int8_t ble_host_subsystem_init(void);
 
+/**@brief BLE host subsystem delete initialization.
+ *
+ * @ingroup host_subsystem
+ *
+ * @return status
+ */
+int8_t ble_delete_host_subsystem(void);
 
 /**@brief Retrun the space of free space in BLE host ACL data queue.
  *

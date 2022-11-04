@@ -65,6 +65,15 @@ extern sys_queue_t    g_ble_cfm_queue;
 int task_ble_app_init(void);
 
 
+/**@brief BLE application task delete.
+ *
+ * @ingroup task_ble_app
+ *
+ * @return none
+ */
+int8_t task_delete_ble_app(void);
+
+
 /** Return BLE application task (task_ble_app) queue remaining size.
  *
  * @ingroup task_ble_app

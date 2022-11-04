@@ -218,6 +218,13 @@ extern sys_queue_t g_hci_tx_cmd_handle;
 void task_hci_init(void);
 
 
+/**@brief BLE HCI task delete.
+ *
+ * @ingroup task_hci
+ *
+ * @return none
+ */
+void task_hci_delete(void);
 
 #ifdef __cplusplus
 };

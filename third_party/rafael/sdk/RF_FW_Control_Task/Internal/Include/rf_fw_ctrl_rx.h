@@ -25,7 +25,7 @@ extern "C" {
  *    PUBLIC FUNCTIONS
  *************************************************************************************************/
 void task_rx_init(void);
-
+void task_rx_delete(void);
 
 
 #ifdef __cplusplus

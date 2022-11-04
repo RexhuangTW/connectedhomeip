@@ -167,6 +167,32 @@ int ble_event_msg_recvfrom(uint8_t *pu8_buf, uint32_t *pu32_buf_len)
     return 0;
 }
 
+int ble_host_stack_deinit(void)
+{
+    int i32_ret = 0;
+
+    do
+    {
+        /*-----------------------------------*/
+        /* A.Input Parameter Range Check     */
+        /*-----------------------------------*/
+
+        /*-----------------------------------*/
+        /* B. Main Functionality             */
+        /*-----------------------------------*/
+        sys_sem_free(&g_app_sem);
+
+        /* Initial protocol stack tasks here */
+        ble_delete_host_subsystem();
+        task_delete_ble_app();
+
+    } while (0);
+
+    /*-----------------------------------*/
+    /* C. Result & Return                */
+    /*-----------------------------------*/
+    return i32_ret;
+}
 
 int ble_host_stack_init(ble_cfg_t *pt_cfg)
 {

@@ -235,6 +235,32 @@ ble_err_t ble_queue_sendto(sys_tlv_t *pt_tlv)
     return t_return;
 }
 
+int8_t task_delete_ble_app(void)
+{
+    int8_t err_code = ERR_OK;
+
+    /*-----------------------------------*/
+    /* A.Input Parameter Range Check     */
+    /*-----------------------------------*/
+
+    /*-----------------------------------*/
+    /* B. Main Functionality             */
+    /*-----------------------------------*/
+    do
+    {
+        sys_queue_free(&g_ble_app_queue);
+        sys_queue_free(&g_app_notify_queue);
+        sys_queue_free(&g_ble_cfm_queue);
+
+        vTaskDelete(g_app_notify_task);
+    } while (0);
+
+    /*-----------------------------------*/
+    /* C. Result & Return                */
+    /*-----------------------------------*/
+    return err_code;
+}
+
 /**@brief BLE application task initialization. */
 int task_ble_app_init(void)
 {
