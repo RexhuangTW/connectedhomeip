@@ -33,6 +33,7 @@ RFB_EVENT_STATUS rfb_comm_single_tone_mode_set(uint8_t single_tone_mode);
 RFB_EVENT_STATUS rfb_comm_rx_enable_set(bool rx_continuous, uint32_t rx_timeout);
 RFB_EVENT_STATUS rfb_comm_rf_idle_set(void);
 RFB_WRITE_TXQ_STATUS rfb_comm_tx_data_send(uint16_t packet_length, uint8_t *tx_data_address, uint8_t InitialCwAckRequest, uint8_t Dsn);
+void rfb_comm_init_to_idle(void);
 void rfb_comm_init(rfb_interrupt_event_t *_rfb_interrupt_event);
 RFB_EVENT_STATUS rfb_comm_rssi_read(uint8_t *rssi);
 RFB_EVENT_STATUS rfb_comm_agc_set(uint8_t agc_enable, uint8_t lna_gain, uint8_t vga_gain, uint8_t tia_gain);

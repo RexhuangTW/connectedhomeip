@@ -355,6 +355,13 @@ RFB_WRITE_TXQ_STATUS rfb_comm_tx_data_send(uint16_t packet_length, uint8_t *tx_d
 
 }
 
+void rfb_comm_init_to_idle(void)
+{
+    RfMcu_HostResetMcu();
+    RfMcu_SysRdySignalWait();
+    RfMcu_HostModeEnable();
+}
+
 void rfb_comm_init(rfb_interrupt_event_t *_rfb_interrupt_event)
 {
     /* Rsgister Interrupt event for application use*/
