@@ -151,7 +151,12 @@ void UnlockOpenThreadTask(void)
 {
     chip::DeviceLayer::ThreadStackMgr().UnlockThreadStack();
 }
-
+void AppTask::OpenCommissioning(intptr_t arg)
+{
+    // Enable BLE advertisements
+    chip::Server::GetInstance().GetCommissioningWindowManager().OpenBasicCommissioningWindow();
+    ChipLogProgress(NotSpecified, "BLE advertising started. Waiting for Pairing.");
+}
 CHIP_ERROR AppTask::Init()
 {
     CHIP_ERROR err;
@@ -162,14 +167,14 @@ CHIP_ERROR AppTask::Init()
         ChipLogError(NotSpecified, "PlatformMgr().InitChipStack() failed");
         return err;
     }
-#if 0
+
     err = ThreadStackMgr().InitThreadStack();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
         return err;
     }
-
+#if 0
     err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_Router);
     if (err != CHIP_NO_ERROR)
     {
@@ -183,7 +188,7 @@ CHIP_ERROR AppTask::Init()
         ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
         return err;
     }    
-
+#endif
     // Initialize CHIP server
 #if CONFIG_CHIP_FACTORY_DATA
     ReturnErrorOnFailure(mFactoryDataProvider.Init());
@@ -199,7 +204,6 @@ CHIP_ERROR AppTask::Init()
 #endif
 
 
-#if 1
     static chip::CommonCaseDeviceServerInitParams initParams;
     (void) initParams.InitializeStaticResourcesBeforeServerInit();
 
@@ -208,23 +212,26 @@ CHIP_ERROR AppTask::Init()
     nativeParams.unlockCb              = UnlockOpenThreadTask;
     nativeParams.openThreadInstancePtr = chip::DeviceLayer::ThreadStackMgrImpl().OTInstance();
     initParams.endpointNativeParams    = static_cast<void *>(&nativeParams);
+
+
     err = chip::Server::GetInstance().Init(initParams);
     if(err != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "chip::Server::init faild %s", ErrorStr(err));
     }
-#endif
+
     gExampleDeviceInfoProvider.SetStorageDelegate(&Server::GetInstance().GetPersistentStorage());
     SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
 
     PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
-#endif
+
     PlatformMgr().AddEventHandler(ChipEventHandler, 0);
 
     if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "Error during PlatformMgr().StartEventLoopTask();");
     }
+
     return CHIP_NO_ERROR;
 }
 

@@ -59,7 +59,7 @@ void otSysInit(int argc, char *argv[])
 
     random_number_init();
 
-    rafael_rfb_init();
+    // rafael_rfb_init();
 }
 
 bool otSysPseudoResetWasRequested(void)

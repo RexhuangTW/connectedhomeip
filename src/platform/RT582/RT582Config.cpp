@@ -52,13 +52,19 @@ static size_t storage_read(uint32_t id, size_t bufSize, uint8_t *buf)
     }
     offset = (RT582CONFIG_ID_PER_SIZE*id) % 1000;
 
-    if(bufSize < storage_backup[offset])
+    if((bufSize < storage_backup[offset]) && (storage_backup[offset] != 0xFF))
+    {
+        ChipLogDetail(DeviceLayer, "Cfg  %s !!!!!!!!!!", __func__); 
         return 0xFFFFFFFF;
+    }
+
+    if(storage_backup[offset] == 0xFF)
+        return 0;
 
     memcpy(buf, &storage_backup[offset+1], storage_backup[offset]);
 
-    if(chk == (bufSize-1))
-        return 0;
+    //if(chk == (bufSize-1))
+    //    return 0;
         
 
     return storage_backup[offset];
@@ -133,6 +139,7 @@ CHIP_ERROR RT582Config::ReadConfigValueBin(Key key, uint8_t * buf, size_t bufSiz
 
 CHIP_ERROR RT582Config::ReadConfigValueBin(Key key, void * buf, size_t bufSize, size_t & outLen)
 {
+    //ChipLogDetail(DeviceLayer, "Cfg  %s", __func__); 
     outLen = storage_read(key, bufSize, (uint8_t *)buf);
 
     if(outLen == 0)

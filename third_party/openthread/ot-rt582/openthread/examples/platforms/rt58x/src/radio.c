@@ -195,10 +195,13 @@ static otRadioKeyType sKeyType;
 static uint32_t sCslSampleTime;
 static uint32_t sCslPeriod;
 #endif
+
+static uint32_t sm_init = 0;
 //=============================================================================
 //                Functions
 //=============================================================================
-static void ReverseExtAddress(otExtAddress *aReversed, const otExtAddress *aOrigin)
+static void
+ReverseExtAddress(otExtAddress *aReversed, const otExtAddress *aOrigin)
 {
     for (size_t i = 0; i < sizeof(*aReversed); i++)
     {
@@ -320,7 +323,8 @@ uint64_t otPlatRadioGetNow(otInstance *aInstance)
     OT_UNUSED_VARIABLE(aInstance);
 
     //return  otPlatAlarmMicroGetNow();
-    return  rfb_port_rtc_time_read();
+    //return  rfb_port_rtc_time_read();
+    return 0;
 }
 
 /**
@@ -392,7 +396,8 @@ otError otPlatRadioSetCcaEnergyDetectThreshold(otInstance *aInstance, int8_t aTh
     return OT_ERROR_NOT_IMPLEMENTED;
     sCCAThreshold = aThreshold;
 
-    spRFBCtrl->phy_pib_set(sTurnaroundTime,
+    if(sm_init)
+        spRFBCtrl->phy_pib_set(sTurnaroundTime,
                            sCCAMode,
                            sCCAThreshold,
                            sCCADuration);
@@ -417,7 +422,7 @@ void otPlatRadioSetExtendedAddress(otInstance *aInstance, const otExtAddress *aA
     sExtendAddr_0 = (aAddress->m8[0] | (aAddress->m8[1] << 8) | (aAddress->m8[2] << 16) | (aAddress->m8[3] << 24));
     sExtendAddr_1 = (aAddress->m8[4] | (aAddress->m8[5] << 8) | (aAddress->m8[6] << 16) | (aAddress->m8[7] << 24));
 
-
+    if(sm_init)
     spRFBCtrl->address_filter_set(sPromiscuous,
                                   sShortAddress,
                                   sExtendAddr_0,
@@ -458,7 +463,7 @@ void otPlatRadioSetPanId(otInstance *aInstance, uint16_t aPanId)
     sPANID = aPanId;
 
     utilsSoftSrcMatchSetPanId(aPanId);
-
+    if(sm_init)
     spRFBCtrl->address_filter_set(sPromiscuous,
                                   sShortAddress,
                                   sExtendAddr_0,
@@ -478,6 +483,7 @@ void otPlatRadioSetPromiscuous(otInstance *aInstance, bool aEnable)
     OT_UNUSED_VARIABLE(aInstance);
 
     sPromiscuous = aEnable;
+    if(sm_init)
     spRFBCtrl->address_filter_set(sPromiscuous,
                                   sShortAddress,
                                   sExtendAddr_0,
@@ -498,6 +504,7 @@ void otPlatRadioSetShortAddress(otInstance *aInstance, uint16_t aAddress)
     OT_UNUSED_VARIABLE(aInstance);
 
     sShortAddress = aAddress;
+    if(sm_init)
     spRFBCtrl->address_filter_set(sPromiscuous,
                                   sShortAddress,
                                   sExtendAddr_0,
@@ -592,6 +599,7 @@ void otPlatRadioEnableSrcMatch(otInstance *aInstance, bool aEnable)
     OT_UNUSED_VARIABLE(aInstance);
     // set Frame Pending bit for all outgoing ACKs if aEnable is false
     sIsSrcMatchEnabled = aEnable;
+    if(sm_init)
     spRFBCtrl->src_addr_match_ctrl(sIsSrcMatchEnabled);
 }
 
@@ -616,9 +624,9 @@ otError otPlatRadioEnergyScan(otInstance *aInstance, uint8_t aScanChannel, uint1
     uint32_t ChannelFrequency = FREQ + 200 * (aScanChannel - 1);
 #endif
     int8_t rssi_value;
-
+    if(sm_init)
     spRFBCtrl->frequency_set(ChannelFrequency);
-
+    if(sm_init)
     rssi_value = spRFBCtrl->rssi_read(RFB_MODEM_ZIGBEE);
 
     otPlatRadioEnergyScanDone(aInstance, -rssi_value);
@@ -640,7 +648,7 @@ int8_t otPlatRadioGetRssi(otInstance *aInstance)
     int8_t   rssi = OT_RADIO_RSSI_INVALID;
 
     OT_UNUSED_VARIABLE(aInstance);
-
+    if(sm_init)
     rssi = spRFBCtrl->rssi_read(RFB_MODEM_ZIGBEE);
 
     return -rssi;
@@ -706,9 +714,9 @@ otError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
         sCurrentChannel        = aChannel;
 
         /* Enable RX and leave SLEEP */
-
+    if(sm_init)
         spRFBCtrl->frequency_set(ChannelFrequency);
-
+    if(sm_init)
         spRFBCtrl->auto_state_set(true);
     }
 
@@ -825,13 +833,15 @@ uint8_t otPlatRadioGetCslAccuracy(otInstance *aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
 
-    return spRFBCtrl->csl_accuracy_get();
+    //return spRFBCtrl->csl_accuracy_get();
+    return 0;
 }
 
 uint8_t otPlatRadioGetCslUncertainty(otInstance *aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
-    return spRFBCtrl->csl_uncertainty_get();
+    //return spRFBCtrl->csl_uncertainty_get();
+    return 0;
 }
 #if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
 void otPlatRadioSetMacKey(otInstance             *aInstance,
@@ -852,8 +862,8 @@ void otPlatRadioSetMacKey(otInstance             *aInstance,
     memcpy(&sPrevKey, aPrevKey, sizeof(otMacKeyMaterial));
     memcpy(&sCurrKey, aCurrKey, sizeof(otMacKeyMaterial));
     memcpy(&sNextKey, aNextKey, sizeof(otMacKeyMaterial));
-
-    spRFBCtrl->key_set(sCurrKey.mKeyMaterial.mKey.m8);
+    if(sm_init)
+        spRFBCtrl->key_set(sCurrKey.mKeyMaterial.mKey.m8);
 exit:
     return;
 }
@@ -905,6 +915,7 @@ otError otPlatRadioSetCca(otInstance *aInstance, int8_t aThreshold, uint16_t tur
     sCCAThreshold = aThreshold;
     sTurnaroundTime = turnaroundtime;
     sCCADuration = duration;
+    if(sm_init)
     spRFBCtrl->phy_pib_set(sTurnaroundTime,
                            sCCAMode,
                            sCCAThreshold,
@@ -941,7 +952,7 @@ otError otPlatRadioSetMacConfig(otInstance *aInstance, uint16_t ack_wait_time, u
 
     sMacAckWaitTime = ack_wait_time;
     sMacFrameRetris = mac_try;
-
+    if(sm_init)
     /* MAC PIB */
     spRFBCtrl->mac_pib_set(MAC_PIB_UNIT_BACKOFF_PERIOD,
                            sMacAckWaitTime,
@@ -1392,12 +1403,12 @@ static void rafael_rx_done(uint16_t packet_length, uint8_t *rx_data_address,
 }
 void rafael_radio_short_addr_ctrl(uint8_t ctrl_type, uint8_t *short_addr)
 {
-    spRFBCtrl->short_addr_ctrl(ctrl_type, short_addr);
+    //spRFBCtrl->short_addr_ctrl(ctrl_type, short_addr);
 }
 
 void rafael_radio_extend_addr_ctrl(uint8_t ctrl_type, uint8_t *extend_addr)
 {
-    spRFBCtrl->extend_addr_ctrl(ctrl_type, extend_addr);
+    //spRFBCtrl->extend_addr_ctrl(ctrl_type, extend_addr);
 }
 
 void rafael_rfb_init(void)
