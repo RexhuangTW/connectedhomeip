@@ -73,7 +73,7 @@ void otSysProcessDrivers(otInstance *aInstance)
 {
     // UartProcessReceive();
     rt58x_alarm_process(aInstance);
-    platformRadioProcess();
+    // platformRadioProcess();
 }
 
 // void otSysEventSignalPending(void)

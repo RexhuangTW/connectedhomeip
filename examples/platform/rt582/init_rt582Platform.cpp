@@ -75,8 +75,8 @@ static void init_default_pin_mux(void)
 
 void init_rt582Platform(void)
 {
-    NVIC_SetPriority(Uart0_IRQn, 0x06);
-    NVIC_SetPriority(CommSubsystem_IRQn, 0x01);
+    //NVIC_SetPriority(Uart0_IRQn, 0x02);
+    //NVIC_SetPriority(CommSubsystem_IRQn, 0x01);
 
     init_default_pin_mux();
     Delay_Init();

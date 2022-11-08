@@ -111,7 +111,6 @@ void SysTick_Handler(void)
 }
 void rt58x_alarm_init()
 {
-#if 1
     timer_config_mode_t cfg;
 
     cfg.int_en = ENABLE;
@@ -120,19 +119,14 @@ void rt58x_alarm_init()
 
     Timer_Open(0, cfg, _timer_isr_handler);
 
+    Timer_Int_Priority(0, 4);
+
     cfg.int_en = ENABLE;
     cfg.mode = TIMER_PERIODIC_MODE;
     cfg.prescale = TIMER_PRESCALE_1;
 
     Timer_Open(4, cfg, _timer_milli_handler);
-#endif
-    /* Stop and clear the SysTick. */
-    SYST_CSR = 0UL;
-    SYST_CVR = 0UL;
-    SYST_RVR = 0UL;
-
-    // SYST_RVR = ( SystemCoreClock / 1000000 ) - 1UL;
-    // SYST_CSR = ( SYST_CSR_ENABLE_BIT | SYST_CSR_CLKSOURCE_BIT | SYST_CSR_TICKINT_BIT);
+    Timer_Int_Priority(4, 4);
 }
 
 uint32_t otPlatTimeGetXtalAccuracy(void)

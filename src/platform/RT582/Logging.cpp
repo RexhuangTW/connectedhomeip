@@ -220,6 +220,7 @@ extern "C" void debugHardfault(uint32_t * sp)
 /**
  * Override default hard-fault handler
  */
+#if 0
 extern "C" __attribute__((naked)) void HardFault_Handler(void)
 {
     __asm volatile("tst lr, #4                                    \n"
@@ -230,7 +231,7 @@ extern "C" __attribute__((naked)) void HardFault_Handler(void)
                    "bx r1                                         \n"
                    "debugHardfault_address: .word debugHardfault  \n");
 }
-
+#endif
 /*-----------------------------------------------------------*/
 
 

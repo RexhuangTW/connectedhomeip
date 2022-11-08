@@ -41,6 +41,22 @@ using namespace ::chip::Credentials;
 // ================================================================================
 // Main Code
 // ================================================================================
+
+void ChipEventHandler(const ChipDeviceEvent * event, intptr_t /* arg */)
+{
+    switch (event->Type)
+    {
+    case DeviceEventType::kCHIPoBLEAdvertisingChange:
+        break;
+    case DeviceEventType::kThreadStateChange:
+        break;
+    case DeviceEventType::kThreadConnectivityChange:
+        break;
+    default:
+        break;
+    }
+}
+
 int main(void)
 {
     CHIP_ERROR err;
@@ -61,11 +77,50 @@ int main(void)
     info( "chip-rt582-lighting-example starting Version %d\r\n", CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION);
     info( "==================================================\n\n");
 
+    err = PlatformMgr().InitChipStack();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "PlatformMgr().InitChipStack() failed");
+        goto exit;
+    }
+    
+    err = ThreadStackMgr().InitThreadStack();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
+        goto exit;
+    }
+#if 0 
+    err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_Router);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "ConnectivityMgr().SetThreadDeviceType() failed");
+        goto exit;
+    }
+
+    err = ThreadStackMgr().StartThreadTask();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
+        goto exit;
+    }    
+#endif 
+    PlatformMgr().AddEventHandler(ChipEventHandler, 0);
+
+    if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "Error during PlatformMgr().StartEventLoopTask();");
+    }
+
     err = GetAppTask().StartAppTask();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "GetAppTask().StartAppTask() failed %s", ErrorStr(err));
-    }    
+    }
+   
     vTaskStartScheduler();
+
+
+exit:    
     return 0;
 }

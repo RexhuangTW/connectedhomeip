@@ -34,6 +34,17 @@ extern "C" {
 #define UART_CACHE_SIZE 256
 #define UART_CACHE_MASK (UART_CACHE_SIZE - 1)
 
+typedef struct execption_ctxt
+{
+    uint32_t exp_vect;
+    uint32_t exp_addr;
+
+    uint32_t spsr;
+    uint32_t cpsr;
+
+    uint32_t r[16];
+} exception_ctxt_t;
+
 typedef struct uart_io
 {
     volatile uint32_t wr_idx;
@@ -47,6 +58,10 @@ static uart_io_t g_uart_rx_io = {
     .wr_idx = 0,
     .rd_idx = 0,
 };
+
+static char bsp_c_g_msg[64] __attribute__((aligned(4))) = {0};
+
+exception_ctxt_t __exi_ctxt;
 
 void uart_isr_event_handle(void)
 {
@@ -95,7 +110,7 @@ void uartConsoleInit(void)
         debug_console_drv_config.hwfc = UART_HWFC_DISABLED;
         debug_console_drv_config.parity = UART_PARITY_NONE;
         debug_console_drv_config.stop_bits = UART_STOPBIT_ONE;
-        debug_console_drv_config.irq_priority = 6;
+        debug_console_drv_config.irq_priority = 7;
 
         rval = bsp_uart_drv_init(0, &debug_console_drv_config, uart_isr_event_handle);
 
@@ -154,6 +169,151 @@ int16_t uartConsoleRead(char *Buf, uint16_t BufLength)
     } while (0);
     return byte_cnt;
 }
+
+static void
+_uint2strhex(char *pStr, unsigned int number, const char nibbles_to_print)
+{
+#define MAX_NIBBLES (8)
+    int nibble = 0;
+    char nibbles = nibbles_to_print;
+
+    if ((unsigned)nibbles > MAX_NIBBLES)
+    {
+        nibbles = MAX_NIBBLES;
+    }
+
+    while (nibbles > 0)
+    {
+        nibbles--;
+        nibble = (int)(number >> (nibbles * 4)) & 0x0F;
+        if (nibble <= 9)
+        {
+            pStr[strlen(pStr)] = (char)('0' + nibble);
+        }
+        else
+        {
+            pStr[strlen(pStr)] = (char)('A' - 10 + nibble);
+        }
+    }
+    return;
+}
+static int
+_exp_dump_out(char *pMsg, int len)
+{
+    UART_T *pCSR = (UART_T *)UART0;
+
+    while (len)
+    {
+        while ((pCSR->LSR & 0x20) == 0)
+        {
+        }
+
+        pCSR->THR = *pMsg++;
+        len--;
+    }
+    return 0;
+}
+static void
+_exp_log_out(const char *format, ...)
+{
+    char *pch = (char *)format;
+    va_list va;
+    va_start(va, format);
+
+    do
+    {
+        if (!pch)
+        {
+            break;
+        }
+
+        while (*pch)
+        {
+            /* format identification character */
+            if (*pch == '%')
+            {
+                pch++;
+
+                if (pch)
+                {
+                    switch (*pch)
+                    {
+                    case 'x':
+                    {
+                        const unsigned int number = va_arg(va, unsigned int);
+
+                        for (int j = 0; j < sizeof(bsp_c_g_msg); j += 4)
+                        {
+                            *(uint32_t *)&bsp_c_g_msg[j] = 0;
+                        }
+
+                        strcpy(&bsp_c_g_msg[strlen(bsp_c_g_msg)], "0x");
+                        _uint2strhex(bsp_c_g_msg, number, 8);
+                        _exp_dump_out(bsp_c_g_msg, strlen(bsp_c_g_msg));
+                    }
+                    break;
+                    case 's':
+                    {
+                        char *string = va_arg(va, char *);
+                        _exp_dump_out(string, strlen(string));
+                    }
+                    break;
+                    default:
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                _exp_dump_out(pch, 1);
+            }
+
+            pch++;
+        }
+    } while (0);
+
+    va_end(va);
+    return;
+}
+
+static int
+_exp_dump_init(void)
+{
+    UART_T *pCSR = (UART_T *)UART0;
+
+    pCSR->LCR |= (0x1 << 7);
+    pCSR->DLL = UART_BAUDRATE_Baud115200 & 0xFF;
+    pCSR->DLM = UART_BAUDRATE_Baud115200 >> 8;
+    pCSR->LCR &= ~(0x1 << 7);
+    pCSR->LCR = 0x3;
+    return 0;
+}
+
+void my_fault_handler_c(uint32_t *sp)
+{
+    _exp_dump_init();
+    _exp_log_out(" [HardFaultHandler]\r\n");
+    _exp_log_out("R0= %x, R1= %x R2= %x R3= %x\r\n",
+                 sp[0], sp[1], sp[2], sp[3]);
+
+    _exp_log_out("R12= %x, LR= %x, PC= %x, PSR= %x\r\n",
+                 sp[4], sp[5], sp[6], sp[7]);
+
+    while (1)
+        ;
+}
+
+void HardFault_Handler(void)
+{
+    __asm volatile(
+        "   tst lr, #4\n"
+        "   ite eq\n"
+        "   mrseq r0, msp\n" 
+        "   mrsne r0, psp\n"
+        "   b my_fault_handler_c\n"
+        );
+}
+
 
 #ifdef __cplusplus
 }

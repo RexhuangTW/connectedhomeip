@@ -33,14 +33,14 @@ extern "C" {
 #define configTIMER_TASK_STACK_DEPTH (1024)
 
 
-#define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY configMAX_SYSCALL_INTERRUPT_PRIORITY
+#define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY 4
 
 /* Interrupt priorities used by the kernel port layer itself.  These are generic
 to all Cortex-M ports, and do not rely on any particular library functions. */
 #define configKERNEL_INTERRUPT_PRIORITY (224)
 /* !!!! configMAX_SYSCALL_INTERRUPT_PRIORITY must not be set to zero !!!!
 See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
-#define configMAX_SYSCALL_INTERRUPT_PRIORITY 1
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY 128
 #define configENABLE_FPU 0
 #define configENABLE_MPU 0
 /* FreeRTOS Secure Side Only and TrustZone Security Extension */
@@ -52,7 +52,7 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 extern uint32_t SystemCoreClock;
 #define configCPU_CLOCK_HZ (SystemCoreClock)
 #define configUSE_PREEMPTION (1)
-#define configUSE_TIME_SLICING (1)
+#define configUSE_TIME_SLICING (0)
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION (0)
 #define configUSE_TICKLESS_IDLE_SIMPLE_DEBUG (1) /* See into vPortSuppressTicksAndSleep source code for explanation */
 #define configMAX_PRIORITIES (56)
@@ -118,16 +118,11 @@ typedef enum task_priority
 {
     TASK_PRIORITY_IDLE      = 0,        /* lowest, special for idle task */
 
-    /* User task priority begin */
-    TASK_PRIORITY_APP = 1,
-
-    TASK_PRIORITY_PROTOCOL_LOW = 1,
-    TASK_PRIORITY_PROTOCOL_NORMAL = 1,
-    TASK_PRIORITY_PROTOCOL_MEDIUM = 1,
-    TASK_PRIORITY_PROTOCOL_HIGH = 2,
-
-    TASK_PRIORITY_TIMER_RUNNING_TASK_PRIORITY = TASK_PRIORITY_PROTOCOL_NORMAL,
-    TASK_PRIORITY_TIMER_TASK_PRIORITY = TASK_PRIORITY_PROTOCOL_HIGH,
+    TASK_PRIORITY_APP = (configTIMER_TASK_PRIORITY - 5),
+    TASK_PRIORITY_PROTOCOL_LOW,
+    TASK_PRIORITY_PROTOCOL_NORMAL,
+    TASK_PRIORITY_PROTOCOL_MEDIUM,
+    TASK_PRIORITY_PROTOCOL_HIGH,
 
     /* highest */
     TASK_PRIORITY_SVC = configMAX_PRIORITIES - 1,

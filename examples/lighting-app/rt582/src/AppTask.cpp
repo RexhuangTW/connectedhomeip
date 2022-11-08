@@ -144,12 +144,12 @@ AppTask AppTask::sAppTask;
 
 void LockOpenThreadTask(void)
 {
-    chip::DeviceLayer::ThreadStackMgr().LockThreadStack();
+    //chip::DeviceLayer::ThreadStackMgr().LockThreadStack();
 }
 
 void UnlockOpenThreadTask(void)
 {
-    chip::DeviceLayer::ThreadStackMgr().UnlockThreadStack();
+    //chip::DeviceLayer::ThreadStackMgr().UnlockThreadStack();
 }
 void AppTask::OpenCommissioning(intptr_t arg)
 {
@@ -157,39 +157,35 @@ void AppTask::OpenCommissioning(intptr_t arg)
     chip::Server::GetInstance().GetCommissioningWindowManager().OpenBasicCommissioningWindow();
     ChipLogProgress(NotSpecified, "BLE advertising started. Waiting for Pairing.");
 }
-CHIP_ERROR AppTask::Init()
+
+void AppTask::InitServer(intptr_t arg)
 {
     CHIP_ERROR err;
+    static chip::CommonCaseDeviceServerInitParams initParams;
+    (void) initParams.InitializeStaticResourcesBeforeServerInit();
 
-    err = PlatformMgr().InitChipStack();
-    if (err != CHIP_NO_ERROR)
+    gExampleDeviceInfoProvider.SetStorageDelegate(initParams.persistentStorageDelegate);
+    SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
+
+    chip::Inet::EndPointStateOpenThread::OpenThreadEndpointInitParam nativeParams;
+    nativeParams.lockCb                = LockOpenThreadTask;
+    nativeParams.unlockCb              = UnlockOpenThreadTask;
+    nativeParams.openThreadInstancePtr = chip::DeviceLayer::ThreadStackMgrImpl().OTInstance();
+    initParams.endpointNativeParams    = static_cast<void *>(&nativeParams);
+
+    err = chip::Server::GetInstance().Init(initParams);
+    if(err != CHIP_NO_ERROR)
     {
-        ChipLogError(NotSpecified, "PlatformMgr().InitChipStack() failed");
-        return err;
+        ChipLogError(NotSpecified, "chip::Server::init faild %s", ErrorStr(err));
     }
 
-    err = ThreadStackMgr().InitThreadStack();
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
-        return err;
-    }
-#if 0
-    err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_Router);
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "ConnectivityMgr().SetThreadDeviceType() failed");
-        return err;
-    }
+}
 
-    err = ThreadStackMgr().StartThreadTask();
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
-        return err;
-    }    
-#endif
-    // Initialize CHIP server
+CHIP_ERROR AppTask::Init()
+{
+    ChipLogProgress(NotSpecified, "Current Software Version: %s", CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING);
+    PlatformMgr().ScheduleWork(InitServer, 0);
+
 #if CONFIG_CHIP_FACTORY_DATA
     ReturnErrorOnFailure(mFactoryDataProvider.Init());
     SetDeviceInstanceInfoProvider(&mFactoryDataProvider);
@@ -203,35 +199,7 @@ CHIP_ERROR AppTask::Init()
     SetDeviceAttestationCredentialsProvider(Examples::GetExampleDACProvider());
 #endif
 
-
-    static chip::CommonCaseDeviceServerInitParams initParams;
-    (void) initParams.InitializeStaticResourcesBeforeServerInit();
-
-    chip::Inet::EndPointStateOpenThread::OpenThreadEndpointInitParam nativeParams;
-    nativeParams.lockCb                = LockOpenThreadTask;
-    nativeParams.unlockCb              = UnlockOpenThreadTask;
-    nativeParams.openThreadInstancePtr = chip::DeviceLayer::ThreadStackMgrImpl().OTInstance();
-    initParams.endpointNativeParams    = static_cast<void *>(&nativeParams);
-
-
-    err = chip::Server::GetInstance().Init(initParams);
-    if(err != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "chip::Server::init faild %s", ErrorStr(err));
-    }
-
-    gExampleDeviceInfoProvider.SetStorageDelegate(&Server::GetInstance().GetPersistentStorage());
-    SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
-
     PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
-
-    PlatformMgr().AddEventHandler(ChipEventHandler, 0);
-
-    if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "Error during PlatformMgr().StartEventLoopTask();");
-    }
-
     return CHIP_NO_ERROR;
 }
 
@@ -269,22 +237,15 @@ void AppTask::AppTaskMain(void * pvParameter)
 
     while (true)
     {   
+        vTaskDelay(100);
+#if 0         
         BaseType_t eventReceived = xQueueReceive(sAppEventQueue, &event, pdMS_TO_TICKS(10));
-
-    }
-}
-
-void AppTask::ChipEventHandler(const ChipDeviceEvent * event, intptr_t /* arg */)
-{
-    switch (event->Type)
-    {
-    case DeviceEventType::kCHIPoBLEAdvertisingChange:
-        break;
-    case DeviceEventType::kThreadStateChange:
-        break;
-    case DeviceEventType::kThreadConnectivityChange:
-        break;
-    default:
-        break;
+       
+        while (eventReceived == pdTRUE)
+        {
+            //sAppTask.DispatchEvent(&event);
+            eventReceived = xQueueReceive(sAppEventQueue, &event, 0);
+        }
+#endif        
     }
 }
