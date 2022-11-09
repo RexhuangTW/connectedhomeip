@@ -91,9 +91,10 @@ private:
         kFastAdvertisingEnabled = 0x0002,
         kAdvertising            = 0x0004,
         kRestartAdvertising     = 0x0008,
-        kEFRBLEStackInitialized = 0x0010,
+        kRTBLEStackInitialized  = 0x0010,
         kDeviceNameSet          = 0x0020,
     };
+    BitFlags<BLEManagerImpl::Flags> mFlags;
 
     enum
     {
@@ -108,6 +109,13 @@ private:
     PacketBufferHandle c3AdditionalDataBufferHandle;
 #endif
 
+    CHIPoBLEServiceMode mServiceMode;
+    char mDeviceName[kMaxDeviceNameLength + 1];
+
+    void DriveBLEState(void);
+    CHIP_ERROR ConfigureAdvertising(void);
+    CHIP_ERROR StartAdvertising(void);
+    CHIP_ERROR StopAdvertising(void);
     static void ble_evt_task(void * arg);
     static void ble_evt_indication_cb(uint32_t data_len);
     static void ble_evt_handler(void *p_param);
@@ -119,6 +127,11 @@ private:
     static void app_evt_handler(void *p_param);
     static int adv_init(void);
     static int adv_enable(uint8_t host_id);
+
+    static void DriveBLEState(intptr_t arg);
+    CHIP_ERROR ConfigureAdvertisingData(void);
+    static void CancelBleAdvTimeoutTimer(void);
+    static void StartBleAdvTimeoutTimer(uint32_t aTimeoutInMs);
 
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     CHIP_ERROR EncodeAdditionalDataTlv();
