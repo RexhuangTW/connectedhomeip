@@ -29,8 +29,8 @@ import("//build_overrides/chip.gni")
 declare_args() {
   # Configuration file for MbedTLS.
   mbedtls = "${chip_root}/third_party/openthread/ot-rt582/openthread/third_party/mbedtls"
-  mbedtls_config_file = "rt582-chip-mbedtls-config.h"
-
+  mbedtls_config_file = "mbedtls-config.h"
+  
   # Extra dependencies for MbedTLS
   mbedtls_deps = [ "${chip_root}/third_party/openthread/ot-rt582/openthread/src/core:libopenthread_core_config" ]
 }
@@ -220,5 +220,7 @@ static_library("mbedtls") {
   public_deps = mbedtls_deps
 
   public_configs = [ ":mbedtls_config" ]
+  # output_name = "libmbedtls"
+  # output_dir = "${root_out_dir}/lib"
 
 }

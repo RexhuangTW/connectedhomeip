@@ -156,8 +156,8 @@ CHIP_ERROR KeyValueStoreManagerImpl::_Put(const char * key, const void * value, 
     }
     else
     {
-        ChipLogProgress(DeviceLayer, "KVS, Error while saving in flash the value of the Matter key [%s] with PDM id: %i", key,
-                        pdmInternalId);
+        ChipLogProgress(DeviceLayer, "KVS, Error while saving in flash the value of the Matter key [%s] with PDM id: %i, CHIPERROR: %" CHIP_ERROR_FORMAT, key,
+                        pdmInternalId, err.Format());
     }
 
 exit:

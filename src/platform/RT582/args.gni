@@ -22,7 +22,8 @@ import("${chip_root}/src/crypto/crypto.gni")
 # ARM architecture flags will be set based on silabs_family.
 arm_platform_config = "${rt582_sdk_build_root}/rt582_arm.gni"
 
-mbedtls_target = "${chip_root}/third_party/openthread/ot-rt582/openthread/third_party/mbedtls"
+mbedtls_target = "${chip_root}/third_party/rafael:mbedtls"
+# mbedtls_target = "${chip_root}/third_party/openthread/ot-rt582/openthread/third_party/mbedtls:mbedtls"
 # mbedtls_target = ""
 # openthread_external_mbedtls = mbedtls_target
 
@@ -44,6 +45,7 @@ chip_with_lwip = false
 
 chip_build_tests = false
 
+chip_enable_openthread = true
 openthread_root = "${chip_root}/third_party/openthread/ot-rt582/openthread"
 
 openthread_core_config_platform_check_file = ""

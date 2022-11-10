@@ -90,21 +90,10 @@ CHIP_ERROR FactoryDataProvider<FlashFactoryData>::Init()
 template <class FlashFactoryData>
 CHIP_ERROR FactoryDataProvider<FlashFactoryData>::GetCertificationDeclaration(MutableByteSpan & outBuffer)
 {
-// #if CONFIG_CHIP_CERTIFICATION_DECLARATION_STORAGE
-//     size_t cdLen = 0;
 
-//     if (Internal::ZephyrConfig::ReadConfigValueBin(Internal::ZephyrConfig::kConfigKey_CertificationDeclaration,
-//                                                    reinterpret_cast<uint8_t *>(outBuffer.data()), outBuffer.size(),
-//                                                    cdLen) == CHIP_NO_ERROR)
-//     {
-//         outBuffer.reduce_size(cdLen);
-//         return CHIP_NO_ERROR;
-//     }
-// #endif
-//     constexpr uint8_t kCdForAllExamples[] = CHIP_DEVICE_CONFIG_CERTIFICATION_DECLARATION;
+    constexpr uint8_t kCdForAllExamples[] = CHIP_DEVICE_CONFIG_CERTIFICATION_DECLARATION;
 
-//     return CopySpanToMutableSpan(ByteSpan{ kCdForAllExamples }, outBuffer);
-    return CHIP_NO_ERROR;
+    return CopySpanToMutableSpan(ByteSpan{ kCdForAllExamples }, outBuffer);
 }
 
 template <class FlashFactoryData>

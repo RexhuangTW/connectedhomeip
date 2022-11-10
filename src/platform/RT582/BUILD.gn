@@ -58,6 +58,7 @@ static_library("RT582") {
     "RT582Config.cpp",
     "RT582Config.h",
     "SystemPlatformConfig.h",
+    "rt582-chip-mbedtls-config.h",
   ]
   include_dirs = []
   deps = []

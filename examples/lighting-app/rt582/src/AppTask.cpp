@@ -193,7 +193,7 @@ CHIP_ERROR AppTask::Init()
     SetDeviceAttestationCredentialsProvider(&mFactoryDataProvider);    
 #else
     uint32_t pass_code = CHIP_DEVICE_CONFIG_USE_TEST_SETUP_PIN_CODE;
-    uint16_t discriminator = 1234;
+    uint16_t discriminator = CHIP_DEVICE_CONFIG_USE_TEST_SETUP_DISCRIMINATOR;
     GetCommissionableDataProvider()->SetSetupPasscode(pass_code);
     GetCommissionableDataProvider()->SetSetupDiscriminator(discriminator);
     SetDeviceAttestationCredentialsProvider(Examples::GetExampleDACProvider());

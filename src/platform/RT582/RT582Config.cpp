@@ -182,9 +182,9 @@ CHIP_ERROR RT582Config::WriteConfigValueBin(Key key, const uint8_t * data, size_
 
 CHIP_ERROR RT582Config::WriteConfigValueBin(Key key, const void * data, size_t dataLen)
 {
-    if (dataLen == 0 || dataLen >= 0xFF)
+    if (dataLen >= 0xFF)
     {
-        err("write error\n");
+        err("write error, data length: %u\n", dataLen);
         return CHIP_ERROR_INVALID_ARGUMENT;
     }
 

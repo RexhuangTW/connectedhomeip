@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//build_overrides/chip.gni")
 declare_args() {
   # Use a different target, such as a prebuilt MbedTLS.
-  mbedtls_target = ""
+  mbedtls_target = "${chip_root}/third_party/openthread/ot-rt582/openthread/third_party/mbedtls:mbedtls"
 }
 
 if (mbedtls_target != "") {

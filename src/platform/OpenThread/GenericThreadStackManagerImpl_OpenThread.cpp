@@ -74,6 +74,10 @@ extern "C" void otSysProcessDrivers(otInstance * aInstance);
 extern "C" void otAppCliInit(otInstance * aInstance);
 #endif
 
+#include "ble_api.h"
+extern "C" ble_err_t ble_cmd_conn_terminate(uint8_t host_id);
+extern bool ble_active;
+
 namespace chip {
 namespace DeviceLayer {
 namespace Internal {
@@ -355,6 +359,12 @@ CHIP_ERROR GenericThreadStackManagerImpl_OpenThread<ImplClass>::_AttachToThreadN
 {
     // Reset the previously set callback since it will never be called in case incorrect dataset was supplied.
     mpConnectCallback = nullptr;
+
+    if(ble_active){
+        ble_cmd_conn_terminate(0);
+        ble_active = false;
+    }
+    
     ReturnErrorOnFailure(Impl()->SetThreadEnabled(false));
     ReturnErrorOnFailure(Impl()->SetThreadProvision(dataset.AsByteSpan()));
 
