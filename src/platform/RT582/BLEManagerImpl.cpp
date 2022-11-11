@@ -904,7 +904,6 @@ uint16_t BLEManagerImpl::_NumConnections(void)
 
 bool BLEManagerImpl::_IsAdvertisingEnabled(void)
 {
-        ble_app_link_info[g_advertising_host_id].state == STATE_ADVERTISING);
     return mFlags.Has(Flags::kAdvertisingEnabled);
 }
 

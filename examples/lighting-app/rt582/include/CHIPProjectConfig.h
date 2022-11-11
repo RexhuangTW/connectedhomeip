@@ -33,9 +33,7 @@
 #define CHIP_DEVICE_CONFIG_USE_TEST_SETUP_PIN_CODE 20202021
 #endif
 
-// #ifndef CHIP_DEVICE_CONFIG_USE_TEST_SETUP_DISCRIMINATOR
 #define CHIP_DEVICE_CONFIG_USE_TEST_SETUP_DISCRIMINATOR 1234
-// #endif
 
 // For convenience, Chip Security Test Mode can be enabled and the
 // requirement for authentication in various protocols can be disabled.
