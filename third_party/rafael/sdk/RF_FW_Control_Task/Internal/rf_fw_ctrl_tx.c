@@ -7,23 +7,23 @@
 /**************************************************************************************************
  *    INCLUDES
  *************************************************************************************************/
-#include "sys_arch.h"
+#include "rf_fw_ctrl_tx.h"
 #include "hci_pci_printf.h"
+#include "mem_mgmt.h"
 #include "project_config.h"
 #include "rf_mcu.h"
-#include "mem_mgmt.h"
-#include "rf_fw_ctrl_tx.h"
+#include "sys_arch.h"
 #if (MODULE_ENABLE(SUPPORT_ZB))
-#include "zigbee_task.h"
 #include "Ruci.h"
 #include "ruci_head.h"
 #include "task_pci.h"
+#include "zigbee_task.h"
 #endif
 #if (MODULE_ENABLE(SUPPORT_BLE))
-#include "task_hci.h"
 #include "ble_hci.h"
-#include "task_host.h"
 #include "ble_memory.h"
+#include "task_hci.h"
+#include "task_host.h"
 #endif
 /**************************************************************************************************
  *    CONSTANTS AND DEFINES
@@ -41,7 +41,11 @@
 
 #define RF_ISR_PRIORITY (configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY + 1)
 
+#if (MODULE_ENABLE(SUPPORT_THREAD))
+#define NUM_TX_DATA_Q (6)
+#else
 #define NUM_TX_DATA_Q (7)
+#endif
 #define NUM_TX_CMD_Q (1)
 
 #define HCI_INTERNAL_MSG_TX_DONE (0x00) /**< Message for isr to notify RX event. */
@@ -60,7 +64,7 @@ sys_queue_t g_pci_tx_cmd_handle;
 sys_sem_t g_tx_cmd_sem;
 sys_sem_t g_tx_data_sem;
 
-sys_task_t  g_phci_tx_task;
+sys_task_t g_phci_tx_task;
 /**************************************************************************************************
  *    LOCAL TYPEDEFS
  *************************************************************************************************/
@@ -94,46 +98,40 @@ uint8_t check_pci_cmd_queue(void);
  *************************************************************************************************/
 
 #if (MODULE_ENABLE(SUPPORT_BLE)) && (MODULE_ENABLE(SUPPORT_ZB))
-uint8_t (*const check_data_queue[])(void) =
-    {
-        check_hci_acl_data_queue,
-        check_pci_data_queue,
+uint8_t (*const check_data_queue[])(void) = {
+    check_hci_acl_data_queue,
+    check_pci_data_queue,
 };
 
-uint8_t (*const check_cmd_queue[])(void) =
-    {
-        check_hci_cmd_queue,
-        check_pci_cmd_queue,
+uint8_t (*const check_cmd_queue[])(void) = {
+    check_hci_cmd_queue,
+    check_pci_cmd_queue,
 };
 #elif (MODULE_ENABLE(SUPPORT_BLE))
-uint8_t (*const check_data_queue[])(void) =
-    {
-        check_hci_acl_data_queue,
-        check_hci_acl_data_queue,
+uint8_t (*const check_data_queue[])(void) = {
+    check_hci_acl_data_queue,
+    check_hci_acl_data_queue,
 };
 
-uint8_t (*const check_cmd_queue[])(void) =
-    {
-        check_hci_cmd_queue,
-        check_hci_cmd_queue,
+uint8_t (*const check_cmd_queue[])(void) = {
+    check_hci_cmd_queue,
+    check_hci_cmd_queue,
 };
 #elif (MODULE_ENABLE(SUPPORT_ZB))
-uint8_t (*const check_data_queue[])(void) =
-    {
-        check_pci_data_queue,
-        check_pci_data_queue,
+uint8_t (*const check_data_queue[])(void) = {
+    check_pci_data_queue,
+    check_pci_data_queue,
 };
 
-uint8_t (*const check_cmd_queue[])(void) =
-    {
-        check_pci_cmd_queue,
-        check_pci_cmd_queue,
+uint8_t (*const check_cmd_queue[])(void) = {
+    check_pci_cmd_queue,
+    check_pci_cmd_queue,
 };
 #endif
 
-uint8_t write_tx_data(uint8_t *tx_data_ptr, uint16_t tx_data_len)
+uint8_t write_tx_data(uint8_t * tx_data_ptr, uint16_t tx_data_len)
 {
-    extern void RfMcu_IoSet(uint8_t Q_id, const uint8_t *p_tx_data, uint16_t tx_data_length);
+    extern void RfMcu_IoSet(uint8_t Q_id, const uint8_t * p_tx_data, uint16_t tx_data_length);
     uint32_t reg_val;
     uint8_t txq_id;
 
@@ -163,26 +161,28 @@ uint8_t write_tx_data(uint8_t *tx_data_ptr, uint16_t tx_data_len)
 
 uint8_t check_hci_acl_data_queue(void)
 {
-    ble_hci_message_struct_t *p_hci_message;
+    ble_hci_message_struct_t * p_hci_message;
     uint16_t hci_data_length;
-    uint8_t send = FALSE;
+    uint8_t send                  = FALSE;
     static uint8_t ble_comm_tx_sn = 0;
 
     if (sys_arch_queue_tryrecv(&g_hci_tx_acl_handle, &p_hci_message) != SYS_ARCH_TIMEOUT)
     {
         if (p_hci_message->msg_type.hci_tx_acl_data.transport_id == BLE_TRANSPORT_HCI_ACL_DATA)
         {
-            ((ble_hci_tx_acl_data_hdr_t *)&acl_txdata_memory[0])->transport_id = p_hci_message->msg_type.hci_tx_acl_data.transport_id;
-            ((ble_hci_tx_acl_data_hdr_t *)&acl_txdata_memory[0])->handle = p_hci_message->msg_type.hci_tx_acl_data.handle;
-            ((ble_hci_tx_acl_data_hdr_t *)&acl_txdata_memory[0])->pb_flag = p_hci_message->msg_type.hci_tx_acl_data.pb_flag;
-            ((ble_hci_tx_acl_data_hdr_t *)&acl_txdata_memory[0])->bc_flag = p_hci_message->msg_type.hci_tx_acl_data.bc_flag;
-            ((ble_hci_tx_acl_data_hdr_t *)&acl_txdata_memory[0])->length = p_hci_message->msg_type.hci_tx_acl_data.length;
-            ((ble_hci_tx_acl_data_hdr_t *)&acl_txdata_memory[0])->sequence = ble_comm_tx_sn;
-            get_acl_data_from_msgblks(&acl_txdata_memory[6], (MBLK *)p_hci_message->msg_type.hci_tx_acl_data.p_data);
+            ((ble_hci_tx_acl_data_hdr_t *) &acl_txdata_memory[0])->transport_id =
+                p_hci_message->msg_type.hci_tx_acl_data.transport_id;
+            ((ble_hci_tx_acl_data_hdr_t *) &acl_txdata_memory[0])->handle   = p_hci_message->msg_type.hci_tx_acl_data.handle;
+            ((ble_hci_tx_acl_data_hdr_t *) &acl_txdata_memory[0])->pb_flag  = p_hci_message->msg_type.hci_tx_acl_data.pb_flag;
+            ((ble_hci_tx_acl_data_hdr_t *) &acl_txdata_memory[0])->bc_flag  = p_hci_message->msg_type.hci_tx_acl_data.bc_flag;
+            ((ble_hci_tx_acl_data_hdr_t *) &acl_txdata_memory[0])->length   = p_hci_message->msg_type.hci_tx_acl_data.length;
+            ((ble_hci_tx_acl_data_hdr_t *) &acl_txdata_memory[0])->sequence = ble_comm_tx_sn;
+            get_acl_data_from_msgblks(&acl_txdata_memory[6], (MBLK *) p_hci_message->msg_type.hci_tx_acl_data.p_data);
 
-            hci_data_length = p_hci_message->msg_type.hci_tx_acl_data.length + 1 /*transport*/ + 1 /* sequence */ + 2 /*handle*/ + 2 /*length*/;
+            hci_data_length =
+                p_hci_message->msg_type.hci_tx_acl_data.length + 1 /*transport*/ + 1 /* sequence */ + 2 /*handle*/ + 2 /*length*/;
 
-            if (write_tx_data((uint8_t *)&acl_txdata_memory[0], hci_data_length) != TRUE)
+            if (write_tx_data((uint8_t *) &acl_txdata_memory[0], hci_data_length) != TRUE)
             {
                 HPCI_PRINTF(HCI_DEBUG_ERR, "[HCI_DEBUG_ERR] tx data fail\n");
             }
@@ -193,7 +193,8 @@ uint8_t check_hci_acl_data_queue(void)
                 {
                     uint16_t i;
 
-                    HPCI_PRINTF(HCI_DEBUG_DATA, "[HCI_TX_D] handle 0x%04x, len:0x%02x\n", p_hci_message->msg_type.hci_tx_acl_data.handle, p_hci_message->msg_type.hci_tx_acl_data.length);
+                    HPCI_PRINTF(HCI_DEBUG_DATA, "[HCI_TX_D] handle 0x%04x, len:0x%02x\n",
+                                p_hci_message->msg_type.hci_tx_acl_data.handle, p_hci_message->msg_type.hci_tx_acl_data.length);
                     HPCI_PRINTF(HCI_DEBUG_DATA, "[HCI_TX_D] ACL data TX =");
                     for (i = 0; i < p_hci_message->msg_type.hci_tx_acl_data.length; i++)
                     {
@@ -208,9 +209,10 @@ uint8_t check_hci_acl_data_queue(void)
         else
         {
             // incorrect type
-            HPCI_PRINTF(HCI_DEBUG_ERR, "[HCI_DEBUG_ERR] tx acl data q rcvd incorrect transport_id %d\n", p_hci_message->msg_type.hci_tx_acl_data.transport_id);
+            HPCI_PRINTF(HCI_DEBUG_ERR, "[HCI_DEBUG_ERR] tx acl data q rcvd incorrect transport_id %d\n",
+                        p_hci_message->msg_type.hci_tx_acl_data.transport_id);
         }
-        msgblks_free((MBLK *)p_hci_message->msg_type.hci_tx_acl_data.p_data);
+        msgblks_free((MBLK *) p_hci_message->msg_type.hci_tx_acl_data.p_data);
         mem_free(p_hci_message);
     }
 
@@ -219,7 +221,7 @@ uint8_t check_hci_acl_data_queue(void)
 
 uint8_t check_hci_cmd_queue(void)
 {
-    ble_hci_message_struct_t *p_hci_message;
+    ble_hci_message_struct_t * p_hci_message;
     uint8_t transport_id, hci_command_length;
     uint8_t cmd_send = FALSE;
 
@@ -231,8 +233,9 @@ uint8_t check_hci_cmd_queue(void)
         {
             hci_command_length = p_hci_message->msg_type.hci_command.length + 1 /*transport*/ + 2 /*opcode*/ + 1 /*length*/;
 
-            HPCI_PRINTF(HCI_TASK, "[HCI_TASK] hci cmd ocf %d ogf %d\n", p_hci_message->msg_type.hci_command.ocf, p_hci_message->msg_type.hci_command.ogf);
-            if (RfMcu_CmdQueueSend((uint8_t *)p_hci_message, hci_command_length) != RF_MCU_TX_CMDQ_SET_SUCCESS)
+            HPCI_PRINTF(HCI_TASK, "[HCI_TASK] hci cmd ocf %d ogf %d\n", p_hci_message->msg_type.hci_command.ocf,
+                        p_hci_message->msg_type.hci_command.ogf);
+            if (RfMcu_CmdQueueSend((uint8_t *) p_hci_message, hci_command_length) != RF_MCU_TX_CMDQ_SET_SUCCESS)
             {
                 HPCI_PRINTF(HCI_DEBUG_ERR, "[HCI_DEBUG_ERR] tx cmd fail\n");
             }
@@ -265,7 +268,7 @@ uint8_t check_hci_cmd_queue(void)
 
 void hci_clear_tx_data_queue(uint16_t target_handle)
 {
-    ble_hci_message_struct_t *hci_msg_ptr;
+    ble_hci_message_struct_t * hci_msg_ptr;
     uint32_t data_num;
 
     data_num = (QUEUE_HCI_ACL_DATA_TX - sys_queue_remaining_size(&g_hci_tx_acl_handle));
@@ -277,8 +280,9 @@ void hci_clear_tx_data_queue(uint16_t target_handle)
         {
             if (hci_msg_ptr->msg_type.hci_tx_acl_data.handle == target_handle)
             {
-                HPCI_PRINTF(HCI_DEBUG_INFO, "[HCI_DEBUG_INFO] clear tx data handle 0x%04x\n", hci_msg_ptr->msg_type.hci_tx_acl_data.handle);
-                msgblks_free((MBLK *)hci_msg_ptr->msg_type.hci_tx_acl_data.p_data);
+                HPCI_PRINTF(HCI_DEBUG_INFO, "[HCI_DEBUG_INFO] clear tx data handle 0x%04x\n",
+                            hci_msg_ptr->msg_type.hci_tx_acl_data.handle);
+                msgblks_free((MBLK *) hci_msg_ptr->msg_type.hci_tx_acl_data.p_data);
                 mem_free(hci_msg_ptr);
             }
             else
@@ -295,7 +299,7 @@ void hci_clear_tx_data_queue(uint16_t target_handle)
 
 uint8_t check_pci_data_queue(void)
 {
-    pci_message_struct_t *p_pci_message;
+    pci_message_struct_t * p_pci_message;
     uint16_t hci_data_length;
     uint8_t send = FALSE;
 
@@ -306,7 +310,7 @@ uint8_t check_pci_data_queue(void)
         {
             hci_data_length = p_pci_message->msg_type.pci_tx_data_hdr.length + sizeof(pci_15p4_data_hdr_t);
 
-            if (write_tx_data((uint8_t *)p_pci_message, hci_data_length) != TRUE)
+            if (write_tx_data((uint8_t *) p_pci_message, hci_data_length) != TRUE)
             {
                 HPCI_PRINTF(PCI_DEBUG_ERR, "[PCI_DEBUG_ERR] tx data fail\n");
             }
@@ -318,7 +322,8 @@ uint8_t check_pci_data_queue(void)
         else
         {
             // incorrect type
-            HPCI_PRINTF(PCI_DEBUG_ERR, "[PCI_DEBUG_ERR] tx acl data q rcvd incorrect transport_id %d\n", p_pci_message->msg_type.pci_tx_data_hdr.ruci_header);
+            HPCI_PRINTF(PCI_DEBUG_ERR, "[PCI_DEBUG_ERR] tx acl data q rcvd incorrect transport_id %d\n",
+                        p_pci_message->msg_type.pci_tx_data_hdr.ruci_header);
         }
 
         mem_free(p_pci_message);
@@ -329,7 +334,7 @@ uint8_t check_pci_data_queue(void)
 
 uint8_t check_pci_cmd_queue(void)
 {
-    pci_message_struct_t *p_pci_message;
+    pci_message_struct_t * p_pci_message;
     uint8_t hci_command_length;
     uint8_t cmd_send = FALSE;
 
@@ -343,7 +348,8 @@ uint8_t check_pci_cmd_queue(void)
         {
             hci_command_length = p_pci_message->msg_type.pci_tx_hdr.length + sizeof(pci_15p4_cmd_hdr_t);
 
-            // HPCI_PRINTF(PCI_DEBUG_INFO, "c %02x %02x\n", p_pci_message->msg_type.pci_array[0], p_pci_message->msg_type.pci_array[1]);
+            // HPCI_PRINTF(PCI_DEBUG_INFO, "c %02x %02x\n", p_pci_message->msg_type.pci_array[0],
+            // p_pci_message->msg_type.pci_array[1]);
             RfMcu_HostCmdSet(RF_MCU_STATE_TX_FAIL); // test code for rfb cmd send fail
             if (RfMcu_CmdQueueSend(p_pci_message->msg_type.pci_array, hci_command_length) != RF_MCU_TX_CMDQ_SET_SUCCESS)
             {
@@ -384,15 +390,13 @@ void check_task_common_queue(void)
         case INTERNAL_MSG_TX_DONE:
             break;
 #if (MODULE_ENABLE(SUPPORT_BLE))
-        case HCI_MSG_HOST_HCI_ACL_DATA_CLEAR:
-        {
+        case HCI_MSG_HOST_HCI_ACL_DATA_CLEAR: {
             hci_clear_tx_data_queue(rf_fw_comm_msg.param_type.hci_msg_ptr->msg_type.hci_data_clear.conn_handle);
             mem_free(rf_fw_comm_msg.param_type.hci_msg_ptr);
         }
         break;
 
-        case HCI_MSG_HOST_HCI_CMD:
-        {
+        case HCI_MSG_HOST_HCI_CMD: {
             /*forward cmd to cmd queue*/
             if (sys_queue_send_with_timeout(&g_hci_tx_cmd_handle, &rf_fw_comm_msg.param_type.hci_msg_ptr, TASK_DELAY_MS))
             {
@@ -402,8 +406,7 @@ void check_task_common_queue(void)
         }
         break;
 
-        case HCI_MSG_HOST_HCI_ACL_DATA:
-        {
+        case HCI_MSG_HOST_HCI_ACL_DATA: {
             /*forward data to data queue*/
             if (sys_queue_send_with_timeout(&g_hci_tx_acl_handle, &rf_fw_comm_msg.param_type.hci_msg_ptr, TASK_DELAY_MS))
             {
@@ -413,8 +416,7 @@ void check_task_common_queue(void)
         }
         break;
 
-        case HCI_MSG_HOST_NOCP_EVENT:
-        {
+        case HCI_MSG_HOST_NOCP_EVENT: {
             uint8_t complete_num;
 
             complete_num = rf_fw_comm_msg.param_type.hci_msg_ptr->msg_type.hci_data.complete_num;
@@ -429,10 +431,10 @@ void check_task_common_queue(void)
 #endif
 
 #if (MODULE_ENABLE(SUPPORT_ZB))
-        case PCI_MSG_TX_PCI_CMD:
-        {
+        case PCI_MSG_TX_PCI_CMD: {
             /*forward cmd to cmd queue*/
-            if (sys_queue_send_with_timeout(&g_pci_tx_cmd_handle, &rf_fw_comm_msg.param_type.pci_msg.param_type.pci_msg_ptr, TASK_DELAY_MS))
+            if (sys_queue_send_with_timeout(&g_pci_tx_cmd_handle, &rf_fw_comm_msg.param_type.pci_msg.param_type.pci_msg_ptr,
+                                            TASK_DELAY_MS))
             {
                 HPCI_PRINTF(PCI_DEBUG_INFO, "[PCI_DEBUG_INFO] pci send cmd fail\n");
                 mem_free(rf_fw_comm_msg.param_type.pci_msg.param_type.pci_msg_ptr);
@@ -440,10 +442,10 @@ void check_task_common_queue(void)
         }
         break;
 
-        case PCI_MSG_TX_PCI_DATA:
-        {
+        case PCI_MSG_TX_PCI_DATA: {
             /*forward data to data queue*/
-            if (sys_queue_send_with_timeout(&g_pci_tx_data_handle, &rf_fw_comm_msg.param_type.pci_msg.param_type.pci_msg_ptr, TASK_DELAY_MS))
+            if (sys_queue_send_with_timeout(&g_pci_tx_data_handle, &rf_fw_comm_msg.param_type.pci_msg.param_type.pci_msg_ptr,
+                                            TASK_DELAY_MS))
             {
                 HPCI_PRINTF(PCI_DEBUG_INFO, "[PCI_DEBUG_INFO] pci send data fail\n");
                 mem_free(rf_fw_comm_msg.param_type.pci_msg.param_type.pci_msg_ptr);
@@ -539,7 +541,6 @@ void task_tx_handle(void)
     }
 }
 
-
 void task_tx_delete(void)
 {
 #if (MODULE_ENABLE(SUPPORT_BLE))
@@ -568,17 +569,15 @@ void task_tx_delete(void)
 #endif
 }
 
-
 void task_tx_init(void)
 {
 #if (MODULE_ENABLE(SUPPORT_BLE)) && (MODULE_ENABLE(SUPPORT_ZB))
-    static char *task_name = {"TASK_DUAL_TX"};
+    static char * task_name = { "TASK_DUAL_TX" };
 #elif (MODULE_ENABLE(SUPPORT_BLE))
-    static char *task_name = {"HCI_TX"};
+    static char * task_name = { "HCI_TX" };
 #elif (MODULE_ENABLE(SUPPORT_ZB))
-    static char *task_name = {"TASK_PCI_TX"};
+    static char * task_name = { "TASK_PCI_TX" };
 #endif
-
 
     HPCI_PRINTF(COMMON_INFO, "[COMMON_INFO] %s init\n", task_name);
 
@@ -598,11 +597,8 @@ void task_tx_init(void)
     sys_sem_new(&g_tx_cmd_sem, NUM_TX_CMD_Q, NUM_TX_CMD_Q);
     sys_sem_new(&g_tx_data_sem, NUM_TX_DATA_Q, NUM_TX_DATA_Q);
 
-    g_phci_tx_task = sys_task_new(task_name,
-                                  (TaskFunction_t)task_tx_handle,
-                                  NULL,
-                                  CONFIG_TX_TASK_STACK_SIZE,
-                                  CONFIG_TX_TASK_PRIORITY);
+    g_phci_tx_task =
+        sys_task_new(task_name, (TaskFunction_t) task_tx_handle, NULL, CONFIG_TX_TASK_STACK_SIZE, CONFIG_TX_TASK_PRIORITY);
     if (g_phci_tx_task == NULL)
     {
         HPCI_PRINTF(COMMON_DEBUG_ERR, "[COMMON_DEBUG_ERR] hci create fail\n");
