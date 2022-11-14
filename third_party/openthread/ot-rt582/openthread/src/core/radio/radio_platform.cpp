@@ -50,7 +50,7 @@ extern "C" void otPlatRadioReceiveDone(otInstance *aInstance, otRadioFrame *aFra
     Instance &    instance = AsCoreType(aInstance);
     Mac::RxFrame *rxFrame  = static_cast<Mac::RxFrame *>(aFrame);
 
-    //VerifyOrExit(instance.IsInitialized());
+    VerifyOrExit(instance.IsInitialized());
 
 #if OPENTHREAD_CONFIG_MULTI_RADIO
     if (rxFrame != nullptr)
@@ -61,7 +61,7 @@ extern "C" void otPlatRadioReceiveDone(otInstance *aInstance, otRadioFrame *aFra
 
     instance.Get<Radio::Callbacks>().HandleReceiveDone(rxFrame, aError);
 
-//exit:
+exit:
     return;
 }
 
@@ -70,7 +70,7 @@ extern "C" void otPlatRadioTxStarted(otInstance *aInstance, otRadioFrame *aFrame
     Instance &    instance = AsCoreType(aInstance);
     Mac::TxFrame &txFrame  = *static_cast<Mac::TxFrame *>(aFrame);
 
-    //VerifyOrExit(instance.IsInitialized());
+    VerifyOrExit(instance.IsInitialized());
 
 #if OPENTHREAD_CONFIG_MULTI_RADIO
     txFrame.SetRadioType(Mac::kRadioTypeIeee802154);
@@ -78,7 +78,7 @@ extern "C" void otPlatRadioTxStarted(otInstance *aInstance, otRadioFrame *aFrame
 
     instance.Get<Radio::Callbacks>().HandleTransmitStarted(txFrame);
 
-//exit:
+exit:
     return;
 }
 
@@ -88,7 +88,7 @@ extern "C" void otPlatRadioTxDone(otInstance *aInstance, otRadioFrame *aFrame, o
     Mac::TxFrame &txFrame  = *static_cast<Mac::TxFrame *>(aFrame);
     Mac::RxFrame *ackFrame = static_cast<Mac::RxFrame *>(aAckFrame);
 
-    //VerifyOrExit(instance.IsInitialized());
+    VerifyOrExit(instance.IsInitialized());
 
 #if OPENTHREAD_CONFIG_MULTI_RADIO
     if (ackFrame != nullptr)
@@ -101,7 +101,7 @@ extern "C" void otPlatRadioTxDone(otInstance *aInstance, otRadioFrame *aFrame, o
 
     instance.Get<Radio::Callbacks>().HandleTransmitDone(txFrame, ackFrame, aError);
 
-//exit:
+exit:
     return;
 }
 
@@ -109,10 +109,10 @@ extern "C" void otPlatRadioEnergyScanDone(otInstance *aInstance, int8_t aEnergyS
 {
     Instance &instance = AsCoreType(aInstance);
 
-    //VerifyOrExit(instance.IsInitialized());
+    VerifyOrExit(instance.IsInitialized());
     instance.Get<Radio::Callbacks>().HandleEnergyScanDone(aEnergyScanMaxRssi);
 
-//exit:
+exit:
     return;
 }
 

@@ -84,7 +84,7 @@ if(OT_POSIX_CONFIG_RCP_BUS)
     )
 endif()
 
-set(OT_POSIX_NAT64_CIDR "192.168.64.0/24" CACHE STRING "NAT64 CIDR for OpenThread NAT64")
+set(OT_POSIX_NAT64_CIDR "192.168.255.0/24" CACHE STRING "NAT64 CIDR for OpenThread NAT64")
 if(OT_POSIX_NAT64_CIDR)
     target_compile_definitions(ot-posix-config
         INTERFACE "OPENTHREAD_POSIX_CONFIG_NAT64_CIDR=\"${OT_POSIX_NAT64_CIDR}\""
@@ -98,9 +98,12 @@ endif()
 set(OT_POSIX_CONFIG_RCP_VENDOR_INTERFACE "vendor_interface_example.cpp"
        CACHE STRING "vendor interface implementation")
 
+set(CMAKE_EXE_LINKER_FLAGS "-rdynamic ${CMAKE_EXE_LINKER_FLAGS}" PARENT_SCOPE)
+
 add_library(openthread-posix
     alarm.cpp
     backbone.cpp
+    backtrace.cpp
     daemon.cpp
     entropy.cpp
     firewall.cpp

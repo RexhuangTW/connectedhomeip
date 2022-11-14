@@ -26,14 +26,13 @@
 #
 
 import("../../etc/gn/openthread.gni")
-import("//build_overrides/chip.gni")
 
 visibility = [ "../../*" ]
 
 if (openthread_enable_core_config_args) {
   config("core_config_args") {
     defines = []
-    
+
     if (openthread_config_thread_version == "1.1") {
       defines += [ "OPENTHREAD_CONFIG_THREAD_VERSION=OT_THREAD_VERSION_1_1" ]
     } else if (openthread_config_thread_version == "1.2") {
@@ -464,7 +463,6 @@ openthread_core_files = [
   "crypto/crypto_platform.cpp",
   "crypto/ecdsa.cpp",
   "crypto/ecdsa.hpp",
-  "crypto/ecdsa_tinycrypt.cpp",
   "crypto/hkdf_sha256.cpp",
   "crypto/hkdf_sha256.hpp",
   "crypto/hmac_sha256.cpp",
@@ -803,11 +801,6 @@ source_set("libopenthread_core_config") {
     "config/tmf.h",
     "openthread-core-config.h",
   ]
-  include_dirs = [
-    # "../../examples/platforms/rt58x",
-    "${chip_root}/examples/platform/rt582/project_include",
-    "../../third_party/mbedtls",
-  ]
   public_configs = [
     ":core_config",
     "../..:openthread_config",
@@ -832,31 +825,24 @@ group("libopenthread_platform") {
   }
   public_deps += [
     ":libopenthread_core_headers",
-    "${mbedtls_target}:mbedtls",
+    "${mbedtls_target}",
   ]
 }
 
 static_library("libopenthread-ftd") {
   sources = openthread_core_sources
   public_deps = [ ":libopenthread_platform" ]
-  public_configs = [ 
-    "../..:openthread_ftd_config",
-    "${mbedtls_target}:mbedtls_config", 
-  ]
+  public_configs = [ "../..:openthread_ftd_config" ]
 }
 
 static_library("libopenthread-mtd") {
   sources = openthread_core_sources
   public_deps = [ ":libopenthread_platform" ]
-  public_configs = [ "../..:openthread_mtd_config",
-    "${mbedtls_target}:mbedtls_config", 
-  ]
+  public_configs = [ "../..:openthread_mtd_config" ]
 }
 
 static_library("libopenthread-radio") {
   sources = openthread_radio_sources
   public_deps = [ ":libopenthread_platform" ]
-  public_configs = [ "../..:openthread_radio_config",
-    "${mbedtls_target}:mbedtls_config", 
-  ]
+  public_configs = [ "../..:openthread_radio_config" ]
 }
