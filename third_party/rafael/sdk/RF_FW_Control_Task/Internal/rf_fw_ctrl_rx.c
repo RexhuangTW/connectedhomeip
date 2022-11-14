@@ -97,13 +97,23 @@ typedef struct
 } zb_rx_ctrl_field_t;
 #endif
 
+
+#if (MODULE_ENABLE(SUPPORT_THREAD))
 typedef struct
 {
-    uint32_t msg_tag; /**< message tag. */
+    uint16_t msg_tag;                          /**< message tag. */
+    uint16_t msg_len;                          /**< message length. */
+    uint8_t *p_msg;                            /**< message payload. */
+} rf_fw_rx_ctrl_msg_t;
+#else
+typedef struct
+{
+    uint32_t msg_tag;                          /**< message tag. */
 #if (MODULE_ENABLE(SUPPORT_ZB))
-    uint32_t param_var; /**< this parameter saving variable.*/
+    uint32_t param_var;                        /**< this parameter saving variable.*/
 #endif
 } rf_fw_rx_ctrl_msg_t;
+#endif
 
 /**************************************************************************************************
  *    LOCAL VARIABLES
@@ -547,6 +557,55 @@ void pci_rx_data(uint8_t *rx_data_ptr, uint8_t *ctrl_field_ptr)
 }
 #endif
 
+uint16_t rx_event_read(uint8_t *p_read_buf, rf_fw_rx_ctrl_msg_t *p_rx_msg)
+{
+    uint16_t length = 0;
+#if (MODULE_ENABLE(SUPPORT_THREAD))
+
+    if (p_rx_msg->msg_len > 0)
+    {
+        length = p_rx_msg->msg_len;
+        memcpy(p_read_buf, p_rx_msg->p_msg, length);
+        mem_free(p_rx_msg->p_msg);
+    }
+#else
+    RF_MCU_RX_CMDQ_ERROR rx_cmd = RF_MCU_RX_CMDQ_ERR_INIT;
+
+    length = RfMcu_EvtQueueRead((uint8_t *)p_read_buf, &rx_cmd);
+
+    if(rx_cmd != RF_MCU_RX_CMDQ_GET_SUCCESS)
+    {
+        length = 0;
+    }
+#endif
+    return length;
+}
+
+uint16_t rx_data_read(uint8_t *p_read_buf, rf_fw_rx_ctrl_msg_t *p_rx_msg)
+{
+    uint16_t length = 0;
+#if (MODULE_ENABLE(SUPPORT_THREAD))
+
+    if (p_rx_msg->msg_len > 0)
+    {
+        length = p_rx_msg->msg_len;
+        memcpy(p_read_buf, p_rx_msg->p_msg, length);
+        mem_free(p_rx_msg->p_msg);
+        p_rx_msg->msg_len = 0;
+    }
+#else
+    RF_MCU_RXQ_ERROR rx_q = RF_MCU_RXQ_ERR_INIT;
+
+    length = RfMcu_RxQueueRead((uint8_t *)p_read_buf, &rx_q);
+
+    if(rx_q != RF_MCU_RXQ_GET_SUCCESS)
+    {
+        length = 0;
+    }
+#endif
+    return length;
+}
+
 void check_rx_task_queue(void)
 {
     rf_fw_rx_ctrl_msg_t rf_fw_comm_msg;
@@ -561,13 +620,11 @@ void check_rx_task_queue(void)
         {
         case ISR_MSG_RX_EVENT:
         {
-            RF_MCU_RX_CMDQ_ERROR rx_cmd;
             uint16_t cmd_length;
             uint8_t read_cmd_array[268]; /*HCI_ACL_DATA_MAX_LENGTH + PHY_STATUS + CRC + HCI_PKT_IND + HANDLE_PB_PC + DATA_TOTAL_LEN*/
 
-            /* 1 rx cmd queue */
-            cmd_length = RfMcu_EvtQueueRead((uint8_t *)read_cmd_array, &rx_cmd);
-            if (rx_cmd == RF_MCU_RX_CMDQ_GET_SUCCESS)
+            cmd_length = rx_event_read(read_cmd_array, &rf_fw_comm_msg);
+            if (cmd_length > 0)
             {
                 transport_id = read_cmd_array[0];
 #if (MODULE_ENABLE(SUPPORT_BLE))
@@ -611,12 +668,11 @@ void check_rx_task_queue(void)
 
         case ISR_MSG_RX_DATA:
         {
-            RF_MCU_RXQ_ERROR rx_q;
             uint8_t read_data_array[268]; /*HCI_ACL_DATA_MAX_LENGTH + PHY_STATUS + CRC + HCI_PKT_IND + HANDLE_PB_PC + DATA_TOTAL_LEN*/
 
             /* 4 rx data queue */
             /*cause rx data ISR may received twice when RT58x is sleeping*/
-            while (RfMcu_RxQueueRead((uint8_t *)read_data_array, &rx_q) != 0)
+            while (rx_data_read(read_data_array, &rf_fw_comm_msg) != 0)
             {
                 transport_id = read_data_array[0];
                 // SYS_PRINTF(DEBUG_INFO, "[DEBUG_INFO] transport_id %d\n", transport_id);
@@ -674,6 +730,8 @@ void task_rx_handle(void)
 #if (MODULE_ENABLE(SUPPORT_BLE))
     hci_reassemble_acl_data_init();
 #endif
+
+#if (!MODULE_ENABLE(SUPPORT_THREAD))
     NVIC_SetPriority(CommSubsystem_IRQn, RF_ISR_PRIORITY);
 
 #if (MODULE_ENABLE(SUPPORT_BLE)) && (MODULE_ENABLE(SUPPORT_ZB))
@@ -682,6 +740,8 @@ void task_rx_handle(void)
     rf_common_init_by_fw(RF_FW_LOAD_SELECT_BLE_CONTROLLER, rf_fw_isr_hander);
 #elif (MODULE_ENABLE(SUPPORT_ZB))
     rf_common_init_by_fw(RF_FW_LOAD_SELECT_RUCI_CMD, rf_fw_isr_hander);
+#endif
+
 #endif
 
     for (;;)
