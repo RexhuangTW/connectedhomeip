@@ -126,7 +126,18 @@
         "ble_service_gatts.h": "c",
         "ble_att_gatt.h": "c",
         "ble_gap.h": "c",
-        "ble_printf.h": "c"
+        "ble_printf.h": "c",
+        "ranges": "cpp",
+        "platform.h": "c",
+        "error.h": "c",
+        "string.h": "c",
+        "common.h": "c",
+        "config.h": "c",
+        "platform-rt58x.h": "c",
+        "openthread-system.h": "c",
+        "cm3_mcu.h": "c",
+        "compare": "cpp",
+        "concepts": "cpp"
     },
     // Configure paths or glob patterns to exclude from file watching.
     "files.watcherExclude": {

@@ -33,6 +33,9 @@ public:
     // This returns an instance of this class.
     static ConfigurationManagerImpl & GetDefaultInstance();
 
+    // ===== Private members reserved for use by this class only.
+    static void DoFactoryReset(intptr_t arg);
+    
 private:
     // ===== Members that implement the ConfigurationManager public interface.
 
@@ -59,8 +62,6 @@ private:
     CHIP_ERROR WriteConfigValueBin(Key key, const uint8_t * data, size_t dataLen) override;
     void RunConfigUnitTest(void) override;
 
-    // ===== Private members reserved for use by this class only.
-    static void DoFactoryReset(intptr_t arg);
 };
 inline CHIP_ERROR ConfigurationManagerImpl::GetPrimaryWiFiMACAddress(uint8_t * buf)
 {
