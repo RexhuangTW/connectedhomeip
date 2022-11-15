@@ -43,6 +43,8 @@
 #include "ble_att_gatt.h"
 #include "util_log.h"
 
+// #include "rfb_comm_common.h"
+extern "C" void rafael_rfb_init(void);
 bool ble_active = false;
 
 using namespace ::chip;
@@ -460,6 +462,10 @@ void BLEManagerImpl::ble_evt_handler(void *p_param)
 
             ChipLogDetail(DeviceLayer, "Disconnect, ID:%d, Reason:0x%02x", p_disconn_param->host_id, p_disconn_param->reason);
         }
+        task_hci_delete();
+        ble_host_stack_deinit();
+        // rfb_comm_init_to_idle();
+        rafael_rfb_init();
     }
     break;
 

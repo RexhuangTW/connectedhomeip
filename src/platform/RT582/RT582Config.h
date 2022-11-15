@@ -30,7 +30,6 @@ constexpr inline uint16_t RT582ConfigKey(uint8_t keyBaseOffset, uint8_t id)
 {
     return static_cast<uint16_t>(keyBaseOffset) << 5 | (id & 0x1F);
 }
-
 class RT582Config
 {
 public:
@@ -77,13 +76,15 @@ public:
     static constexpr Key kConfigKey_HolidaySchedules   = RT582ConfigKey(kMatterConfig_KeyBase, 0x12);
     static constexpr Key kConfigKey_BootReason         = RT582ConfigKey(kMatterConfig_KeyBase, 0x13);
 
-    static constexpr Key kConfigKey_GroupKeyBase       = RT582ConfigKey(kMatterConfig_KeyBase, 0x0F);
-    static constexpr Key kConfigKey_GroupKeyMax        = RT582ConfigKey(kMatterConfig_KeyBase, 0x1E); // Allows 16 Group Keys to be created.    
+    // static constexpr Key kConfigKey_GroupKeyBase       = RT582ConfigKey(kMatterConfig_KeyBase, 0x1F);
+    // // Allows 16 Group Keys to be created.    
+    // static constexpr Key kConfigKey_GroupKeyMax        = RT582ConfigKey(kMatterKvs_KeyValue, 0x2F); 
 
     static constexpr Key kMinConfigKey_MatterFactory = RT582ConfigKey(kMatterFactory_KeyBase, 0x00);
     static constexpr Key kMaxConfigKey_MatterFactory = RT582ConfigKey(kMatterFactory_KeyBase, 0x0A);
     static constexpr Key kMinConfigKey_MatterConfig  = RT582ConfigKey(kMatterConfig_KeyBase, 0x00);
-    static constexpr Key kMaxConfigKey_MatterConfig  = RT582ConfigKey(kMatterConfig_KeyBase, 0x10);
+    static constexpr Key kMaxConfigKey_MatterConfig  = RT582ConfigKey(kMatterConfig_KeyBase, 0x13);
+
 
     static constexpr Key kMinConfigKey_KVSKey      = RT582ConfigKey(kMatterKvs_KeyBase, 0x00);
     static constexpr Key kMaxConfigKey_KVSKey      = RT582ConfigKey(kMatterKvs_KeyBase, 0x1F);
@@ -111,6 +112,32 @@ public:
     static CHIP_ERROR FactoryResetConfig(void);
     static void RunConfigUnitTest(void);
 
+    static uint32_t RT582KeyaddrPasser(uint32_t id){
+        uint32_t index=0;
+        if(id>=kMaxConfigKey_MatterFactory){ index += kMaxConfigKey_MatterFactory - kMinConfigKey_MatterFactory +1; }
+        else{ 
+            index += id - kMinConfigKey_MatterFactory +1; 
+            return index;
+        }
+
+        if(id>=kMaxConfigKey_MatterConfig){ index += kMaxConfigKey_MatterConfig - kMinConfigKey_MatterConfig +1; }
+        else{ 
+            index += id - kMinConfigKey_MatterConfig +1; 
+            return index;
+        }
+
+        if(id>=kMaxConfigKey_KVSKey){ index += kMaxConfigKey_KVSKey - kMinConfigKey_KVSKey +1; }
+        else{ 
+            index += id - kMinConfigKey_KVSKey +1; 
+            return index;
+        }
+
+        if(id>=kMaxConfigKey_KVSValue){ index += kMaxConfigKey_KVSValue - kMinConfigKey_KVSValue +1; }
+        else{ 
+            index += id - kMinConfigKey_KVSValue +1; 
+            return index;
+        }
+    }
 
 protected:
 

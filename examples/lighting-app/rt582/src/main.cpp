@@ -25,6 +25,7 @@
 
 #include <credentials/DeviceAttestationCredsProvider.h>
 #include <credentials/examples/DeviceAttestationCredsExample.h>
+#include "RT582Config.h"
 
 #include <lib/core/CHIPError.h>
 
@@ -37,6 +38,7 @@ using namespace ::chip;
 using namespace ::chip::Inet;
 using namespace ::chip::DeviceLayer;
 using namespace ::chip::Credentials;
+using namespace ::chip::DeviceLayer::Internal;
 
 // ================================================================================
 // Main Code
@@ -70,6 +72,10 @@ int main(void)
         return 0;
     }
 
+    // DeviceLayer::ConfigurationMgr().InitiateFactoryReset();
+    // ConfigurationManagerImpl::DoFactoryReset(0);
+    RT582Config::FactoryResetConfig();
+    
 #if CONFIG_ENABLE_CHIP_SHELL
     startShellTask();
 #endif
@@ -84,13 +90,14 @@ int main(void)
         goto exit;
     }
     
+
     err = ThreadStackMgr().InitThreadStack();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
         goto exit;
     }
-#if 0 
+// #if 0 
     err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_Router);
     if (err != CHIP_NO_ERROR)
     {
@@ -104,7 +111,7 @@ int main(void)
         ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
         goto exit;
     }    
-#endif 
+// #endif 
     PlatformMgr().AddEventHandler(ChipEventHandler, 0);
 
     if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
