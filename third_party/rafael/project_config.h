@@ -15,7 +15,7 @@
 #define SUPPORT_QSPI_DMA                   1
 
 #define SUPPORT_BLE                        1
-#define SUPPORT_THREAD                     1
+#define SUPPORT_THREAD                     0
 #define USE_BSP_UART_DRV                    1
 #define DEBUG_CONSOLE_UART_ID               0
 

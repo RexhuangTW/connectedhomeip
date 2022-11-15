@@ -52,7 +52,7 @@ static size_t storage_read(uint32_t id, size_t bufSize, uint8_t *buf)
     {
         flash_read_page_syncmode((uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
     }
-    offset = (RT582CONFIG_ID_PER_SIZE*id) % 0x1000;
+    offset = (RT582CONFIG_ID_PER_SIZE*flash_keyid) % 0x1000;
 
     if((bufSize < storage_backup[offset]) && (storage_backup[offset] != 0xFF))
     {
@@ -76,29 +76,35 @@ size_t storage_write(uint32_t id, size_t dataLen, uint8_t *data)
 {
     uint32_t sector_addr, id_addr, i, offset;
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
-    // ChipLogDetail(DeviceLayer, "storage_write key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
+    ChipLogDetail(DeviceLayer, "storage_write key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
 
     id_addr = RT582CONFIG_BASE_ADDR+(RT582CONFIG_ID_PER_SIZE*flash_keyid);
     sector_addr = id_addr - (id_addr % RT582CONFIG_SECTOR_SIZE);
+
 
     for(i=0;i<16;i++)
     {
         flash_read_page_syncmode((uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
     }
-
+    while (flash_check_busy());
     flash_erase(FLASH_ERASE_SECTOR, sector_addr);
+    while (flash_check_busy());
 
-    offset = (RT582CONFIG_ID_PER_SIZE*id) % 0x1000;
+    offset = (RT582CONFIG_ID_PER_SIZE*flash_keyid) % 0x1000;
 
     storage_backup[offset] = dataLen;
     memcpy(&storage_backup[offset+1], data, dataLen);
 
     for(i=0;i<16;i++)
     {
+        while (flash_check_busy());
         flash_write_page(
             (uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], 
             (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
     }
+
+    ChipLogDetail(DeviceLayer, "%s sector 0x%08X - 0x%08X", __func__, sector_addr, (sector_addr+(0x10*RT582CONFIG_ID_PER_SIZE)));
+    ChipLogDetail(DeviceLayer, "%s page 0x%08X", __func__, sector_addr+offset);
 
     for(i=0;i<16;i++)
     {
@@ -125,9 +131,9 @@ void storage_erase(uint32_t id)
 {
     uint32_t sector_addr, id_addr, i, offset;
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
-    // ChipLogDetail(DeviceLayer, "storage_erase key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
+    ChipLogDetail(DeviceLayer, "storage_erase key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
 
-    id_addr = RT582CONFIG_BASE_ADDR+(RT582CONFIG_ID_PER_SIZE*id);
+    id_addr = RT582CONFIG_BASE_ADDR+(RT582CONFIG_ID_PER_SIZE*flash_keyid);
     sector_addr = id_addr - (id_addr % RT582CONFIG_SECTOR_SIZE);
 
     for(i=0;i<16;i++)
@@ -135,17 +141,23 @@ void storage_erase(uint32_t id)
         flash_read_page_syncmode((uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
     }
 
+    while (flash_check_busy());
     flash_erase(FLASH_ERASE_SECTOR, sector_addr);
+    while (flash_check_busy());
 
-    offset = (RT582CONFIG_ID_PER_SIZE*id) % 0x1000;
+    offset = (RT582CONFIG_ID_PER_SIZE*flash_keyid) % 0x1000;
     memset(&storage_backup[offset], 0xff, RT582CONFIG_ID_PER_SIZE);
 
     for(i=0;i<16;i++)
     {
+        while (flash_check_busy());
         flash_write_page(
             (uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], 
             (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
     }
+
+    ChipLogDetail(DeviceLayer, "%s sector 0x%08X - 0x%08X", __func__, sector_addr, (sector_addr+(0x10*RT582CONFIG_ID_PER_SIZE)));
+    ChipLogDetail(DeviceLayer, "%s page 0x%08X", __func__, sector_addr+offset);    
 }
 
 CHIP_ERROR RT582Config::Init()
@@ -246,8 +258,14 @@ bool RT582Config::ConfigValueExists(Key key)
 CHIP_ERROR RT582Config::FactoryResetConfig(void)
 {
     ChipLogDetail(DeviceLayer, "RT582Config %s", __func__);
-    for (Key key = kMinConfigKey_MatterConfig; key <= kMaxConfigKey_MatterConfig; key++)
+    for (Key key = kMinConfigKey_MatterConfig; key < kMaxConfigKey_MatterConfig; key++)
         ClearConfigValue(key);
+
+    for (Key key = kMinConfigKey_KVSKey; key < kMaxConfigKey_KVSKey; key++)
+        ClearConfigValue(key);
+
+    for (Key key = kMinConfigKey_KVSValue; key < kMaxConfigKey_KVSValue; key++)
+        ClearConfigValue(key);                    
     return CHIP_NO_ERROR;
 }
 
