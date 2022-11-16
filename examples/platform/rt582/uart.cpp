@@ -86,8 +86,9 @@ void uart_isr_event_handle(void)
 
             g_uart_rx_io.uart_cache[wr_pos] = value[0];
             g_uart_rx_io.wr_idx = pos;
-
+#if ENABLE_CHIP_SHELL
             chip::NotifyShellProcessFromISR();
+#endif
         }
     } while (0);
     return;

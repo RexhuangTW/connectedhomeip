@@ -76,7 +76,7 @@ int main(void)
     // ConfigurationManagerImpl::DoFactoryReset(0);
     RT582Config::FactoryResetConfig();
     
-#if CONFIG_ENABLE_CHIP_SHELL
+#if ENABLE_CHIP_SHELL
     startShellTask();
 #endif
     info( "==================================================\n");
