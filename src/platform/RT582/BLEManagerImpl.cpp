@@ -1091,6 +1091,16 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
 
     if (status == BLE_ERR_OK)
     {
+        status = ble_cmd_default_mtu_size_set(0, BLE_GATT_ATT_MTU_MAX);
+        if (status != BLE_ERR_OK)
+        {
+            info_color(LOG_RED, "ble_cmd_default_mtu_size_set() status = %d\n", status);
+            err = BLE_ERR_STATE_TRANSLATE(status);
+        }
+    }
+
+    if (status == BLE_ERR_OK)
+    {
         status = ble_cmd_adv_enable(0);
         if (status != BLE_ERR_OK)
         {
@@ -1273,7 +1283,6 @@ bool BLEManagerImpl::CloseConnection(BLE_CONNECTION_OBJECT conId)
 
 uint16_t BLEManagerImpl::GetMTU(BLE_CONNECTION_OBJECT conId) const
 {   
-    ChipLogDetail(DeviceLayer, "BLE %s %u", __func__, g_mtu_size);
     return g_mtu_size;
 }
 
