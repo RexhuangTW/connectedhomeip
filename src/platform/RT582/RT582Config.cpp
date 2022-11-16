@@ -258,6 +258,9 @@ bool RT582Config::ConfigValueExists(Key key)
 CHIP_ERROR RT582Config::FactoryResetConfig(void)
 {
     ChipLogDetail(DeviceLayer, "RT582Config %s", __func__);
+    // for (Key key = kMinConfigKey_MatterFactory; key < kMaxConfigKey_MatterFactory; key++)
+    //     ClearConfigValue(key);
+
     for (Key key = kMinConfigKey_MatterConfig; key < kMaxConfigKey_MatterConfig; key++)
         ClearConfigValue(key);
 

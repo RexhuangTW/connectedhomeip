@@ -109,7 +109,7 @@ static xQueueHandle g_app_msg_q;
 static SemaphoreHandle_t semaphore_cb;
 static SemaphoreHandle_t semaphore_isr;
 static SemaphoreHandle_t semaphore_app;
-static uint8_t g_rx_buffer[BLE_GATT_ATT_MTU_MIN];
+static uint8_t g_rx_buffer[BLE_GATT_ATT_MTU_MAX];
 static uint8_t g_rx_buffer_length;
 static ble_cfg_t gt_app_cfg;
 static uint8_t g_advertising_host_id = BLE_HOSTID_RESERVED;
@@ -738,7 +738,7 @@ void BLEManagerImpl::app_evt_handler(void *p_param)
         do
         {
             // set preferred MTU size and data length
-            status = ble_cmd_default_mtu_size_set(host_id, BLE_GATT_ATT_MTU_MIN);
+            status = ble_cmd_default_mtu_size_set(host_id, BLE_GATT_ATT_MTU_MAX);
             if (status != BLE_ERR_OK)
             {
                 info_color(LOG_RED, "ble_cmd_default_mtu_size_set() status = %d\n", status);
@@ -1273,6 +1273,7 @@ bool BLEManagerImpl::CloseConnection(BLE_CONNECTION_OBJECT conId)
 
 uint16_t BLEManagerImpl::GetMTU(BLE_CONNECTION_OBJECT conId) const
 {   
+    ChipLogDetail(DeviceLayer, "BLE %s %u", __func__, g_mtu_size);
     return g_mtu_size;
 }
 

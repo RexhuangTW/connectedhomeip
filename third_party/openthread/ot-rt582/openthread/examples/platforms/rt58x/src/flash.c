@@ -68,13 +68,15 @@ static inline uint32_t mapAddress(uint8_t aSwapIndex, uint32_t aOffset)
  *
  * @param aInstance
  */
-void otPlatFlashInit(otInstance *aInstance)
+void otPlatFlashInit(otInstance * aInstance)
 {
     // info("otPlatFlashInit  -- %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     sFlashDataStart = FLASH_START_ADDRESS;
-    sFlashDataEnd = FLASH_START_ADDRESS + (FLASH_PAGE_SIZE * PLATFORM_FLASH_PAGE_NUN);
+    sFlashDataEnd   = FLASH_START_ADDRESS + (FLASH_PAGE_SIZE * PLATFORM_FLASH_PAGE_NUN);
+    otPlatFlashErase(0, 0);
+    otPlatFlashErase(0, 1);
 }
 
 /**
@@ -83,7 +85,7 @@ void otPlatFlashInit(otInstance *aInstance)
  * @param aInstance
  * @return uint32_t
  */
-uint32_t otPlatFlashGetSwapSize(otInstance *aInstance)
+uint32_t otPlatFlashGetSwapSize(otInstance * aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
 
@@ -97,7 +99,7 @@ uint32_t otPlatFlashGetSwapSize(otInstance *aInstance)
  * @param aInstance
  * @param aSwapIndex
  */
-void otPlatFlashErase(otInstance *aInstance, uint8_t aSwapIndex)
+void otPlatFlashErase(otInstance * aInstance, uint8_t aSwapIndex)
 {
     OT_UNUSED_VARIABLE(aInstance);
     while (flash_check_busy())
@@ -116,13 +118,13 @@ void otPlatFlashErase(otInstance *aInstance, uint8_t aSwapIndex)
  * @param aData
  * @param aSize
  */
-void otPlatFlashWrite(otInstance *aInstance, uint8_t aSwapIndex, uint32_t aOffset, const void *aData, uint32_t aSize)
+void otPlatFlashWrite(otInstance * aInstance, uint8_t aSwapIndex, uint32_t aOffset, const void * aData, uint32_t aSize)
 {
     // info("otPlatFlashWrite  -- %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     uint32_t i;
-    uint8_t *pDest = (uint8_t *)aData;
+    uint8_t * pDest = (uint8_t *) aData;
 #if 0
     for (i = 0; i < 16; i++)
     {
@@ -159,12 +161,12 @@ void otPlatFlashWrite(otInstance *aInstance, uint8_t aSwapIndex, uint32_t aOffse
  * @param aData
  * @param aSize
  */
-void otPlatFlashRead(otInstance *aInstance, uint8_t aSwapIndex, uint32_t aOffset, void *aData, uint32_t aSize)
+void otPlatFlashRead(otInstance * aInstance, uint8_t aSwapIndex, uint32_t aOffset, void * aData, uint32_t aSize)
 {
     OT_UNUSED_VARIABLE(aInstance);
 
     uint32_t i;
-    uint8_t *pDest = (uint8_t *)aData;
+    uint8_t * pDest = (uint8_t *) aData;
 
     for (i = 0; i < aSize; i++)
     {
