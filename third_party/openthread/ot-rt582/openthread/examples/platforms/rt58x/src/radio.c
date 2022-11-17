@@ -39,7 +39,7 @@
 
 #include "util_list.h"
 #include "util_log.h"
-
+#include "task_hci.h"
 //=============================================================================
 //                Private Definitions of const value
 //=============================================================================
@@ -1375,23 +1375,30 @@ static void rafael_rx_done(uint16_t packet_length, uint8_t *rx_data_address,
                 p_rx_buffer = _mac_rx_buffer_free_find();
                 if (p_rx_buffer)
                 {
-                    sReceiveFrame[i].mPsdu = p_rx_buffer->data;
+                    if (rx_data_address[0] != BLE_TRANSPORT_HCI_ACL_DATA)
+                    {
+                        sReceiveFrame[i].mPsdu = p_rx_buffer->data;
 #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
-                    sReceiveFrame[i].mLength = packet_length - 9;
+                        sReceiveFrame[i].mLength = packet_length - 9;
 #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-                    sReceiveFrame[i].mLength = packet_length - 10;
+                        sReceiveFrame[i].mLength = packet_length - 10;
 #endif
-                    // sReceiveFrame[i].mInfo.mRxInfo.mTimestamp = otPlatAlarmMicroGetNow()-4000;
-                    sReceiveFrame[i].mInfo.mRxInfo.mRssi = -rssi;
-                    sReceiveFrame[i].mInfo.mRxInfo.mLqi = ((RAFAEL_RECEIVE_SENSITIVITY - rssi) * 0xFF) / RAFAEL_RECEIVE_SENSITIVITY;
-                    sReceiveFrame[i].mChannel = sCurrentChannel;
+                        // sReceiveFrame[i].mInfo.mRxInfo.mTimestamp = otPlatAlarmMicroGetNow()-4000;
+                        sReceiveFrame[i].mInfo.mRxInfo.mRssi = -rssi;
+                        sReceiveFrame[i].mInfo.mRxInfo.mLqi = ((RAFAEL_RECEIVE_SENSITIVITY - rssi) * 0xFF) / RAFAEL_RECEIVE_SENSITIVITY;
+                        sReceiveFrame[i].mChannel = sCurrentChannel;
 #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
-                    memcpy(sReceiveFrame[i].mPsdu, rx_data_address + 8, sReceiveFrame[i].mLength);
+                        memcpy(sReceiveFrame[i].mPsdu, rx_data_address + 8, sReceiveFrame[i].mLength);
 #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-                    memcpy(sReceiveFrame[i].mPsdu, rx_data_address + 9, sReceiveFrame[i].mLength);
+                        memcpy(sReceiveFrame[i].mPsdu, rx_data_address + 9, sReceiveFrame[i].mLength);
 #endif
-                    p_rx_buffer->free = false;
-                    gpio_pin_write(21, 0);
+                        p_rx_buffer->free = false;
+                        gpio_pin_write(21, 0);
+                    }
+                    else
+                    {
+
+                    }
                 }
                 break;
             }

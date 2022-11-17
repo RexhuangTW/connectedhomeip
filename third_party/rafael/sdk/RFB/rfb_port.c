@@ -132,6 +132,20 @@ void rfb_port_zb_init(rfb_interrupt_event_t *_rfb_interrupt_event)
 }
 #endif
 
+#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
+void rfb_port_multi_init(rfb_interrupt_event_t *_rfb_interrupt_event)
+{
+    rfb_comm_multi_init(_rfb_interrupt_event);
+
+    /*Set the initial modem type*/
+    rfb_port_modem_set(RFB_MODEM_ZIGBEE);
+
+#if (RFB_DEBUG_PORT_EN)
+    rfb_debug_port_init();
+#endif
+}
+#endif
+
 #if (defined RFB_WISUN_ENABLED && RFB_WISUN_ENABLED == 1)
 void rfb_port_wisun_init(rfb_interrupt_event_t *_rfb_interrupt_event)
 {

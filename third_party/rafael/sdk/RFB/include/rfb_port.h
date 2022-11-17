@@ -83,3 +83,6 @@ void rfb_port_csl_sample_time_update(uint32_t csl_sample_time);
 uint32_t rfb_port_rtc_time_read(void);
 #endif
 
+#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
+void rfb_port_multi_init(rfb_interrupt_event_t *_rfb_interrupt_event);
+#endif

@@ -747,3 +747,6 @@ rfb_wisun_ctrl_t *rfb_wisun_init(void);
 #if (defined RFB_BLE_ENABLED && RFB_BLE_ENABLED == 1)
 rfb_ble_ctrl_t *rfb_ble_init(void);
 #endif
+#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED ==1)
+rfb_zb_ctrl_t *rfb_multi_init(void);
+#endif

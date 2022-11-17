@@ -69,6 +69,35 @@ rfb_zb_ctrl_t const rfb_zb_ctrl =
 };
 #endif
 
+#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
+/* Register Rfb control Apis*/
+rfb_zb_ctrl_t const rfb_multi_ctrl =
+{
+    rfb_port_multi_init,
+    rfb_port_frequency_set,
+    rfb_port_zb_is_channel_free,
+    rfb_port_data_send,
+    rfb_port_tx_continuous_wave_set,
+    rfb_port_rssi_read,
+    rfb_port_15p4_address_filter_set,
+    rfb_port_15p4_mac_pib_set,
+    rfb_port_15p4_phy_pib_set,
+    rfb_port_15p4_auto_ack_set,
+    rfb_port_15p4_pending_bit_set,
+    rfb_port_auto_state_set,
+    rfb_port_version_get,
+    rfb_port_15p4_src_addr_match_ctrl,
+    rfb_port_15p4_short_addr_ctrl,
+    rfb_port_15p4_extend_addr_ctrl,
+    rfb_port_key_set,
+    rfb_port_csl_receiver_ctrl,
+    rfb_port_csl_accuracy_get,
+    rfb_port_csl_uncertainty_get,
+    rfb_port_csl_sample_time_update,
+    rfb_port_rtc_time_read,
+};
+#endif
+
 #if (defined RFB_WISUN_ENABLED && RFB_WISUN_ENABLED == 1)
 /* Register Rfb control Apis*/
 rfb_wisun_ctrl_t const rfb_ctrl =
@@ -134,5 +163,12 @@ rfb_wisun_ctrl_t *rfb_wisun_init(void)
 rfb_ble_ctrl_t *rfb_ble_init(void)
 {
     return (rfb_ble_ctrl_t *)&rfb_ctrl;
+}
+#endif
+
+#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
+rfb_zb_ctrl_t *rfb_multi_init(void)
+{
+    return (rfb_zb_ctrl_t *)&rfb_multi_ctrl;
 }
 #endif
