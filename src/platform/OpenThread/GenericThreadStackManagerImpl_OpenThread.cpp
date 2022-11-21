@@ -359,12 +359,23 @@ CHIP_ERROR GenericThreadStackManagerImpl_OpenThread<ImplClass>::_AttachToThreadN
 {
     // Reset the previously set callback since it will never be called in case incorrect dataset was supplied.
     mpConnectCallback = nullptr;
-
+#if 0
     if(ble_active){
-        ble_cmd_conn_terminate(0);
+        //ble_cmd_conn_terminate(0);
         ble_active = false;
+
+        ChipDeviceEvent event;
+        event.Type                                = DeviceEventType::kThreadStateChange;
+        event.ThreadStateChange.RoleChanged       = 0;
+        event.ThreadStateChange.AddressChanged    = 0;
+        event.ThreadStateChange.NetDataChanged    = 0;
+        event.ThreadStateChange.ChildNodesChanged = 0;
+        event.ThreadStateChange.OpenThread.Flags  = 0;
+
+        CHIP_ERROR status = PlatformMgr().PostEvent(&event);
+
     }
-    
+#endif
     ReturnErrorOnFailure(Impl()->SetThreadEnabled(false));
     ReturnErrorOnFailure(Impl()->SetThreadProvision(dataset.AsByteSpan()));
 
@@ -2348,6 +2359,7 @@ CHIP_ERROR GenericThreadStackManagerImpl_OpenThread<ImplClass>::_SetupSrpHost(co
     Inet::IPAddress hostAddress;
 #endif
 
+    ChipLogProgress(DeviceLayer, "ot %s : %s", __func__, aHostName);
     VerifyOrReturnError(mSrpClient.mIsInitialized, CHIP_ERROR_WELL_UNINITIALIZED);
 
     Impl()->LockThreadStack();

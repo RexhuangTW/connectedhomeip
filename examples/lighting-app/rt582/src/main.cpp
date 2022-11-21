@@ -97,32 +97,32 @@ int main(void)
         ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
         goto exit;
     }
-// #if 0 
-    err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_Router);
+
+    err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_MinimalEndDevice);
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "ConnectivityMgr().SetThreadDeviceType() failed");
         goto exit;
     }
-
+    #if 1
     err = ThreadStackMgr().StartThreadTask();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
         goto exit;
     }    
-// #endif 
+    #endif 
     PlatformMgr().AddEventHandler(ChipEventHandler, 0);
 
     if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
     {
-        ChipLogError(NotSpecified, "Error during PlatformMgr().StartEventLoopTask();");
+       ChipLogError(NotSpecified, "Error during PlatformMgr().StartEventLoopTask();");
     }
 
     err = GetAppTask().StartAppTask();
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(NotSpecified, "GetAppTask().StartAppTask() failed %s", ErrorStr(err));
+       ChipLogError(NotSpecified, "GetAppTask().StartAppTask() failed %s", ErrorStr(err));
     }
    
     vTaskStartScheduler();

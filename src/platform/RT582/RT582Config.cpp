@@ -76,7 +76,7 @@ size_t storage_write(uint32_t id, size_t dataLen, uint8_t *data)
 {
     uint32_t sector_addr, id_addr, i, offset;
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
-    ChipLogDetail(DeviceLayer, "storage_write key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
+    //ChipLogDetail(DeviceLayer, "storage_write key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
 
     id_addr = RT582CONFIG_BASE_ADDR+(RT582CONFIG_ID_PER_SIZE*flash_keyid);
     sector_addr = id_addr - (id_addr % RT582CONFIG_SECTOR_SIZE);
@@ -103,8 +103,8 @@ size_t storage_write(uint32_t id, size_t dataLen, uint8_t *data)
             (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
     }
 
-    ChipLogDetail(DeviceLayer, "%s sector 0x%08X - 0x%08X", __func__, sector_addr, (sector_addr+(0x10*RT582CONFIG_ID_PER_SIZE)));
-    ChipLogDetail(DeviceLayer, "%s page 0x%08X", __func__, sector_addr+offset);
+    //ChipLogDetail(DeviceLayer, "%s sector 0x%08X - 0x%08X", __func__, sector_addr, (sector_addr+(0x10*RT582CONFIG_ID_PER_SIZE)));
+    //ChipLogDetail(DeviceLayer, "%s page 0x%08X", __func__, sector_addr+offset);
 
     for(i=0;i<16;i++)
     {
@@ -115,7 +115,7 @@ size_t storage_write(uint32_t id, size_t dataLen, uint8_t *data)
 
 void storage_erase_all(void)
 {
-    ChipLogDetail(DeviceLayer, "RT582Config %s", __func__);
+    //ChipLogDetail(DeviceLayer, "RT582Config %s", __func__);
     while (flash_check_busy());
     flash_erase(FLASH_ERASE_SECTOR, RT582CONFIG_BASE_ADDR);
     while (flash_check_busy());
@@ -131,7 +131,7 @@ void storage_erase(uint32_t id)
 {
     uint32_t sector_addr, id_addr, i, offset;
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
-    ChipLogDetail(DeviceLayer, "storage_erase key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
+    //ChipLogDetail(DeviceLayer, "storage_erase key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
 
     id_addr = RT582CONFIG_BASE_ADDR+(RT582CONFIG_ID_PER_SIZE*flash_keyid);
     sector_addr = id_addr - (id_addr % RT582CONFIG_SECTOR_SIZE);
@@ -156,8 +156,8 @@ void storage_erase(uint32_t id)
             (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
     }
 
-    ChipLogDetail(DeviceLayer, "%s sector 0x%08X - 0x%08X", __func__, sector_addr, (sector_addr+(0x10*RT582CONFIG_ID_PER_SIZE)));
-    ChipLogDetail(DeviceLayer, "%s page 0x%08X", __func__, sector_addr+offset);    
+    //ChipLogDetail(DeviceLayer, "%s sector 0x%08X - 0x%08X", __func__, sector_addr, (sector_addr+(0x10*RT582CONFIG_ID_PER_SIZE)));
+    //ChipLogDetail(DeviceLayer, "%s page 0x%08X", __func__, sector_addr+offset);    
 }
 
 CHIP_ERROR RT582Config::Init()
@@ -242,7 +242,7 @@ CHIP_ERROR RT582Config::WriteConfigValueBin(Key key, const void * data, size_t d
 
 CHIP_ERROR RT582Config::ClearConfigValue(Key key)
 {
-    ChipLogDetail(DeviceLayer, "RT582Config %s, %u", __func__, key);
+    //ChipLogDetail(DeviceLayer, "RT582Config %s, %u", __func__, key);
     storage_erase(key);
     return CHIP_NO_ERROR;
 }
@@ -257,7 +257,7 @@ bool RT582Config::ConfigValueExists(Key key)
 
 CHIP_ERROR RT582Config::FactoryResetConfig(void)
 {
-    ChipLogDetail(DeviceLayer, "RT582Config %s", __func__);
+    //ChipLogDetail(DeviceLayer, "RT582Config %s", __func__);
     // for (Key key = kMinConfigKey_MatterFactory; key < kMaxConfigKey_MatterFactory; key++)
     //     ClearConfigValue(key);
 

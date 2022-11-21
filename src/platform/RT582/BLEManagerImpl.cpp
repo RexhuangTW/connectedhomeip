@@ -99,7 +99,7 @@ static const uint8_t         DEVICE_NAME_STR[] = {DEVICE_NAME};
 
 // Device BLE Address
 static const ble_gap_addr_t  DEVICE_ADDR = {.addr_type = RANDOM_STATIC_ADDR,
-                                            .addr = {0x21, 0x22, 0x23, 0x24, 0x25, 0xC6 }
+                                            .addr = {0x21, 0x21, 0x23, 0x24, 0x25, 0xC6 }
                                            };
 
 
@@ -445,6 +445,7 @@ void BLEManagerImpl::ble_evt_handler(void *p_param)
 
     case BLE_GAP_EVT_DISCONN_COMPLETE:
     {
+        ChipDeviceEvent disconnectEvent;
         ble_evt_gap_disconn_complete_t *p_disconn_param = (ble_evt_gap_disconn_complete_t *)&p_ble_evt_param->event_param.ble_evt_gap.param.evt_disconn_complete;
         if (p_disconn_param->status != BLE_HCI_ERR_CODE_SUCCESS)
         {
@@ -452,6 +453,7 @@ void BLEManagerImpl::ble_evt_handler(void *p_param)
         }
         else
         {
+            #if 0
             ble_app_link_info[p_disconn_param->host_id].state = STATE_STANDBY;
 
             // re-start adv
@@ -459,13 +461,17 @@ void BLEManagerImpl::ble_evt_handler(void *p_param)
             {
                 // No Application queue buffer. Error.
             }
+            #endif
 
             ChipLogDetail(DeviceLayer, "Disconnect, ID:%d, Reason:0x%02x", p_disconn_param->host_id, p_disconn_param->reason);
         }
-        task_hci_delete();
-        ble_host_stack_deinit();
-        // rfb_comm_init_to_idle();
-        rafael_rfb_init();
+
+        if(p_disconn_param->reason == 0x16)
+        {
+            /* Send Connection close event */
+            disconnectEvent.Type = DeviceEventType::kCHIPoBLEConnectionClosed;
+            PlatformMgr().PostEvent(&disconnectEvent);
+        }
     }
     break;
 
@@ -541,9 +547,7 @@ void BLEManagerImpl::ble_svcs_matter_evt_handler(void *p_matter_evt_param)
             buf = System::PacketBufferHandle::New(p_param->length);
             memcpy(buf->Start(), p_param->data, p_param->length);
             buf->SetDataLength(p_param->length);
-            ChipLogDetail(DeviceLayer,
-                        "Write request/command received for CHIPoBLE RX characteristic (len %u)",
-                        buf->DataLength());
+            //ChipLogDetail(DeviceLayer,"Write request/command received for CHIPoBLE RX characteristic (len %u)",buf->DataLength());
 
             // Post an event to the CHIP queue to deliver the data into the CHIP stack.
             {
@@ -579,13 +583,13 @@ void BLEManagerImpl::ble_svcs_matter_evt_handler(void *p_matter_evt_param)
 
         case BLESERVICE_MATTER_CLIENT_RX_BUFFER_INDICATE_CONFIRM_EVENT:
         {
-             ChipLogDetail(DeviceLayer, "get matter indicate confirm"); 
+            //ChipLogDetail(DeviceLayer, "get matter indicate confirm"); 
         }
         break;
 
         case BLESERVICE_MATTER_CLIENT_RX_BUFFER_CCCD_WRITE_EVENT:
         {
-            ChipLogDetail(DeviceLayer, "get CCCD write event"); 
+            //ChipLogDetail(DeviceLayer, "get CCCD write event"); 
             bool indicationsEnabled = (*p_param->data);
             if (indicationsEnabled)
             {
@@ -738,13 +742,14 @@ void BLEManagerImpl::app_evt_handler(void *p_param)
         do
         {
             // set preferred MTU size and data length
+            #if 0
             status = ble_cmd_default_mtu_size_set(host_id, BLE_GATT_ATT_MTU_MAX);
             if (status != BLE_ERR_OK)
             {
                 info_color(LOG_RED, "ble_cmd_default_mtu_size_set() status = %d\n", status);
                 break;
             }
-
+            #endif
             // enable advertising
             status = (ble_err_t)adv_init();
             if (status != BLE_ERR_OK)
@@ -1088,17 +1093,17 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
         ChipLogError(DeviceLayer,"adv_param() status = %d\n", status);
         err = BLE_ERR_STATE_TRANSLATE(status);
     }
-
+#if 0
     if (status == BLE_ERR_OK)
     {
-        status = ble_cmd_default_mtu_size_set(0, BLE_GATT_ATT_MTU_MAX);
+        status = ble_cmd_default_mtu_size_set(0, BLE_GATT_ATT_MTU_MIN);
         if (status != BLE_ERR_OK)
         {
             info_color(LOG_RED, "ble_cmd_default_mtu_size_set() status = %d\n", status);
             err = BLE_ERR_STATE_TRANSLATE(status);
         }
     }
-
+#endif
     if (status == BLE_ERR_OK)
     {
         status = ble_cmd_adv_enable(0);
@@ -1216,7 +1221,7 @@ void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
     case DeviceEventType::kCHIPoBLESubscribe: {
         ChipDeviceEvent connEstEvent;
 
-        ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLESubscribe");
+        //ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLESubscribe");
         HandleSubscribeReceived(event->CHIPoBLESubscribe.ConId, &CHIP_BLE_SVC_ID, &ChipUUID_CHIPoBLEChar_TX);
         connEstEvent.Type = DeviceEventType::kCHIPoBLEConnectionEstablished;
         PlatformMgr().PostEventOrDie(&connEstEvent);
@@ -1224,20 +1229,20 @@ void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
     break;
 
     case DeviceEventType::kCHIPoBLEUnsubscribe: {
-        ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLEUnsubscribe");
+        //ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLEUnsubscribe");
         HandleUnsubscribeReceived(event->CHIPoBLEUnsubscribe.ConId, &CHIP_BLE_SVC_ID, &ChipUUID_CHIPoBLEChar_TX);
     }
     break;
 
     case DeviceEventType::kCHIPoBLEWriteReceived: {
-        ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLEWriteReceived");
+        //ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLEWriteReceived");
         HandleWriteReceived(event->CHIPoBLEWriteReceived.ConId, &CHIP_BLE_SVC_ID, &ChipUUID_CHIPoBLEChar_RX,
                             PacketBufferHandle::Adopt(event->CHIPoBLEWriteReceived.Data));
     }
     break;
 
     case DeviceEventType::kCHIPoBLEConnectionError: {
-        ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLEConnectionError");
+        //ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLEConnectionError");
         HandleConnectionError(event->CHIPoBLEConnectionError.ConId, event->CHIPoBLEConnectionError.Reason);
     }
     break;
@@ -1248,10 +1253,68 @@ void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
     }
     break;
 
+    case DeviceEventType::kCHIPoBLEConnectionClosed:
+    #if 0
+        ChipLogProgress(DeviceLayer, "hci_delete");
+        task_hci_delete();
+        ChipLogProgress(DeviceLayer, "host deinit");
+        ble_host_stack_deinit();
+        ChipLogProgress(DeviceLayer, "rfb init");
+        rafael_rfb_init();
+    
+        ChipLogProgress(DeviceLayer, "thread start");
+        ThreadStackMgr().StartThreadTask(); 
+    #endif
+        //ThreadStackManager().SetThreadEnabled(1);
+        break;
+
+    case DeviceEventType::kThreadStateChange:
+        HandleThreadStateChange(event);
+        break;    
+
+    case DeviceEventType::kOperationalNetworkEnabled:
+        HandleOperationalNetworkEnabled(event);
+        break;
+
     default:
-        ChipLogProgress(DeviceLayer, "_OnPlatformEvent default:  event->Type = %d", event->Type);
+        //ChipLogProgress(DeviceLayer, "_OnPlatformEvent default:  event->Type = %d", event->Type);
         break;
     }
+}
+
+
+CHIP_ERROR BLEManagerImpl::HandleOperationalNetworkEnabled(const ChipDeviceEvent * event)
+{
+    ChipDeviceEvent disconnectEvent;
+
+    ChipLogDetail(DeviceLayer, "HandleOperationalNetworkEnabled");
+
+    //ble_cmd_conn_terminate(0);
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR BLEManagerImpl::HandleThreadStateChange(const ChipDeviceEvent * event)
+{
+    CHIP_ERROR error = CHIP_NO_ERROR;
+
+    ChipLogDetail(DeviceLayer, "HandleThreadStateChange");
+
+    if (event->Type == DeviceEventType::kThreadStateChange && event->ThreadStateChange.RoleChanged)
+    {
+        ChipDeviceEvent attachEvent;
+        attachEvent.Type                            = DeviceEventType::kThreadConnectivityChange;
+        attachEvent.ThreadConnectivityChange.Result = kConnectivity_Established;
+
+        error = PlatformMgr().PostEvent(&attachEvent);
+        VerifyOrExit(error == CHIP_NO_ERROR,
+                     ChipLogError(DeviceLayer, "Failed to post Thread connectivity change: %" CHIP_ERROR_FORMAT, error.Format()));
+
+        ChipLogDetail(DeviceLayer, "Thread Connectivity Ready");
+    }
+
+exit:
+    return error;
 }
 
 bool BLEManagerImpl::SubscribeCharacteristic(BLE_CONNECTION_OBJECT conId, const ChipBleUUID * svcId, const ChipBleUUID * charId)
