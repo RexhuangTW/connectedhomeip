@@ -386,6 +386,5 @@ extern "C" void otAppCliInit(otInstance *aInstance)
     sSendLength = 0;
 
     IgnoreError(otPlatUartEnable());
-
     otCliInit(aInstance, CliUartOutput, aInstance);
 }

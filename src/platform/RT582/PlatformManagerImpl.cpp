@@ -37,6 +37,7 @@
 #include "AppConfig.h"
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
+#include "cm3_mcu.h"
 
 namespace chip {
 namespace DeviceLayer {
@@ -45,6 +46,10 @@ PlatformManagerImpl PlatformManagerImpl::sInstance;
 
 static int app_entropy_source(void * data, unsigned char * output, size_t len, size_t * olen)
 {
+  
+    for(int i =0; i<len; i++)
+        output[i] = (get_random_number() % 0xFF);
+
     *olen = len;
     return 0;
 }

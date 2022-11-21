@@ -63,6 +63,8 @@ static char bsp_c_g_msg[64] __attribute__((aligned(4))) = {0};
 
 exception_ctxt_t __exi_ctxt;
 
+extern void otSysEventSignalPending(void);
+
 void uart_isr_event_handle(void)
 {
     // receive data
@@ -89,6 +91,7 @@ void uart_isr_event_handle(void)
 #if ENABLE_CHIP_SHELL
             chip::NotifyShellProcessFromISR();
 #endif
+            otSysEventSignalPending();
         }
     } while (0);
     return;
