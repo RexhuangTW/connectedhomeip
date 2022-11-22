@@ -1217,18 +1217,18 @@ void platformRadioProcess(otInstance *aInstance)
         for (uint32_t i = 0; i < MAC_RX_BUFFERS; i++)
         {
             if (sReceiveFrame[i].mPsdu != NULL)
-            {
+            {                
                 if(_mac_rx_buffer_chk_acl(sReceiveFrame[i].mPsdu))
                 {
                     rf_fw_rx_ctrl_msg_t rf_msg = {0};
 
                     rf_msg.msg_tag = 0x05;
                     rf_msg.msg_len = sReceiveFrame[i].mLength;
-
+                   
                     rf_msg.p_msg = mem_malloc(sReceiveFrame[i].mLength);
                     if(rf_msg.p_msg != 0)
-                    {
-                        memcpy(rf_msg.p_msg, sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength);
+                    {                       
+                    memcpy(rf_msg.p_msg, sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength);
                         while(sys_queue_send_with_timeout(&g_rx_common_queue_handle, &rf_msg, 20) != 0)
                         {
                             err("acl data send failed\n");
@@ -1463,8 +1463,9 @@ static void rafael_rx_done(uint16_t packet_length, uint8_t *rx_data_address,
                     else
                     {
                         sReceiveFrame[i].mPsdu = p_rx_buffer->data;
-                        sReceiveFrame[i].mLength = packet_length;
-                        memcpy(sReceiveFrame[i].mPsdu, rx_data_address, packet_length);
+                        sReceiveFrame[i].mLength = (((rx_data_address[3]) | (rx_data_address[4] << 8)) + 5);
+                        memcpy(sReceiveFrame[i].mPsdu, rx_data_address, sReceiveFrame[i].mLength);
+
                         p_rx_buffer->acl = 1;
                     }
                     p_rx_buffer->free = false;

@@ -187,6 +187,7 @@ void rfb_isr_handler(uint8_t interrupt_status)
 #if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
         isr_msg.msg_tag = ISR_MSG_RX_EVENT;
         sys_queue_send_from_isr(&g_rx_common_queue_handle, &isr_msg);
+        RfMcu_HostCmdSet(RF_MCU_STATE_EVENT_DONE);
 #endif
     }
     if (interrupt_state_value.bf.TX_DONE)
