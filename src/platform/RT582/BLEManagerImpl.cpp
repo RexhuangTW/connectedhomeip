@@ -1248,7 +1248,7 @@ void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
     break;
 
     case DeviceEventType::kCHIPoBLEIndicateConfirm: {
-        ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLEIndicateConfirm");
+        //ChipLogProgress(DeviceLayer, "_OnPlatformEvent kCHIPoBLEIndicateConfirm");
         HandleIndicationConfirmation(event->CHIPoBLEIndicateConfirm.ConId, &CHIP_BLE_SVC_ID, &ChipUUID_CHIPoBLEChar_TX);
     }
     break;

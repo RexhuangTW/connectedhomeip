@@ -87,7 +87,7 @@
 #define MAC_PIB_MAC_MIN_BE 1
 #endif
 
-#define MAC_RX_BUFFERS 2
+#define MAC_RX_BUFFERS 20
 #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
 #define FREQ (2405)
 #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
@@ -405,7 +405,7 @@ exit:
  */
 otError otPlatRadioSetCcaEnergyDetectThreshold(otInstance *aInstance, int8_t aThreshold)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     return OT_ERROR_NOT_IMPLEMENTED;
@@ -429,7 +429,7 @@ otError otPlatRadioSetCcaEnergyDetectThreshold(otInstance *aInstance, int8_t aTh
  */
 void otPlatRadioSetExtendedAddress(otInstance *aInstance, const otExtAddress *aAddress)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     ReverseExtAddress(&sExtAddress, aAddress);
@@ -474,7 +474,7 @@ otError otPlatRadioSetFemLnaGain(otInstance *aInstance, int8_t aGain)
  */
 void otPlatRadioSetPanId(otInstance *aInstance, uint16_t aPanId)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     sPANID = aPanId;
@@ -497,7 +497,7 @@ void otPlatRadioSetPanId(otInstance *aInstance, uint16_t aPanId)
  */
 void otPlatRadioSetPromiscuous(otInstance *aInstance, bool aEnable)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     sPromiscuous = aEnable;
@@ -519,7 +519,7 @@ void otPlatRadioSetPromiscuous(otInstance *aInstance, bool aEnable)
  */
 void otPlatRadioSetShortAddress(otInstance *aInstance, uint16_t aAddress)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     sShortAddress = aAddress;
@@ -615,7 +615,7 @@ otError otPlatRadioEnable(otInstance *aInstance)
  */
 void otPlatRadioEnableSrcMatch(otInstance *aInstance, bool aEnable)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
     // set Frame Pending bit for all outgoing ACKs if aEnable is false
     sIsSrcMatchEnabled = aEnable;
@@ -635,7 +635,7 @@ void otPlatRadioEnableSrcMatch(otInstance *aInstance, bool aEnable)
  */
 otError otPlatRadioEnergyScan(otInstance *aInstance, uint8_t aScanChannel, uint16_t aScanDuration)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     return OT_ERROR_NOT_IMPLEMENTED;
@@ -665,7 +665,7 @@ otError otPlatRadioEnergyScan(otInstance *aInstance, uint8_t aScanChannel, uint1
  */
 int8_t otPlatRadioGetRssi(otInstance *aInstance)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     otError  error;
     int8_t   rssi = OT_RADIO_RSSI_INVALID;
 
@@ -717,7 +717,7 @@ bool otPlatRadioIsEnabled(otInstance *aInstance)
  */
 otError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     assert(aInstance != NULL);
@@ -789,7 +789,7 @@ exit:
  */
 otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
     OT_UNUSED_VARIABLE(aFrame);
 
@@ -924,7 +924,7 @@ otError otPlatRadioGetCca(otInstance *aInstance, int8_t *aThreshold, uint16_t *t
  */
 otError otPlatRadioSetCca(otInstance *aInstance, int8_t aThreshold, uint16_t turnaroundtime, uint16_t duration)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     if (aThreshold <= 0)
     {
         return OT_ERROR_INVALID_ARGS;
@@ -966,7 +966,7 @@ otError otPlatRadioGetMacConfig(otInstance *aInstance, uint16_t *ack_wait_time, 
  */
 otError otPlatRadioSetMacConfig(otInstance *aInstance, uint16_t ack_wait_time, uint8_t mac_try)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     if (ack_wait_time <= 0)
     {
         return OT_ERROR_INVALID_ARGS;
@@ -1018,7 +1018,7 @@ otError otPlatRadioGetPhyConfig(otInstance *aInstance, uint8_t *tx_power, uint8_
  */
 otError otPlatRadioSetPhyConfig(otInstance *aInstance, uint8_t tx_power, uint8_t modulation, uint8_t data_rate)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     if (tx_power < TX_POWER_20dBm || tx_power > TX_POWER_0dBm)
     {
         return OT_ERROR_INVALID_ARGS;
@@ -1228,7 +1228,7 @@ void platformRadioProcess(otInstance *aInstance)
                     rf_msg.p_msg = mem_malloc(sReceiveFrame[i].mLength);
                     if(rf_msg.p_msg != 0)
                     {                       
-                    memcpy(rf_msg.p_msg, sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength);
+                        memcpy(rf_msg.p_msg, sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength);
                         while(sys_queue_send_with_timeout(&g_rx_common_queue_handle, &rf_msg, 20) != 0)
                         {
                             err("acl data send failed\n");
@@ -1237,7 +1237,7 @@ void platformRadioProcess(otInstance *aInstance)
                     }
                     _mac_rx_buffer_free(sReceiveFrame[i].mPsdu);
                     sReceiveFrame[i].mPsdu = NULL;
-                    break;
+                    continue;
                 }
 
                 // Unable to simulate SFD, so use the rx done timestamp instead.
@@ -1379,6 +1379,7 @@ static void _mac_rx_buffer_free(uint8_t *pbuf)
         {
             enter_critical_section();
             sMacRxBuffer[i].free = true;
+            sMacRxBuffer[i].acl = false;
             leave_critical_section();
             break;
         }
@@ -1489,7 +1490,7 @@ void rafael_radio_extend_addr_ctrl(uint8_t ctrl_type, uint8_t *extend_addr)
 
 void rafael_rfb_init(void)
 {
-    info("OT %s\n", __func__);
+    //info("OT %s\n", __func__);
     /* Init MAC rx buffer */
     for (uint32_t i = 0; i < MAC_RX_BUFFERS; i++)
     {
@@ -1539,7 +1540,7 @@ void rafael_rfb_init(void)
     spRFBCtrl->auto_ack_set(true);
 
     /* Auto State */
-    spRFBCtrl->auto_state_set(true);
+    spRFBCtrl->auto_state_set(false);
 
     sTransmitFrame.mPsdu = sTransmitMessage.mPsdu;
 

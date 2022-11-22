@@ -58,8 +58,9 @@ void otSysInit(int argc, char *argv[])
     rt58x_alarm_init();
 
     random_number_init();
-
+#if (MODULE_ENABLE(SUPPORT_MATTER_CONCURRENT))
     rafael_rfb_init();
+#endif
 }
 
 bool otSysPseudoResetWasRequested(void)
