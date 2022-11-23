@@ -144,12 +144,12 @@ AppTask AppTask::sAppTask;
 
 void LockOpenThreadTask(void)
 {
-    chip::DeviceLayer::ThreadStackMgr().LockThreadStack();
+    //chip::DeviceLayer::ThreadStackMgr().LockThreadStack();
 }
 
 void UnlockOpenThreadTask(void)
 {
-    chip::DeviceLayer::ThreadStackMgr().UnlockThreadStack();
+    //chip::DeviceLayer::ThreadStackMgr().UnlockThreadStack();
 }
 void AppTask::OpenCommissioning(intptr_t arg)
 {

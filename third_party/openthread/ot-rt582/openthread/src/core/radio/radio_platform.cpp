@@ -50,7 +50,7 @@ extern "C" void otPlatRadioReceiveDone(otInstance *aInstance, otRadioFrame *aFra
     Instance &    instance = AsCoreType(aInstance);
     Mac::RxFrame *rxFrame  = static_cast<Mac::RxFrame *>(aFrame);
 
-    VerifyOrExit(instance.IsInitialized());
+    //VerifyOrExit(instance.IsInitialized());
 
 #if OPENTHREAD_CONFIG_MULTI_RADIO
     if (rxFrame != nullptr)
@@ -70,7 +70,7 @@ extern "C" void otPlatRadioTxStarted(otInstance *aInstance, otRadioFrame *aFrame
     Instance &    instance = AsCoreType(aInstance);
     Mac::TxFrame &txFrame  = *static_cast<Mac::TxFrame *>(aFrame);
 
-    VerifyOrExit(instance.IsInitialized());
+    //VerifyOrExit(instance.IsInitialized());
 
 #if OPENTHREAD_CONFIG_MULTI_RADIO
     txFrame.SetRadioType(Mac::kRadioTypeIeee802154);
@@ -88,7 +88,7 @@ extern "C" void otPlatRadioTxDone(otInstance *aInstance, otRadioFrame *aFrame, o
     Mac::TxFrame &txFrame  = *static_cast<Mac::TxFrame *>(aFrame);
     Mac::RxFrame *ackFrame = static_cast<Mac::RxFrame *>(aAckFrame);
 
-    VerifyOrExit(instance.IsInitialized());
+    //VerifyOrExit(instance.IsInitialized());
 
 #if OPENTHREAD_CONFIG_MULTI_RADIO
     if (ackFrame != nullptr)

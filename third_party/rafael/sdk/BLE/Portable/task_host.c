@@ -28,11 +28,11 @@
  *************************************************************************************************/
 // BLE Host subsystem task
 #define CONFIG_HOST_SUBSYSTEM_PRIORITY TASK_PRIORITY_PROTOCOL_NORMAL /**< Task priority. */
-#define CONFIG_HOST_SUBSYSTEM_STACK_SIZE 256                         /**< Task stack size. */
+#define CONFIG_HOST_SUBSYSTEM_STACK_SIZE 128                         /**< Task stack size. */
 
 // BLE cmd transport task
 #define CONFIG_CMD_TRANSPORT_PRIORITY TASK_PRIORITY_PROTOCOL_NORMAL /**< Task priority. */
-#define CONFIG_CMD_TRANSPORT_STACK_SIZE 256                         /**< Task stack size. */
+#define CONFIG_CMD_TRANSPORT_STACK_SIZE 128                         /**< Task stack size. */
 
 #define CONFIG_HOST_SW_TIMER_TICK_COUNT 10 /**< host sw timer tick count. */
 
