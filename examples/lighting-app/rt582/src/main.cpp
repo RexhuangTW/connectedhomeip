@@ -113,7 +113,7 @@ int main(void)
     }    
     #endif 
     PlatformMgr().AddEventHandler(ChipEventHandler, 0);
-
+#if 1
     if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
     {
        ChipLogError(NotSpecified, "Error during PlatformMgr().StartEventLoopTask();");
@@ -124,7 +124,7 @@ int main(void)
     {
        ChipLogError(NotSpecified, "GetAppTask().StartAppTask() failed %s", ErrorStr(err));
     }
-   
+#endif
     vTaskStartScheduler();
 
 

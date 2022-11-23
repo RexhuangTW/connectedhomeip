@@ -57,7 +57,7 @@ using namespace chip::TLV;
 using namespace ::chip::Credentials;
 using namespace ::chip::DeviceLayer;
 
-#define APP_TASK_STACK_SIZE (3 * 1024)
+#define APP_TASK_STACK_SIZE (2 * 1024)
 #define APP_TASK_PRIORITY 2
 #define APP_EVENT_QUEUE_SIZE 10
 
@@ -144,12 +144,12 @@ AppTask AppTask::sAppTask;
 
 void LockOpenThreadTask(void)
 {
-    //chip::DeviceLayer::ThreadStackMgr().LockThreadStack();
+    chip::DeviceLayer::ThreadStackMgr().LockThreadStack();
 }
 
 void UnlockOpenThreadTask(void)
 {
-    //chip::DeviceLayer::ThreadStackMgr().UnlockThreadStack();
+    chip::DeviceLayer::ThreadStackMgr().UnlockThreadStack();
 }
 void AppTask::OpenCommissioning(intptr_t arg)
 {

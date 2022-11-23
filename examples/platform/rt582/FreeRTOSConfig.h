@@ -30,7 +30,7 @@ extern "C" {
 #define configUSE_TIMERS (1)
 #define configTIMER_TASK_PRIORITY (40) /* Highest priority */
 #define configTIMER_QUEUE_LENGTH (10)
-#define configTIMER_TASK_STACK_DEPTH (1024)
+#define configTIMER_TASK_STACK_DEPTH (512)
 
 
 #define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY 4
@@ -64,7 +64,7 @@ extern uint32_t SystemCoreClock;
 #define configUSE_RECURSIVE_MUTEXES (1)
 #define configUSE_COUNTING_SEMAPHORES (1)
 #define configUSE_TASK_NOTIFICATIONS 1
-#define configUSE_TRACE_FACILITY 1
+#define configUSE_TRACE_FACILITY 0
 #define configQUEUE_REGISTRY_SIZE (10)
 #define configUSE_QUEUE_SETS (0)
 #define configUSE_NEWLIB_REENTRANT (1)
@@ -73,7 +73,7 @@ extern uint32_t SystemCoreClock;
 #define configSUPPORT_DYNAMIC_ALLOCATION (1)
 
 //#ifndef configTOTAL_HEAP_SIZE
-#define configTOTAL_HEAP_SIZE ((size_t)(28 * 1024))
+#define configTOTAL_HEAP_SIZE ((size_t)(26 * 1024))
 //#endif // configTOTAL_HEAP_SIZE
 
 /* Optional functions - most linkers will remove unused functions anyway. */

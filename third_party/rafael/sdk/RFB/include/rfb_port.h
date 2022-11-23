@@ -35,7 +35,7 @@ typedef struct _rfb_t
  *************************************************************************************************/
 void rfb_port_modem_set(rfb_modem_type_t modem);
 void rfb_port_frequency_set(uint32_t rf_frequency);
-void rfb_port_data_send(uint8_t *tx_data_address, uint16_t packet_length, uint8_t InitialCwAckRequest, uint8_t Dsn);
+uint32_t rfb_port_data_send(uint8_t *tx_data_address, uint16_t packet_length, uint8_t InitialCwAckRequest, uint8_t Dsn);
 void rfb_port_tx_continuous_wave_set(uint32_t rf_frequency, tx_power_level_t tx_power);
 uint8_t rfb_port_rssi_read(rfb_modem_type_t modem);
 void rfb_port_auto_state_set(bool rxOnWhenIdle);

@@ -732,7 +732,7 @@ Error Ip6::HandleFragment(Message &aMessage, MessageOrigin aOrigin, MessageInfo 
     offset          = FragmentHeader::FragmentOffsetToBytes(fragmentHeader.GetOffset());
     payloadFragment = aMessage.GetLength() - aMessage.GetOffset() - sizeof(fragmentHeader);
 
-    LogInfo("Fragment with id %d received > %d bytes, offset %d", fragmentHeader.GetIdentification(), payloadFragment,
+    LogInfo("Fragment with id %ld received > %d bytes, offset %d", fragmentHeader.GetIdentification(), payloadFragment,
             offset);
 
     if (offset + payloadFragment + aMessage.GetOffset() > kMaxAssembledDatagramLength)

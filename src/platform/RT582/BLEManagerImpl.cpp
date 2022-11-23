@@ -109,11 +109,11 @@ static xQueueHandle g_app_msg_q;
 static SemaphoreHandle_t semaphore_cb;
 static SemaphoreHandle_t semaphore_isr;
 static SemaphoreHandle_t semaphore_app;
-static uint8_t g_rx_buffer[BLE_GATT_ATT_MTU_MAX];
+static uint8_t g_rx_buffer[BLE_GATT_DATA_LENGTH_MAX];
 static uint8_t g_rx_buffer_length;
 static ble_cfg_t gt_app_cfg;
 static uint8_t g_advertising_host_id = BLE_HOSTID_RESERVED;
-static uint8_t g_mtu_size = BLE_GATT_ATT_MTU_MIN;
+static uint8_t g_mtu_size = BLE_GATT_ATT_MTU_MAX;
 const uint8_t UUID_CHIPoBLEService[]    = { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
                                          0x00, 0x10, 0x00, 0x00, 0xF6, 0xFF, 0x00, 0x00 };
 const uint8_t ShortUUID_CHIPoBLEService[]  = { 0xF6, 0xFF };
@@ -766,7 +766,7 @@ void BLEManagerImpl::app_evt_handler(void *p_param)
             }
         } while (0);
 
-        g_mtu_size = BLE_GATT_ATT_MTU_MIN;
+        //g_mtu_size = BLE_GATT_ATT_MTU_MIN;
         break;
 
     default:
@@ -872,7 +872,7 @@ CHIP_ERROR BLEManagerImpl::_Init()
     // Initialize the CHIP BleLayer.
     err = BleLayer::Init(this, this, &DeviceLayer::SystemLayer());
     // SuccessOrExit(err);
-
+#if 1
     gt_app_cfg.pf_evt_indication = ble_evt_indication_cb;
 
     task_hci_init();
@@ -900,7 +900,7 @@ CHIP_ERROR BLEManagerImpl::_Init()
     {
         return CHIP_ERROR_NO_MEMORY;
     }    
-
+#endif
     mFlags.Set(Flags::kRTBLEStackInitialized);
     // mFlags.Set(Flags::kAdvertisingEnabled, CHIP_DEVICE_CONFIG_CHIPOBLE_ENABLE_ADVERTISING_AUTOSTART ? true : false);
     // mFlags.Set(Flags::kFastAdvertisingEnabled);
@@ -1093,10 +1093,10 @@ CHIP_ERROR BLEManagerImpl::ConfigureAdvertisingData(void)
         ChipLogError(DeviceLayer,"adv_param() status = %d\n", status);
         err = BLE_ERR_STATE_TRANSLATE(status);
     }
-#if 0
+#if 1
     if (status == BLE_ERR_OK)
     {
-        status = ble_cmd_default_mtu_size_set(0, BLE_GATT_ATT_MTU_MIN);
+        status = ble_cmd_default_mtu_size_set(0, BLE_GATT_ATT_MTU_MAX);
         if (status != BLE_ERR_OK)
         {
             info_color(LOG_RED, "ble_cmd_default_mtu_size_set() status = %d\n", status);
@@ -1254,26 +1254,15 @@ void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
     break;
 
     case DeviceEventType::kCHIPoBLEConnectionClosed:
-    #if 0
-        ChipLogProgress(DeviceLayer, "hci_delete");
-        task_hci_delete();
-        ChipLogProgress(DeviceLayer, "host deinit");
-        ble_host_stack_deinit();
-        ChipLogProgress(DeviceLayer, "rfb init");
-        rafael_rfb_init();
-    
-        ChipLogProgress(DeviceLayer, "thread start");
-        ThreadStackMgr().StartThreadTask(); 
-    #endif
-        //ThreadStackManager().SetThreadEnabled(1);
+
         break;
 
     case DeviceEventType::kThreadStateChange:
-        HandleThreadStateChange(event);
+        //HandleThreadStateChange(event);
         break;    
 
     case DeviceEventType::kOperationalNetworkEnabled:
-        HandleOperationalNetworkEnabled(event);
+        //HandleOperationalNetworkEnabled(event);
         break;
 
     default:
@@ -1288,7 +1277,6 @@ CHIP_ERROR BLEManagerImpl::HandleOperationalNetworkEnabled(const ChipDeviceEvent
     ChipDeviceEvent disconnectEvent;
 
     ChipLogDetail(DeviceLayer, "HandleOperationalNetworkEnabled");
-
     //ble_cmd_conn_terminate(0);
 
     return CHIP_NO_ERROR;
@@ -1299,19 +1287,6 @@ CHIP_ERROR BLEManagerImpl::HandleThreadStateChange(const ChipDeviceEvent * event
     CHIP_ERROR error = CHIP_NO_ERROR;
 
     ChipLogDetail(DeviceLayer, "HandleThreadStateChange");
-
-    if (event->Type == DeviceEventType::kThreadStateChange && event->ThreadStateChange.RoleChanged)
-    {
-        ChipDeviceEvent attachEvent;
-        attachEvent.Type                            = DeviceEventType::kThreadConnectivityChange;
-        attachEvent.ThreadConnectivityChange.Result = kConnectivity_Established;
-
-        error = PlatformMgr().PostEvent(&attachEvent);
-        VerifyOrExit(error == CHIP_NO_ERROR,
-                     ChipLogError(DeviceLayer, "Failed to post Thread connectivity change: %" CHIP_ERROR_FORMAT, error.Format()));
-
-        ChipLogDetail(DeviceLayer, "Thread Connectivity Ready");
-    }
 
 exit:
     return error;

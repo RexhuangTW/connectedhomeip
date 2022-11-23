@@ -40,6 +40,7 @@ lwip_platform = "rt582"
 chip_mdns = "platform"
 chip_inet_config_enable_ipv4 = false
 chip_inet_config_enable_tcp_endpoint = false
+chip_inet_config_enable_udp_endpoint = true
 chip_system_config_use_open_thread_inet_endpoints = true
 chip_with_lwip = false
 
