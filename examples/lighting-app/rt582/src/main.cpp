@@ -74,8 +74,6 @@ int main(void)
 
     // DeviceLayer::ConfigurationMgr().InitiateFactoryReset();
     // ConfigurationManagerImpl::DoFactoryReset(0);
-    RT582Config::FactoryResetConfig();
-    
 #if ENABLE_CHIP_SHELL
     startShellTask();
 #endif
@@ -104,16 +102,16 @@ int main(void)
         ChipLogError(NotSpecified, "ConnectivityMgr().SetThreadDeviceType() failed");
         goto exit;
     }
-    #if 1
+
     err = ThreadStackMgr().StartThreadTask();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
         goto exit;
     }    
-    #endif 
+
     PlatformMgr().AddEventHandler(ChipEventHandler, 0);
-#if 1
+
     if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
     {
        ChipLogError(NotSpecified, "Error during PlatformMgr().StartEventLoopTask();");
@@ -124,7 +122,7 @@ int main(void)
     {
        ChipLogError(NotSpecified, "GetAppTask().StartAppTask() failed %s", ErrorStr(err));
     }
-#endif
+
     vTaskStartScheduler();
 
 

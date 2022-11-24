@@ -37,6 +37,8 @@
 #include <lib/core/CHIPError.h>
 #include <platform/CHIPDeviceLayer.h>
 
+#include "bsp.h"
+
 /**********************************************************
  * Defines
  *********************************************************/
@@ -61,6 +63,8 @@ public:
     static void AppTaskMain(void * pvParameter);
 
     void PostLightActionRequest(int32_t aActor, LightingManager::Action_t aAction);
+    void PostEvent(const AppEvent * event);
+    void UpdateClusterState();
 
 private:
     friend AppTask & GetAppTask(void);
@@ -69,15 +73,36 @@ private:
     static void InitServer(intptr_t arg);
     static void OpenCommissioning(intptr_t arg);
     static void ChipEventHandler(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg);
+    static void LightActionEventHandler(AppEvent * aEvent);
+    static void ActionInitiated(LightingManager::Action_t aActio, int32_t aActor);
+    static void ActionCompleted(LightingManager::Action_t aAction);
+    void DispatchEvent(AppEvent * event);
 
+    static void ButtonEventHandler(bsp_event_t event);
+
+    static void FunctionTimerEventHandler(AppEvent * aEvent);
+    static void FunctionHandler(AppEvent * aEvent);
+
+    static void TimerEventHandler(chip::System::Layer * aLayer, void * aAppState);
+
+    void StartTimer(uint32_t aTimeoutMs);
+    void CancelTimer(void);
+
+    enum Function_t
+    {
+        kFunction_NoneSelected   = 0,
+        kFunction_FactoryReset   = 1,
+
+        kFunction_Invalid
+    } Function;
+
+    Function_t mFunction;
     bool mFunctionTimerActive;
     bool mSyncClusterToButtonAction;
 
     static AppTask sAppTask;   
 
 };
-
-
 inline AppTask & GetAppTask(void)
 {
     return AppTask::sAppTask;

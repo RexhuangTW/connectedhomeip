@@ -85,9 +85,9 @@ public:
     static constexpr Key kMaxConfigKey_MatterConfig  = RT582ConfigKey(kMatterConfig_KeyBase, 0x14);
 
     static constexpr Key kMinConfigKey_KVSKey      = RT582ConfigKey(kMatterKvs_KeyBase, 0x00);
-    static constexpr Key kMaxConfigKey_KVSKey      = RT582ConfigKey(kMatterKvs_KeyBase, 0x10);
+    static constexpr Key kMaxConfigKey_KVSKey      = RT582ConfigKey(kMatterKvs_KeyBase, 0x1F);
     static constexpr Key kMinConfigKey_KVSValue    = RT582ConfigKey(kMatterKvs_KeyValue, 0x00);
-    static constexpr Key kMaxConfigKey_KVSValue    = RT582ConfigKey(kMatterKvs_KeyValue, 0x10);    
+    static constexpr Key kMaxConfigKey_KVSValue    = RT582ConfigKey(kMatterKvs_KeyValue, 0x1F);    
 
 
     static CHIP_ERROR Init(void);

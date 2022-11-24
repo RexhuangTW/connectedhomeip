@@ -809,7 +809,7 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
         //while (!platformRadioIsTransmitPending());
         if (platformRadioIsTransmitPending())
         {
-            gpio_pin_write(20, 0);
+            //gpio_pin_write(20, 0);
             error           = OT_ERROR_NONE;
             sState          = OT_RADIO_STATE_TRANSMIT;
             if(sCurrentChannel != aFrame->mChannel)
@@ -1311,7 +1311,7 @@ void platformRadioProcess(otInstance *aInstance)
                     }
                     _mac_rx_buffer_free(sReceiveFrame[i].mPsdu);
                     sReceiveFrame[i].mPsdu = NULL;
-                    gpio_pin_write(21, 1);
+                    //gpio_pin_write(21, 1);
                     break;
                 }
             }
@@ -1430,7 +1430,7 @@ static void rafael_tx_done(uint8_t u8_tx_status)
     sTransmitError = u8_tx_status;
     //sTxWait = false;
     sTxDone = true;
-    gpio_pin_write(20, 1);
+    //gpio_pin_write(20, 1);
 
     otSysEventSignalPending();
 }
@@ -1479,7 +1479,7 @@ static void rafael_rx_done(uint16_t packet_length, uint8_t *rx_data_address,
 #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
                         memcpy(sReceiveFrame[i].mPsdu, rx_data_address + 9, sReceiveFrame[i].mLength);
 #endif                       
-                        gpio_pin_write(21, 0);
+                        //gpio_pin_write(21, 0);
                     }
                     else
                     {

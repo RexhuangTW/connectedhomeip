@@ -75,8 +75,6 @@ void otPlatFlashInit(otInstance * aInstance)
 
     sFlashDataStart = FLASH_START_ADDRESS;
     sFlashDataEnd   = FLASH_START_ADDRESS + (FLASH_PAGE_SIZE * PLATFORM_FLASH_PAGE_NUN);
-    otPlatFlashErase(0, 0);
-    otPlatFlashErase(0, 1);
 }
 
 /**

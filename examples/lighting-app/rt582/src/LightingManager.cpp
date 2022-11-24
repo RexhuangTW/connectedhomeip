@@ -47,26 +47,13 @@ OnOffEffect gEffect = {
 
 CHIP_ERROR LightingManager::Init()
 {
-    // Create FreeRTOS sw timer for light timer.
-    sLightTimer = xTimerCreate("lightTmr",       // Just a text name, not used by the RTOS kernel
-                               1,                // == default timer period (mS)
-                               false,            // no timer reload (==one-shot)
-                               (void *) this,    // init timer id = light obj context
-                               TimerEventHandler // timer callback handler
-    );
-
-    if (sLightTimer == NULL)
-    {
-        return APP_ERROR_CREATE_TIMER_FAILED;
-    }
-
     bool currentLedState;
     // read current on/off value on endpoint one.
     chip::DeviceLayer::PlatformMgr().LockChipStack();
     OnOffServer::Instance().getOnOffValue(1, &currentLedState);
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
-    mState                 = currentLedState ? kState_OnCompleted : kState_OffCompleted;
+    mState                 = currentLedState ? kState_On : kState_Off;
     mAutoTurnOffTimerArmed = false;
     mAutoTurnOff           = false;
     mAutoTurnOffDuration   = 0;
@@ -81,64 +68,46 @@ void LightingManager::SetCallbacks(Callback_fn_initiated aActionInitiated_CB, Ca
     mActionCompleted_CB = aActionCompleted_CB;
 }
 
-bool LightingManager::IsActionInProgress()
+bool LightingManager::IsTurnedOn()
 {
-    return (mState == kState_OffInitiated || mState == kState_OnInitiated);
+    return mState == kState_On;
 }
 
-bool LightingManager::IsLightOn()
-{
-    return (mState == kState_OnCompleted);
-}
-
-void LightingManager::EnableAutoTurnOff(bool aOn)
-{
-    mAutoTurnOff = aOn;
-}
-
-void LightingManager::SetAutoTurnOffDuration(uint32_t aDurationInSecs)
-{
-    mAutoTurnOffDuration = aDurationInSecs;
-}
 
 bool LightingManager::InitiateAction(int32_t aActor, Action_t aAction)
 {
     bool action_initiated = false;
     State_t new_state;
 
-    // Initiate Turn On/Off Action only when the previous one is complete.
-    if (((mState == kState_OffCompleted) || mOffEffectArmed) && aAction == ON_ACTION)
+    switch (aAction)
     {
-        action_initiated = true;
-
-        new_state = kState_OnInitiated;
+    case ON_ACTION:
+        ChipLogProgress(NotSpecified, "LightMgr:ON: %s->ON", mState == kState_On ? "ON" : "OFF");
+        break;
+    case OFF_ACTION:
+        ChipLogProgress(NotSpecified, "LightMgr:OFF: %s->OFF", mState == kState_On ? "ON" : "OFF");
+        break;
+    default:
+        ChipLogProgress(NotSpecified, "LightMgr:Unknown");
+        break;
     }
-    else if (mState == kState_OnCompleted && aAction == OFF_ACTION && mOffEffectArmed == false)
+
+    // Initiate Turn On/Off Action only when the previous one is complete.
+    if (mState == kState_Off && aAction == ON_ACTION)
     {
         action_initiated = true;
 
-        new_state = kState_OffInitiated;
+        new_state = kState_On;
+    }
+    else if (mState == kState_On && aAction == OFF_ACTION)
+    {
+        action_initiated = true;
+
+        new_state = kState_Off;
     }
 
     if (action_initiated)
     {
-        if (mAutoTurnOffTimerArmed && new_state == kState_OffInitiated)
-        {
-            // If auto turn off timer has been armed and someone initiates turning off,
-            // cancel the timer and continue as normal.
-            mAutoTurnOffTimerArmed = false;
-
-            CancelTimer();
-        }
-
-        if (mOffEffectArmed && new_state == kState_OnInitiated)
-        {
-            CancelTimer();
-            mOffEffectArmed = false;
-        }
-
-        StartTimer(ACTUATOR_MOVEMENT_PERIOS_MS);
-
         // Since the timer started successfully, update the state and trigger callback
         mState = new_state;
 
@@ -198,6 +167,7 @@ void LightingManager::TimerEventHandler(TimerHandle_t xTimer)
     {
         event.Handler = ActuatorMovementTimerEventHandler;
     }
+    GetAppTask().PostEvent(&event);
 }
 
 void LightingManager::AutoTurnOffTimerEventHandler(AppEvent * aEvent)
@@ -232,41 +202,6 @@ void LightingManager::OffEffectTimerEventHandler(AppEvent * aEvent)
 
 
     light->InitiateAction(actor, OFF_ACTION);
-}
-
-void LightingManager::ActuatorMovementTimerEventHandler(AppEvent * aEvent)
-{
-    Action_t actionCompleted = INVALID_ACTION;
-
-    LightingManager * light = static_cast<LightingManager *>(aEvent->TimerEvent.Context);
-
-    if (light->mState == kState_OffInitiated)
-    {
-        light->mState   = kState_OffCompleted;
-        actionCompleted = OFF_ACTION;
-    }
-    else if (light->mState == kState_OnInitiated)
-    {
-        light->mState   = kState_OnCompleted;
-        actionCompleted = ON_ACTION;
-    }
-
-    if (actionCompleted != INVALID_ACTION)
-    {
-        if (light->mActionCompleted_CB)
-        {
-            light->mActionCompleted_CB(actionCompleted);
-        }
-
-        if (light->mAutoTurnOff && actionCompleted == ON_ACTION)
-        {
-            // Start the timer for auto turn off
-            light->StartTimer(light->mAutoTurnOffDuration * 1000);
-
-            light->mAutoTurnOffTimerArmed = true;
-
-        }
-    }
 }
 
 void LightingManager::OnTriggerOffWithEffect(OnOffEffect * effect)

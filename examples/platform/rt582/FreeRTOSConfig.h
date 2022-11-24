@@ -52,7 +52,7 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 extern uint32_t SystemCoreClock;
 #define configCPU_CLOCK_HZ (SystemCoreClock)
 #define configUSE_PREEMPTION (1)
-#define configUSE_TIME_SLICING (1)
+#define configUSE_TIME_SLICING (0)
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION (0)
 #define configUSE_TICKLESS_IDLE_SIMPLE_DEBUG (1) /* See into vPortSuppressTicksAndSleep source code for explanation */
 #define configMAX_PRIORITIES (56)

@@ -43,7 +43,7 @@ static size_t storage_read(uint32_t id, size_t bufSize, uint8_t *buf)
 {
     uint32_t sector_addr, id_addr, i, offset, chk, data_size;
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
-    // ChipLogDetail(DeviceLayer, "storage_read key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
+    //ChipLogDetail(DeviceLayer, "storage_read key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
 
     id_addr = RT582CONFIG_BASE_ADDR + (RT582CONFIG_ID_PER_SIZE * flash_keyid);
     sector_addr = id_addr - (id_addr % RT582CONFIG_SECTOR_SIZE);
@@ -61,7 +61,10 @@ static size_t storage_read(uint32_t id, size_t bufSize, uint8_t *buf)
     }
 
     if(storage_backup[offset] == 0xFF)
-        return 0;
+    {
+        //ChipLogDetail(DeviceLayer, "Cfg  %s id 0x%02x not found", __func__, id); 
+        return 0xFFFFFFFE;
+    }
 
     memcpy(buf, &storage_backup[offset+1], storage_backup[offset]);
 
@@ -102,6 +105,7 @@ size_t storage_write(uint32_t id, size_t dataLen, uint8_t *data)
             (uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], 
             (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
     }
+    while (flash_check_busy());
 
     //ChipLogDetail(DeviceLayer, "%s sector 0x%08X - 0x%08X", __func__, sector_addr, (sector_addr+(0x10*RT582CONFIG_ID_PER_SIZE)));
     //ChipLogDetail(DeviceLayer, "%s page 0x%08X", __func__, sector_addr+offset);
@@ -155,7 +159,7 @@ void storage_erase(uint32_t id)
             (uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], 
             (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
     }
-
+    while (flash_check_busy());
     //ChipLogDetail(DeviceLayer, "%s sector 0x%08X - 0x%08X", __func__, sector_addr, (sector_addr+(0x10*RT582CONFIG_ID_PER_SIZE)));
     //ChipLogDetail(DeviceLayer, "%s page 0x%08X", __func__, sector_addr+offset);    
 }
@@ -190,7 +194,7 @@ CHIP_ERROR RT582Config::ReadConfigValueBin(Key key, void * buf, size_t bufSize, 
 {
     outLen = storage_read(key, bufSize, (uint8_t *)buf);
 
-    if(outLen == 0)
+    if(outLen == 0xFFFFFFFE)
        return CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND;
 
     else if(outLen == 0xFFFFFFFF)

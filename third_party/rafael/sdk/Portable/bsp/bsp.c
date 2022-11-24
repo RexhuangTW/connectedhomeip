@@ -46,14 +46,6 @@ int bsp_init(uint32_t u32_type, bsp_event_callback_t callback)
         {
             bsp_button_init(callback);
         }
-        if (u32_type & BSP_INIT_DEBUG_CONSOLE)
-        {
-            bsp_console_init(callback);
-        }
-        if (u32_type & BSP_INIT_UART)
-        {
-            bsp_uart_init(callback);
-        }
 
     } while (0);
 
