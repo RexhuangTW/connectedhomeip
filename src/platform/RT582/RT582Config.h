@@ -27,7 +27,7 @@ namespace Internal {
 
 constexpr inline uint16_t RT582ConfigKey(uint8_t keyBaseOffset, uint8_t id)
 {
-    return static_cast<uint16_t>(keyBaseOffset) << 5 | (id & 0x1F);
+    return static_cast<uint16_t>(keyBaseOffset) << 6 | (id & 0x3F);
 }
 class RT582Config
 {

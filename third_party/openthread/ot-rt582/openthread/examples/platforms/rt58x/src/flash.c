@@ -102,7 +102,9 @@ void otPlatFlashErase(otInstance * aInstance, uint8_t aSwapIndex)
     OT_UNUSED_VARIABLE(aInstance);
     while (flash_check_busy())
         ;
+    vPortEnterCritical();
     flash_erase(FLASH_ERASE_SECTOR, FLASH_START_ADDRESS + (aSwapIndex * FLASH_PAGE_SIZE));
+    vPortExitCritical();
     while (flash_check_busy())
         ;
 }
@@ -146,7 +148,9 @@ void otPlatFlashWrite(otInstance * aInstance, uint8_t aSwapIndex, uint32_t aOffs
     {
         while (flash_check_busy())
             ;
+        vPortEnterCritical();
         flash_write_byte(FLASH_START_ADDRESS + (aSwapIndex * FLASH_SWAP_SIZE) + aOffset + i, pDest[i]);
+        vPortExitCritical();
     }
 }
 

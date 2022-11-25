@@ -114,7 +114,7 @@ void uartConsoleInit(void)
         debug_console_drv_config.hwfc = UART_HWFC_DISABLED;
         debug_console_drv_config.parity = UART_PARITY_NONE;
         debug_console_drv_config.stop_bits = UART_STOPBIT_ONE;
-        debug_console_drv_config.irq_priority = 7;
+        debug_console_drv_config.irq_priority = 6;
 
         rval = bsp_uart_drv_init(0, &debug_console_drv_config, uart_isr_event_handle);
 

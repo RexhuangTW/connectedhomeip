@@ -19,6 +19,8 @@
 
 #define SET_SYS_CLK                         SYS_CLK_64MHZ
 
+#define SUPPORT_MULTITASKING                1
+
 #define SUPPORT_MATTER_CONCURRENT          1
 #if (MODULE_ENABLE(SUPPORT_MATTER_CONCURRENT))
 #define SUPPORT_BLE                        1
