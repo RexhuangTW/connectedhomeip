@@ -30,18 +30,13 @@
 
 #define CHIP_CONFIG_ABORT() abort()
 
-#define CHIP_CONFIG_PERSISTED_STORAGE_KEY_TYPE uint32_t
+#define CHIP_CONFIG_PERSISTED_STORAGE_KEY_TYPE uint16_t
 #define CHIP_CONFIG_PERSISTED_STORAGE_ENC_MSG_CNTR_ID 1
 #define CHIP_CONFIG_PERSISTED_STORAGE_MAX_KEY_LENGTH 2
 
-#define CHIP_CONFIG_LIFETIIME_PERSISTED_COUNTER_KEY EFR32Config::kConfigKey_LifeTimeCounter
+#define CHIP_CONFIG_LIFETIIME_PERSISTED_COUNTER_KEY 0x01
 
 // ==================== Security Adaptations ====================
-
-// FIXME: EFR32 set to MBED-TLS (But this is third-party repo in CHIP, not SDK)
-
-// FIXME: EFR32 currently set to CHIP (Does this use Entropy.cpp ?)
-
 #if CHIP_HAVE_CONFIG_H
 #include <crypto/CryptoBuildConfig.h>
 #endif

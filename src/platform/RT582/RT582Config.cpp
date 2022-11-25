@@ -29,9 +29,9 @@
 #include "util_log.h"
 #include "cm3_mcu.h"
 
-#define RT582CONFIG_BASE_ADDR       0xF4000
-#define RT582CONFIG_MAX_ID          0x80
+#define RT582CONFIG_BASE_ADDR       0xF3000
 #define RT582CONFIG_ID_PER_SIZE     0x100
+#define RT582CONFIG_FLASH_PAGE_SIZE 0x100
 #define RT582CONFIG_SECTOR_SIZE     0x1000
 
 namespace chip {
@@ -50,7 +50,7 @@ static size_t storage_read(uint32_t id, size_t bufSize, uint8_t *buf)
 
     for(i=0;i<16;i++)
     {
-        flash_read_page_syncmode((uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
+        flash_read_page_syncmode((uint32_t)&storage_backup[i*RT582CONFIG_FLASH_PAGE_SIZE], (sector_addr+(i*RT582CONFIG_FLASH_PAGE_SIZE)));
     }
     offset = (RT582CONFIG_ID_PER_SIZE*flash_keyid) % 0x1000;
 
@@ -79,7 +79,7 @@ size_t storage_write(uint32_t id, size_t dataLen, uint8_t *data)
 {
     uint32_t sector_addr, id_addr, i, offset;
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
-    //ChipLogDetail(DeviceLayer, "storage_write key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
+    ChipLogDetail(DeviceLayer, "storage_write key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
 
     id_addr = RT582CONFIG_BASE_ADDR+(RT582CONFIG_ID_PER_SIZE*flash_keyid);
     sector_addr = id_addr - (id_addr % RT582CONFIG_SECTOR_SIZE);
@@ -87,7 +87,7 @@ size_t storage_write(uint32_t id, size_t dataLen, uint8_t *data)
 
     for(i=0;i<16;i++)
     {
-        flash_read_page_syncmode((uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
+        flash_read_page_syncmode((uint32_t)&storage_backup[i*RT582CONFIG_FLASH_PAGE_SIZE], (sector_addr+(i*RT582CONFIG_FLASH_PAGE_SIZE)));
     }
     while (flash_check_busy());
     vPortEnterCritical();
@@ -105,8 +105,8 @@ size_t storage_write(uint32_t id, size_t dataLen, uint8_t *data)
         while (flash_check_busy());
         vPortEnterCritical();
         flash_write_page(
-            (uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], 
-            (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
+            (uint32_t)&storage_backup[i*RT582CONFIG_FLASH_PAGE_SIZE], 
+            (sector_addr+(i*RT582CONFIG_FLASH_PAGE_SIZE)));
         vPortExitCritical();
     }
     while (flash_check_busy());
@@ -117,23 +117,9 @@ size_t storage_write(uint32_t id, size_t dataLen, uint8_t *data)
     return dataLen;
 }
 
-void storage_erase_all(void)
-{
-    //ChipLogDetail(DeviceLayer, "RT582Config %s", __func__);
-    while (flash_check_busy());
-    flash_erase(FLASH_ERASE_SECTOR, RT582CONFIG_BASE_ADDR);
-    while (flash_check_busy());
-    flash_erase(FLASH_ERASE_SECTOR, RT582CONFIG_BASE_ADDR + 0x1000);
-    while (flash_check_busy());
-    flash_erase(FLASH_ERASE_SECTOR, RT582CONFIG_BASE_ADDR + 0x2000);
-    while (flash_check_busy());
-    flash_erase(FLASH_ERASE_SECTOR, RT582CONFIG_BASE_ADDR + 0x3000);
-    while (flash_check_busy());
-}
-
 void storage_erase(uint32_t id)
 {
-    uint32_t sector_addr, id_addr, i, offset;
+    uint32_t sector_addr, id_addr, i, offset, ignore_page = 0;
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
     //ChipLogDetail(DeviceLayer, "storage_erase key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
 
@@ -142,7 +128,7 @@ void storage_erase(uint32_t id)
 
     for(i=0;i<16;i++)
     {
-        flash_read_page_syncmode((uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
+        flash_read_page_syncmode((uint32_t)&storage_backup[i*RT582CONFIG_FLASH_PAGE_SIZE], (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
     }
 
     while (flash_check_busy());
@@ -154,13 +140,17 @@ void storage_erase(uint32_t id)
     offset = (RT582CONFIG_ID_PER_SIZE*flash_keyid) % 0x1000;
     memset(&storage_backup[offset], 0xff, RT582CONFIG_ID_PER_SIZE);
 
+    //ignore_page = ((RT582CONFIG_ID_PER_SIZE*flash_keyid) % RT582CONFIG_SECTOR_SIZE) / RT582CONFIG_ID_PER_SIZE;
+
     for(i=0;i<16;i++)
     {
+        //if(i == ignore_page)
+        //    continue;        
         while (flash_check_busy());
         vPortEnterCritical();
         flash_write_page(
-            (uint32_t)&storage_backup[i*RT582CONFIG_ID_PER_SIZE], 
-            (sector_addr+(i*RT582CONFIG_ID_PER_SIZE)));
+            (uint32_t)&storage_backup[i*RT582CONFIG_FLASH_PAGE_SIZE], 
+            (sector_addr+(i*RT582CONFIG_FLASH_PAGE_SIZE)));
         vPortExitCritical();
     }
     while (flash_check_busy());

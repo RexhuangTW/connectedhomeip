@@ -21,3 +21,4 @@
 void cmd_misc_init(void);
 void cmd_otcli_init(void);
 void cmd_app_server_init(void);
+void cmd_rafael_init(void);

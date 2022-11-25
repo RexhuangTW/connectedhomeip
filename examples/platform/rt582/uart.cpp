@@ -91,7 +91,7 @@ void uart_isr_event_handle(void)
 #if ENABLE_CHIP_SHELL
             chip::NotifyShellProcessFromISR();
 #endif
-            otSysEventSignalPending();
+            //otSysEventSignalPending();
         }
     } while (0);
     return;

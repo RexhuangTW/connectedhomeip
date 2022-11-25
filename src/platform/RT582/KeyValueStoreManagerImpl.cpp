@@ -40,7 +40,7 @@ namespace chip {
 namespace DeviceLayer {
 namespace PersistedStorage {
 
-constexpr size_t kMaxNumberOfKeys  = 0x1E;
+constexpr size_t kMaxNumberOfKeys  = 0x1f;
 constexpr size_t kMaxKeyValueBytes = 254;
 
 KeyValueStoreManagerImpl KeyValueStoreManagerImpl::sInstance;
