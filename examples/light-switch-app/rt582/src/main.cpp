@@ -78,7 +78,7 @@ int main(void)
     startShellTask();
 #endif
     info( "==================================================\n");
-    info( "chip-rt582-lighting-example starting Version %d\r\n", CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION);
+    info( "chip-rt582-light-switch-example starting Version %d\r\n", CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION);
     info( "==================================================\n\n");
 
     err = PlatformMgr().InitChipStack();

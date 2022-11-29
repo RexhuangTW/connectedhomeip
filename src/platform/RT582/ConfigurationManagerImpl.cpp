@@ -24,6 +24,8 @@
 #include <platform/ConfigurationManager.h>
 #include <platform/RT582/RT582Config.h>
 
+#include "cm3_mcu.h"
+
 namespace chip {
 namespace DeviceLayer {
 
@@ -176,7 +178,7 @@ void ConfigurationManagerImpl::DoFactoryReset(intptr_t arg)
 
     // Restart the system.
     ChipLogProgress(DeviceLayer, "System restarting");
-    //NVIC_SystemReset();
+    Sys_Software_Reset();
 }
 
 ConfigurationManager & ConfigurationMgrImpl()

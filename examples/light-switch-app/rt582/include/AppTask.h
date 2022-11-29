@@ -29,7 +29,7 @@
 #include "AppEvent.h"
 #include "BaseApplication.h"
 #include "FreeRTOS.h"
-#include "LightingManager.h"
+#include "binding-handler.h"
 // #include "sl_simple_button_instances.h"
 #include "timers.h" // provides FreeRTOS timer support
 #include <app/clusters/identify-server/identify-server.h>
@@ -62,9 +62,25 @@ public:
     CHIP_ERROR StartAppTask();
     static void AppTaskMain(void * pvParameter);
 
-    void PostLightActionRequest(int32_t aActor, LightingManager::Action_t aAction);
+    enum Action_t : uint8_t
+    {
+        ON_ACTION = 0,
+        OFF_ACTION,
+        LEVEL_ACTION,
+
+        INVALID_ACTION
+    };
+
+    enum ButtonEvent: uint8_t
+    {
+        kButtonReleaseEvent = 0,
+        kButtonPushEvent,
+    };
+
+    void PostLightActionRequest(int32_t aActor, AppTask::Action_t aAction);
     void PostEvent(const AppEvent * event);
     void UpdateClusterState();
+
 
 private:
     friend AppTask & GetAppTask(void);
@@ -73,10 +89,10 @@ private:
     static void InitServer(intptr_t arg);
     static void OpenCommissioning(intptr_t arg);
     static void ChipEventHandler(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg);
-    static void LightActionEventHandler(AppEvent * aEvent);
-    static void ActionInitiated(LightingManager::Action_t aActio, int32_t aActor);
-    static void ActionCompleted(LightingManager::Action_t aAction);
+    static void ActionInitiated(AppTask::Action_t aActio, int32_t aActor);
+    static void ActionCompleted(AppTask::Action_t aAction);
     void DispatchEvent(AppEvent * event);
+    static void SwitchActionEventHandler(AppEvent * aEvent);
 
     static void ButtonEventHandler(bsp_event_t event);
 
@@ -92,12 +108,14 @@ private:
     {
         kFunction_NoneSelected   = 0,
         kFunction_FactoryReset   = 1,
+        kFunction_Switch_1       = 2,
 
         kFunction_Invalid
     } Function;
 
     Function_t mFunction;
     bool mFunctionTimerActive;
+    bool mFunctionSwitchActive;
     bool mSyncClusterToButtonAction;
 
     static AppTask sAppTask;   

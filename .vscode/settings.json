@@ -137,7 +137,9 @@
         "openthread-system.h": "c",
         "cm3_mcu.h": "c",
         "compare": "cpp",
-        "concepts": "cpp"
+        "concepts": "cpp",
+        "rfb_comm.h": "c",
+        "rf_common_init.h": "c"
     },
     // Configure paths or glob patterns to exclude from file watching.
     "files.watcherExclude": {
@@ -190,5 +192,6 @@
     "files.trimFinalNewlines": true,
     "C_Cpp.default.cppStandard": "gnu++14",
     "C_Cpp.default.cStandard": "gnu11",
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "cmake.sourceDirectory": "${workspaceFolder}/config/telink/chip-module"
 }

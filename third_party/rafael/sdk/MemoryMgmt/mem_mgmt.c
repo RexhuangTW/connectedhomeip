@@ -13,7 +13,7 @@
 
 
 #define MEM_MGMT_DEBUG_INFO_TASK_SIZE         20
-#define MEM_MGMT_DEBUG_INFO_SIZE              100
+#define MEM_MGMT_DEBUG_INFO_SIZE              1
 
 #define __mem_mgmt_pool          __attribute__ ((used, section("mem_mgmt_pool")))
 

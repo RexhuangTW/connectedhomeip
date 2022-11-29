@@ -40,7 +40,7 @@ namespace chip {
 namespace DeviceLayer {
 namespace PersistedStorage {
 
-constexpr size_t kMaxNumberOfKeys  = 0x1F;
+constexpr size_t kMaxNumberOfKeys  = 0x1f;
 constexpr size_t kMaxKeyValueBytes = 254;
 
 KeyValueStoreManagerImpl KeyValueStoreManagerImpl::sInstance;
@@ -93,17 +93,18 @@ CHIP_ERROR KeyValueStoreManagerImpl::_Get(const char * key, void * value, size_t
 
     keyId = GetStringKeyId(key, NULL);
 
+    ChipLogDetail(DeviceLayer, "KVS, get keyId: 0x%02x", keyId);
     if (keyId < kMaxNumberOfKeys)
     {
         // This is the ID of the actual data
         pdmInternalId = chip::DeviceLayer::Internal::RT582ConfigKey(pdmIdKvsValue, keyId);
-        ChipLogProgress(DeviceLayer, "KVS, get the value of Matter key [%s] with PDM id: %i", key, pdmInternalId);
+        ChipLogDetail(DeviceLayer, "KVS, get the value of Matter key [%s] with PDM id: 0x%02x", key, pdmInternalId);
         err = chip::DeviceLayer::Internal::RT582Config::ReadConfigValueBin(pdmInternalId, (uint8_t *) value, value_size, read_bytes);
         *read_bytes_size = read_bytes;
     }
     else
     {
-        ChipLogProgress(DeviceLayer, "KVS, Matter key [%s] not found in persistent storage.", key);
+       ChipLogDetail(DeviceLayer, "KVS, Matter key [%s] not found in persistent storage.", key);
     }
 
 exit:
@@ -133,7 +134,8 @@ CHIP_ERROR KeyValueStoreManagerImpl::_Put(const char * key, const void * value, 
     }
 
     pdmInternalId = chip::DeviceLayer::Internal::RT582ConfigKey(pdmIdKvsValue, keyId);
-    ChipLogProgress(DeviceLayer, "KVS, save in flash the value of the Matter key [%s] with PDM id: %i", key, pdmInternalId);
+    ChipLogDetail(DeviceLayer, "KVS, put keyId: 0x%02x", keyId);
+    ChipLogDetail(DeviceLayer, "KVS, save in flash the value of the Matter key [%s] with PDM id: 0x%02x", key, pdmInternalId);
 
     err = chip::DeviceLayer::Internal::RT582Config::WriteConfigValueBin(pdmInternalId, (uint8_t *) value, value_size);
 
@@ -143,20 +145,20 @@ CHIP_ERROR KeyValueStoreManagerImpl::_Put(const char * key, const void * value, 
         if (true == putKey)
         {
             pdmInternalId = chip::DeviceLayer::Internal::RT582ConfigKey(pdmIdKvsKey, keyId);
-            ChipLogProgress(DeviceLayer, "KVS, save in flash the Matter key [%s] with PDM id: %i", key, pdmInternalId);
+            ChipLogDetail(DeviceLayer, "KVS, save in flash the Matter key [%s] with PDM id: 0x%02x", key, pdmInternalId);
 
             err = chip::DeviceLayer::Internal::RT582Config::WriteConfigValueStr(pdmInternalId, key, strlen(key) + 1);
 
             if (err != CHIP_NO_ERROR)
             {
-                ChipLogProgress(DeviceLayer, "KVS, Error while saving in flash the Matter key [%s] with PDM id: %i", key,
+                ChipLogDetail(DeviceLayer, "KVS, Error while saving in flash the Matter key [%s] with PDM id: 0x%02x", key,
                                 pdmInternalId);
             }
         }
     }
     else
     {
-        ChipLogProgress(DeviceLayer, "KVS, Error while saving in flash the value of the Matter key [%s] with PDM id: %i, CHIPERROR: %" CHIP_ERROR_FORMAT, key,
+        ChipLogDetail(DeviceLayer, "KVS, Error while saving in flash the value of the Matter key [%s] with PDM id: 0x%02x, CHIPERROR: %" CHIP_ERROR_FORMAT, key,
                         pdmInternalId, err.Format());
     }
 
@@ -182,28 +184,28 @@ CHIP_ERROR KeyValueStoreManagerImpl::_Delete(const char * key)
         // entry exists so we can remove it
         pdmInternalId = chip::DeviceLayer::Internal::RT582ConfigKey(pdmIdKvsKey, keyId);
 
-        ChipLogProgress(DeviceLayer, "KVS, delete from flash the Matter key [%s] with PDM id: %i", key, pdmInternalId);
+        ChipLogDetail(DeviceLayer, "KVS, delete from flash the Matter key [%s] with PDM id: 0x%02x", key, pdmInternalId);
         err = chip::DeviceLayer::Internal::RT582Config::ClearConfigValue(pdmInternalId);
 
         /* also delete the 'key string' from flash */
         if (err == CHIP_NO_ERROR)
         {
             pdmInternalId = chip::DeviceLayer::Internal::RT582ConfigKey(pdmIdKvsValue, keyId);
-            ChipLogProgress(DeviceLayer, "KVS, delete from flash the value of the Matter key [%s] with PDM id: %i", key,
+            ChipLogDetail(DeviceLayer, "KVS, delete from flash the value of the Matter key [%s] with PDM id: 0x%02x", key,
                             pdmInternalId);
 
             err = chip::DeviceLayer::Internal::RT582Config::ClearConfigValue(pdmInternalId);
 
             if (err != CHIP_NO_ERROR)
             {
-                ChipLogProgress(DeviceLayer,
-                                "KVS, Error while deleting from flash the value of the Matter key [%s] with PDM id: %i", key,
+                ChipLogDetail(DeviceLayer,
+                                "KVS, Error while deleting from flash the value of the Matter key [%s] with PDM id: 0x%02x", key,
                                 pdmInternalId);
             }
         }
         else
         {
-            ChipLogProgress(DeviceLayer, "KVS, Error while deleting from flash the Matter key [%s] with PDM id: %i", key,
+            ChipLogDetail(DeviceLayer, "KVS, Error while deleting from flash the Matter key [%s] with PDM id: 0x%02x", key,
                             pdmInternalId);
         }
     }

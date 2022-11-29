@@ -10,15 +10,22 @@
  * @see http://
  */
 /**************************************************************************************************
-*    INCLUDES
-*************************************************************************************************/
-#include <string.h>
+ *    INCLUDES
+ *************************************************************************************************/
 #include <stdio.h>
+#include <string.h>
+
 #include "cm3_mcu.h"
 #include "ruci.h"
-#include "rfb_comm.h"
+
 #include "rfb.h"
+#include "rfb_comm.h"
+
 #include "rf_common_init.h"
+#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
+#include "mem_mgmt.h"
+#include "task_hci.h"
+#endif
 /**************************************************************************************************
  *    MACROS
  *************************************************************************************************/
@@ -33,10 +40,10 @@
  *************************************************************************************************/
 typedef struct _rfb_rx_ctrl_field_t
 {
-    uint16_t        Length;
-    uint8_t         CrcStatus;
-    uint8_t         Rssi;
-    uint8_t         Snr;
+    uint16_t Length;
+    uint8_t CrcStatus;
+    uint8_t Rssi;
+    uint8_t Snr;
 } rfb_rx_ctrl_field_t;
 
 typedef struct _rfb_rx_buffer_s
@@ -51,52 +58,96 @@ typedef struct _rfb_rx_queue_t
     rfb_rx_buffer_t rx_buf[MAX_RX_BUFF_NUM];
 } rfb_rx_queue_t;
 
+#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
+typedef struct
+{
+    uint16_t msg_tag; /**< message tag. */
+    uint16_t msg_len; /**< message length. */
+    uint8_t * p_msg;  /**< message payload. */
+} rf_fw_rx_ctrl_msg_t;
+#endif
 /**************************************************************************************************
  *    GLOBAL VARIABLES
  *************************************************************************************************/
-rfb_interrupt_event_t *rfb_interrupt_event;
+rfb_interrupt_event_t * rfb_interrupt_event;
 static rfb_rx_queue_t g_rx_queue;
 extern void enter_critical_section(void);
 extern void leave_critical_section(void);
-extern void RfMcu_MemoryGet(uint16_t reg_address, uint8_t *p_rx_data, uint16_t rx_data_length);
+extern void RfMcu_MemoryGet(uint16_t reg_address, uint8_t * p_rx_data, uint16_t rx_data_length);
 /**************************************************************************************************
  *    LOCAL FUNCTIONS
  *************************************************************************************************/
 
-RF_MCU_RX_CMDQ_ERROR rfb_event_read(uint8_t *packet_length, uint8_t *event_address)
+RF_MCU_RX_CMDQ_ERROR rfb_event_read(uint8_t * packet_length, uint8_t * event_address)
 {
+#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
+    rf_fw_rx_ctrl_msg_t comm_msg;
+#endif
     RF_MCU_RX_CMDQ_ERROR rx_confirm_error = RF_MCU_RX_CMDQ_ERR_INIT;
-    uint8_t state = 0;
+    uint8_t state                         = 0;
     do
     {
-        state = (uint8_t)RfMcu_McuStateRead();
+        state = (uint8_t) RfMcu_McuStateRead();
         state = state & RF_MCU_STATE_EVENT_DONE;
     } while (RF_MCU_STATE_EVENT_DONE != state);
     RfMcu_HostCmdSet(RF_MCU_STATE_EVENT_DONE);
     state = 0;
     do
     {
-        state = (uint8_t)RfMcu_McuStateRead();
+        state = (uint8_t) RfMcu_McuStateRead();
         state = state & RF_MCU_STATE_EVENT_DONE;
     } while (0 != state);
 
-    (*packet_length)  = RfMcu_EvtQueueRead(event_address, &rx_confirm_error);
+#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
+    while (1)
+    {
+        (*packet_length) = RfMcu_EvtQueueRead(event_address, &rx_confirm_error);
 
+        if (event_address[0] != BLE_TRANSPORT_HCI_EVENT)
+        {
+            break;
+        }
+        else
+        {
+            comm_msg.msg_tag = MSG_RX_EVENT;
+            comm_msg.msg_len = (*packet_length);
+            comm_msg.p_msg   = mem_malloc((*packet_length));
+            memcpy(comm_msg.p_msg, event_address, comm_msg.msg_len);
+
+            sys_queue_send(&g_rx_common_queue_handle, &comm_msg);
+            state = 0;
+            do
+            {
+                state = (uint8_t) RfMcu_McuStateRead();
+                state = state & RF_MCU_STATE_EVENT_DONE;
+            } while (RF_MCU_STATE_EVENT_DONE != state);
+            RfMcu_HostCmdSet(RF_MCU_STATE_EVENT_DONE);
+            state = 0;
+            do
+            {
+                state = (uint8_t) RfMcu_McuStateRead();
+                state = state & RF_MCU_STATE_EVENT_DONE;
+            } while (0 != state);
+        }
+    }
+#else
+    (*packet_length) = RfMcu_EvtQueueRead(event_address, &rx_confirm_error);
+#endif
 
     return rx_confirm_error;
 }
 
-RF_MCU_RXQ_ERROR rfb_comm_rx_data_read(uint8_t *rx_data_address, rfb_rx_ctrl_field_t *rx_control_field)
+RF_MCU_RXQ_ERROR rfb_comm_rx_data_read(uint8_t * rx_data_address, rfb_rx_ctrl_field_t * rx_control_field)
 {
     RF_MCU_RXQ_ERROR RxQueueError = RF_MCU_RXQ_ERR_INIT;
     RfMcu_RxQueueRead(rx_data_address, &RxQueueError);
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sRxControlField, RUCI_RX_CONTROL_FIELD);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sRxControlField, RUCI_RX_CONTROL_FIELD);
     /* Crc status , Rssi , and SNR will be put on first three byte of RX queue*/
-    memcpy((uint8_t *)rx_control_field, &rx_data_address[2], RUCI_LEN_RX_CONTROL_FIELD - 2);
+    memcpy((uint8_t *) rx_control_field, &rx_data_address[2], RUCI_LEN_RX_CONTROL_FIELD - 2);
     return RxQueueError;
 }
 
-void rfb_send_cmd(uint8_t *cmd_address, uint8_t cmd_length)
+void rfb_send_cmd(uint8_t * cmd_address, uint8_t cmd_length)
 {
 
     if (RF_MCU_TX_CMDQ_SET_SUCCESS != RfMcu_CmdQueueSend(cmd_address, cmd_length))
@@ -111,12 +162,15 @@ void rfb_send_cmd(uint8_t *cmd_address, uint8_t cmd_length)
 void rfb_isr_handler(uint8_t interrupt_status)
 {
     static COMM_SUBSYSTEM_INTERRUPT interrupt_state_value;
+#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
+    rf_fw_rx_ctrl_msg_t isr_msg;
+#endif
     uint32_t pro_grm_cnt;
     uint8_t tx_status, rx_numIdx;
     bool isRemainingRxQ;
-    RF_MCU_RXQ_ERROR rxq_status = RF_MCU_RXQ_ERR_INIT;
-    static rfb_rx_queue_t *pRxQueue = &g_rx_queue;
-    interrupt_state_value.u8 = interrupt_status;
+    RF_MCU_RXQ_ERROR rxq_status      = RF_MCU_RXQ_ERR_INIT;
+    static rfb_rx_queue_t * pRxQueue = &g_rx_queue;
+    interrupt_state_value.u8         = interrupt_status;
 
     /* wake up RF to clear interrupt status */
     RfMcu_HostWakeUpMcu();
@@ -130,11 +184,16 @@ void rfb_isr_handler(uint8_t interrupt_status)
     if (interrupt_state_value.bf.EVENT_DONE)
     {
         RfMcu_InterruptClear((interrupt_status & 0x01));
+#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
+        isr_msg.msg_tag = ISR_MSG_RX_EVENT;
+        sys_queue_send_from_isr(&g_rx_common_queue_handle, &isr_msg);
+        RfMcu_HostCmdSet(RF_MCU_STATE_EVENT_DONE);
+#endif
     }
     if (interrupt_state_value.bf.TX_DONE)
     {
         /* Read Tx Status */
-        tx_status = (uint8_t)RfMcu_McuStateRead();
+        tx_status = (uint8_t) RfMcu_McuStateRead();
 
         /* Clear MCU state by sending host command */
         RfMcu_HostCmdSet((tx_status & 0xF8));
@@ -144,16 +203,17 @@ void rfb_isr_handler(uint8_t interrupt_status)
     if (interrupt_state_value.bf.RFB_TRAP)
     {
         printf("[Error] RFB Trap !!!\n");
-        RfMcu_MemoryGet(0x4008, (uint8_t *)&pro_grm_cnt, 4);
+        RfMcu_MemoryGet(0x4008, (uint8_t *) &pro_grm_cnt, 4);
         printf("PC= %X\n", pro_grm_cnt);
-        RfMcu_MemoryGet(0x01E0, (uint8_t *)&pro_grm_cnt, 4);
+        RfMcu_MemoryGet(0x01E0, (uint8_t *) &pro_grm_cnt, 4);
         printf("MAC err status= %X\n", pro_grm_cnt);
-        RfMcu_MemoryGet(0x0198, (uint8_t *)&pro_grm_cnt, 4);
+        RfMcu_MemoryGet(0x0198, (uint8_t *) &pro_grm_cnt, 4);
         printf("MAC task status= %X\n", pro_grm_cnt);
-        RfMcu_MemoryGet(0x0048, (uint8_t *)&pro_grm_cnt, 4);
+        RfMcu_MemoryGet(0x0048, (uint8_t *) &pro_grm_cnt, 4);
         printf("BMU err status= %X\n", pro_grm_cnt);
         RfMcu_InterruptClear((interrupt_status & 0x04));
-        while (1);
+        while (1)
+            ;
     }
     if (interrupt_state_value.bf.RX_DONE)
     {
@@ -161,13 +221,14 @@ void rfb_isr_handler(uint8_t interrupt_status)
         g_rx_queue.rx_num = 0;
         do
         {
-            rxq_status = rfb_comm_rx_data_read(pRxQueue->rx_buf[g_rx_queue.rx_num].rx_data, &pRxQueue->rx_buf[g_rx_queue.rx_num].rx_control_field);
+            rxq_status = rfb_comm_rx_data_read(pRxQueue->rx_buf[g_rx_queue.rx_num].rx_data,
+                                               &pRxQueue->rx_buf[g_rx_queue.rx_num].rx_control_field);
             if (rxq_status != RF_MCU_RXQ_GET_SUCCESS)
             {
                 return;
             }
             isRemainingRxQ = RfMcu_RxQueueCheck();
-            g_rx_queue.rx_num ++;
+            g_rx_queue.rx_num++;
             if (g_rx_queue.rx_num > MAX_RX_BUFF_NUM)
             {
                 return;
@@ -175,9 +236,10 @@ void rfb_isr_handler(uint8_t interrupt_status)
         } while (isRemainingRxQ);
 
         for (rx_numIdx = 0; rx_numIdx < g_rx_queue.rx_num; rx_numIdx++)
-            rfb_interrupt_event->rx_done(pRxQueue->rx_buf[rx_numIdx].rx_control_field.Length, pRxQueue->rx_buf[rx_numIdx].rx_data, pRxQueue->rx_buf[rx_numIdx].rx_control_field.CrcStatus,
-                                         pRxQueue->rx_buf[rx_numIdx].rx_control_field.Rssi, pRxQueue->rx_buf[rx_numIdx].rx_control_field.Snr);
-
+            rfb_interrupt_event->rx_done(pRxQueue->rx_buf[rx_numIdx].rx_control_field.Length, pRxQueue->rx_buf[rx_numIdx].rx_data,
+                                         pRxQueue->rx_buf[rx_numIdx].rx_control_field.CrcStatus,
+                                         pRxQueue->rx_buf[rx_numIdx].rx_control_field.Rssi,
+                                         pRxQueue->rx_buf[rx_numIdx].rx_control_field.Snr);
     }
 
     if (interrupt_state_value.bf.RTC_WAKEUP)
@@ -194,26 +256,25 @@ void rfb_isr_handler(uint8_t interrupt_status)
     {
         RfMcu_InterruptClear((interrupt_status & 0x10));
     }
-
 }
 
 RFB_EVENT_STATUS rfb_comm_frequency_set(uint32_t rf_frequency)
 {
-    ruci_para_set_rf_frequency_t sSetFrequencyCmd = {0};
-    ruci_para_cnf_event_t sCnfEvent = {0};
-    uint8_t event_len = 0;
-    RF_MCU_RX_CMDQ_ERROR event_status = RF_MCU_RX_CMDQ_ERR_INIT;
+    ruci_para_set_rf_frequency_t sSetFrequencyCmd = { 0 };
+    ruci_para_cnf_event_t sCnfEvent               = { 0 };
+    uint8_t event_len                             = 0;
+    RF_MCU_RX_CMDQ_ERROR event_status             = RF_MCU_RX_CMDQ_ERR_INIT;
 
     SET_RUCI_PARA_SET_RF_FREQUENCY(&sSetFrequencyCmd, rf_frequency);
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sSetFrequencyCmd, RUCI_SET_RF_FREQUENCY);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sSetFrequencyCmd, RUCI_SET_RF_FREQUENCY);
 
     enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sSetFrequencyCmd, RUCI_LEN_SET_RF_FREQUENCY);
-    event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
+    rfb_send_cmd((uint8_t *) &sSetFrequencyCmd, RUCI_LEN_SET_RF_FREQUENCY);
+    event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
     leave_critical_section();
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_CNF_EVENT_NOT_AVAILABLE;
@@ -224,7 +285,7 @@ RFB_EVENT_STATUS rfb_comm_frequency_set(uint32_t rf_frequency)
     }
     if (sCnfEvent.status != RFB_EVENT_SUCCESS)
     {
-        return (RFB_EVENT_STATUS)sCnfEvent.status;
+        return (RFB_EVENT_STATUS) sCnfEvent.status;
     }
 
     return RFB_EVENT_SUCCESS;
@@ -232,21 +293,21 @@ RFB_EVENT_STATUS rfb_comm_frequency_set(uint32_t rf_frequency)
 
 RFB_EVENT_STATUS rfb_comm_single_tone_mode_set(uint8_t single_tone_mode)
 {
-    ruci_para_set_single_tone_mode_t sStModeEnCmd_t = {0};
-    ruci_para_cnf_event_t sCnfEvent = {0};
-    uint8_t event_len = 0;
-    RF_MCU_RX_CMDQ_ERROR event_status = RF_MCU_RX_CMDQ_ERR_INIT;
+    ruci_para_set_single_tone_mode_t sStModeEnCmd_t = { 0 };
+    ruci_para_cnf_event_t sCnfEvent                 = { 0 };
+    uint8_t event_len                               = 0;
+    RF_MCU_RX_CMDQ_ERROR event_status               = RF_MCU_RX_CMDQ_ERR_INIT;
 
     SET_RUCI_PARA_SET_SINGLE_TONE_MODE(&sStModeEnCmd_t, single_tone_mode);
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sStModeEnCmd_t, RUCI_SET_SINGLE_TONE_MODE);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sStModeEnCmd_t, RUCI_SET_SINGLE_TONE_MODE);
 
     enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sStModeEnCmd_t, RUCI_LEN_SET_SINGLE_TONE_MODE);
-    event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
+    rfb_send_cmd((uint8_t *) &sStModeEnCmd_t, RUCI_LEN_SET_SINGLE_TONE_MODE);
+    event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
     leave_critical_section();
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_CNF_EVENT_NOT_AVAILABLE;
@@ -257,28 +318,28 @@ RFB_EVENT_STATUS rfb_comm_single_tone_mode_set(uint8_t single_tone_mode)
     }
     if (sCnfEvent.status != RFB_EVENT_SUCCESS)
     {
-        return (RFB_EVENT_STATUS)sCnfEvent.status;
+        return (RFB_EVENT_STATUS) sCnfEvent.status;
     }
     return RFB_EVENT_SUCCESS;
 }
 
 RFB_EVENT_STATUS rfb_comm_rx_enable_set(bool rx_continuous, uint32_t rx_timeout)
 {
-    ruci_para_set_rx_enable_t sRxReqCmd = {0};
-    ruci_para_cnf_event_t sCnfEvent = {0};
-    uint8_t event_len = 0;
-    RF_MCU_RX_CMDQ_ERROR event_status = RF_MCU_RX_CMDQ_ERR_INIT;
+    ruci_para_set_rx_enable_t sRxReqCmd = { 0 };
+    ruci_para_cnf_event_t sCnfEvent     = { 0 };
+    uint8_t event_len                   = 0;
+    RF_MCU_RX_CMDQ_ERROR event_status   = RF_MCU_RX_CMDQ_ERR_INIT;
 
     SET_RUCI_PARA_SET_RX_ENABLE(&sRxReqCmd, ((rx_continuous == true) ? RX_ALWAYS_ON_MODE : rx_timeout));
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sRxReqCmd, RUCI_SET_RX_ENABLE);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sRxReqCmd, RUCI_SET_RX_ENABLE);
 
     enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sRxReqCmd, RUCI_LEN_SET_RX_ENABLE);
-    event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
+    rfb_send_cmd((uint8_t *) &sRxReqCmd, RUCI_LEN_SET_RX_ENABLE);
+    event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
     leave_critical_section();
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_CNF_EVENT_NOT_AVAILABLE;
@@ -289,30 +350,29 @@ RFB_EVENT_STATUS rfb_comm_rx_enable_set(bool rx_continuous, uint32_t rx_timeout)
     }
     if (sCnfEvent.status != RFB_EVENT_SUCCESS)
     {
-        return (RFB_EVENT_STATUS)sCnfEvent.status;
+        return (RFB_EVENT_STATUS) sCnfEvent.status;
     }
 
     return RFB_EVENT_SUCCESS;
 }
 
-
 RFB_EVENT_STATUS rfb_comm_rf_idle_set(void)
 {
-    ruci_para_set_rf_idle_t sRfIdleSetCmd = {0};
-    ruci_para_cnf_event_t sCnfEvent = {0};
-    uint8_t event_len = 0;
-    RF_MCU_RX_CMDQ_ERROR event_status = RF_MCU_RX_CMDQ_ERR_INIT;
+    ruci_para_set_rf_idle_t sRfIdleSetCmd = { 0 };
+    ruci_para_cnf_event_t sCnfEvent       = { 0 };
+    uint8_t event_len                     = 0;
+    RF_MCU_RX_CMDQ_ERROR event_status     = RF_MCU_RX_CMDQ_ERR_INIT;
 
     SET_RUCI_PARA_SET_RF_IDLE(&sRfIdleSetCmd);
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sRfIdleSetCmd, RUCI_SET_RF_IDLE);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sRfIdleSetCmd, RUCI_SET_RF_IDLE);
 
     enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sRfIdleSetCmd, RUCI_LEN_SET_RF_IDLE);
-    event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
+    rfb_send_cmd((uint8_t *) &sRfIdleSetCmd, RUCI_LEN_SET_RF_IDLE);
+    event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
     leave_critical_section();
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_CNF_EVENT_NOT_AVAILABLE;
@@ -323,16 +383,15 @@ RFB_EVENT_STATUS rfb_comm_rf_idle_set(void)
     }
     if (sCnfEvent.status != RFB_EVENT_SUCCESS)
     {
-        return (RFB_EVENT_STATUS)sCnfEvent.status;
+        return (RFB_EVENT_STATUS) sCnfEvent.status;
     }
 
     return RFB_EVENT_SUCCESS;
 }
 
-
-RFB_WRITE_TXQ_STATUS rfb_comm_tx_data_send(uint16_t packet_length, uint8_t *tx_data_address, uint8_t mac_control, uint8_t mac_dsn)
+RFB_WRITE_TXQ_STATUS rfb_comm_tx_data_send(uint16_t packet_length, uint8_t * tx_data_address, uint8_t mac_control, uint8_t mac_dsn)
 {
-    ruci_para_set_tx_control_field_t sTxControlField = {0};
+    ruci_para_set_tx_control_field_t sTxControlField = { 0 };
     static uint8_t txData[MAX_RF_LEN];
     /* wake up RF to clear interrupt status */
     RfMcu_HostWakeUpMcu();
@@ -343,8 +402,8 @@ RFB_WRITE_TXQ_STATUS rfb_comm_tx_data_send(uint16_t packet_length, uint8_t *tx_d
     SET_RUCI_PARA_SET_TX_CONTROL_FIELD(&sTxControlField, mac_control, mac_dsn);
     sTxControlField.length += packet_length;
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sTxControlField, RUCI_SET_TX_CONTROL_FIELD);
-    memcpy(&txData[0], (uint8_t *)&sTxControlField, RUCI_LEN_SET_TX_CONTROL_FIELD);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sTxControlField, RUCI_SET_TX_CONTROL_FIELD);
+    memcpy(&txData[0], (uint8_t *) &sTxControlField, RUCI_LEN_SET_TX_CONTROL_FIELD);
     memcpy(&txData[RUCI_LEN_SET_TX_CONTROL_FIELD], tx_data_address, packet_length);
 
     if (RF_MCU_TXQ_FULL == RfMcu_TxQueueSendById(RF_TX_Q_ID, &txData[0], packet_length + RUCI_LEN_SET_TX_CONTROL_FIELD))
@@ -352,7 +411,6 @@ RFB_WRITE_TXQ_STATUS rfb_comm_tx_data_send(uint16_t packet_length, uint8_t *tx_d
         return RFB_WRITE_TXQ_FULL;
     }
     return RFB_WRITE_TXQ_SUCCESS;
-
 }
 
 void rfb_comm_init_to_idle(void)
@@ -362,7 +420,15 @@ void rfb_comm_init_to_idle(void)
     RfMcu_HostModeEnable();
 }
 
-void rfb_comm_init(rfb_interrupt_event_t *_rfb_interrupt_event)
+void rfb_comm_multi_init(rfb_interrupt_event_t * _rfb_interrupt_event)
+{
+    /* Rsgister Interrupt event for application use*/
+    rfb_interrupt_event = _rfb_interrupt_event;
+
+    rf_common_init_by_fw(RF_FW_LOAD_SELECT_MULTI_PROTCOL_2P4G, rfb_isr_handler);
+}
+
+void rfb_comm_init(rfb_interrupt_event_t * _rfb_interrupt_event)
 {
     /* Rsgister Interrupt event for application use*/
     rfb_interrupt_event = _rfb_interrupt_event;
@@ -370,27 +436,27 @@ void rfb_comm_init(rfb_interrupt_event_t *_rfb_interrupt_event)
     rf_common_init_by_fw(RF_FW_LOAD_SELECT_RUCI_CMD, rfb_isr_handler);
 }
 
-RFB_EVENT_STATUS rfb_comm_rssi_read(uint8_t *rssi)
+RFB_EVENT_STATUS rfb_comm_rssi_read(uint8_t * rssi)
 {
-    ruci_para_get_rssi_t sGetRssiCmd = {0};
-    ruci_para_get_rssi_event_t sGetRssiEvent = {0};
-    ruci_para_cnf_event_t sCnfEvent = {0};
-    uint8_t event_len = 0;
-    RF_MCU_RX_CMDQ_ERROR event_status = RF_MCU_RX_CMDQ_ERR_INIT;
-    uint8_t get_rssi_event_len = 0;
+    ruci_para_get_rssi_t sGetRssiCmd           = { 0 };
+    ruci_para_get_rssi_event_t sGetRssiEvent   = { 0 };
+    ruci_para_cnf_event_t sCnfEvent            = { 0 };
+    uint8_t event_len                          = 0;
+    RF_MCU_RX_CMDQ_ERROR event_status          = RF_MCU_RX_CMDQ_ERR_INIT;
+    uint8_t get_rssi_event_len                 = 0;
     RF_MCU_RX_CMDQ_ERROR get_rssi_event_status = RF_MCU_RX_CMDQ_ERR_INIT;
 
     SET_RUCI_PARA_GET_RSSI(&sGetRssiCmd);
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sGetRssiCmd, RUCI_GET_RSSI);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sGetRssiCmd, RUCI_GET_RSSI);
 
     enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sGetRssiCmd, RUCI_LEN_GET_RSSI);
-    event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
-    get_rssi_event_status = rfb_event_read(&get_rssi_event_len, (uint8_t *)&sGetRssiEvent);
+    rfb_send_cmd((uint8_t *) &sGetRssiCmd, RUCI_LEN_GET_RSSI);
+    event_status          = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
+    get_rssi_event_status = rfb_event_read(&get_rssi_event_len, (uint8_t *) &sGetRssiEvent);
     leave_critical_section();
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_CNF_EVENT_NOT_AVAILABLE;
@@ -401,10 +467,10 @@ RFB_EVENT_STATUS rfb_comm_rssi_read(uint8_t *rssi)
     }
     if (sCnfEvent.status != RFB_EVENT_SUCCESS)
     {
-        return (RFB_EVENT_STATUS)sCnfEvent.status;
+        return (RFB_EVENT_STATUS) sCnfEvent.status;
     }
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sGetRssiEvent, RUCI_GET_RSSI_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sGetRssiEvent, RUCI_GET_RSSI_EVENT);
     if (get_rssi_event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_RSP_EVENT_NOT_AVAILABLE;
@@ -420,21 +486,21 @@ RFB_EVENT_STATUS rfb_comm_rssi_read(uint8_t *rssi)
 
 RFB_EVENT_STATUS rfb_comm_agc_set(uint8_t agc_enable, uint8_t lna_gain, uint8_t vga_gain, uint8_t tia_gain)
 {
-    ruci_para_set_agc_t sAgcSetCmd = {0};
-    ruci_para_cnf_event_t sCnfEvent = {0};
-    uint8_t event_len = 0;
+    ruci_para_set_agc_t sAgcSetCmd    = { 0 };
+    ruci_para_cnf_event_t sCnfEvent   = { 0 };
+    uint8_t event_len                 = 0;
     RF_MCU_RX_CMDQ_ERROR event_status = RF_MCU_RX_CMDQ_ERR_INIT;
 
     SET_RUCI_PARA_SET_AGC(&sAgcSetCmd, (agc_enable & 0x01), lna_gain, vga_gain, tia_gain);
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sAgcSetCmd, RUCI_SET_AGC);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sAgcSetCmd, RUCI_SET_AGC);
 
     enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sAgcSetCmd, RUCI_LEN_SET_AGC);
-    event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
+    rfb_send_cmd((uint8_t *) &sAgcSetCmd, RUCI_LEN_SET_AGC);
+    event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
     leave_critical_section();
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_CNF_EVENT_NOT_AVAILABLE;
@@ -445,7 +511,7 @@ RFB_EVENT_STATUS rfb_comm_agc_set(uint8_t agc_enable, uint8_t lna_gain, uint8_t 
     }
     if (sCnfEvent.status != RFB_EVENT_SUCCESS)
     {
-        return (RFB_EVENT_STATUS)sCnfEvent.status;
+        return (RFB_EVENT_STATUS) sCnfEvent.status;
     }
 
     return RFB_EVENT_SUCCESS;
@@ -453,21 +519,21 @@ RFB_EVENT_STATUS rfb_comm_agc_set(uint8_t agc_enable, uint8_t lna_gain, uint8_t 
 
 RFB_EVENT_STATUS rfb_comm_rf_sleep_set(bool enable_flag)
 {
-    ruci_para_set_rf_sleep_t sRfSleepSetCmd = {0};
-    ruci_para_cnf_event_t sCnfEvent = {0};
-    uint8_t event_len = 0;
-    RF_MCU_RX_CMDQ_ERROR event_status = RF_MCU_RX_CMDQ_ERR_INIT;
+    ruci_para_set_rf_sleep_t sRfSleepSetCmd = { 0 };
+    ruci_para_cnf_event_t sCnfEvent         = { 0 };
+    uint8_t event_len                       = 0;
+    RF_MCU_RX_CMDQ_ERROR event_status       = RF_MCU_RX_CMDQ_ERR_INIT;
 
     SET_RUCI_PARA_SET_RF_SLEEP(&sRfSleepSetCmd, enable_flag);
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sRfSleepSetCmd, RUCI_SET_RF_SLEEP);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sRfSleepSetCmd, RUCI_SET_RF_SLEEP);
 
     enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sRfSleepSetCmd, RUCI_LEN_SET_RF_SLEEP);
-    event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
+    rfb_send_cmd((uint8_t *) &sRfSleepSetCmd, RUCI_LEN_SET_RF_SLEEP);
+    event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
     leave_critical_section();
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_CNF_EVENT_NOT_AVAILABLE;
@@ -478,33 +544,33 @@ RFB_EVENT_STATUS rfb_comm_rf_sleep_set(bool enable_flag)
     }
     if (sCnfEvent.status != RFB_EVENT_SUCCESS)
     {
-        return (RFB_EVENT_STATUS)sCnfEvent.status;
+        return (RFB_EVENT_STATUS) sCnfEvent.status;
     }
 
     return RFB_EVENT_SUCCESS;
 }
 
-RFB_EVENT_STATUS rfb_comm_fw_version_get(uint32_t *rfb_version)
+RFB_EVENT_STATUS rfb_comm_fw_version_get(uint32_t * rfb_version)
 {
-    ruci_para_get_fw_ver_t sGetRfbVerCmd = {0};
-    ruci_para_get_fw_ver_event_t sGetRfbVerEvent = {0};
-    ruci_para_cmn_cnf_event_t sCmnCnfEvent = {0};
-    uint8_t event_len = 0;
-    RF_MCU_RX_CMDQ_ERROR event_status = RF_MCU_RX_CMDQ_ERR_INIT;
-    uint8_t get_rfb_ver_event_len = 0;
+    ruci_para_get_fw_ver_t sGetRfbVerCmd          = { 0 };
+    ruci_para_get_fw_ver_event_t sGetRfbVerEvent  = { 0 };
+    ruci_para_cmn_cnf_event_t sCmnCnfEvent        = { 0 };
+    uint8_t event_len                             = 0;
+    RF_MCU_RX_CMDQ_ERROR event_status             = RF_MCU_RX_CMDQ_ERR_INIT;
+    uint8_t get_rfb_ver_event_len                 = 0;
     RF_MCU_RX_CMDQ_ERROR get_rfb_ver_event_status = RF_MCU_RX_CMDQ_ERR_INIT;
 
     SET_RUCI_PARA_GET_FW_VER(&sGetRfbVerCmd);
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sGetRfbVerCmd, RUCI_GET_FW_VER);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sGetRfbVerCmd, RUCI_GET_FW_VER);
 
     enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sGetRfbVerCmd, RUCI_LEN_GET_FW_VER);
-    event_status = rfb_event_read(&event_len, (uint8_t *)&sCmnCnfEvent);
-    get_rfb_ver_event_status = rfb_event_read(&get_rfb_ver_event_len, (uint8_t *)&sGetRfbVerEvent);
+    rfb_send_cmd((uint8_t *) &sGetRfbVerCmd, RUCI_LEN_GET_FW_VER);
+    event_status             = rfb_event_read(&event_len, (uint8_t *) &sCmnCnfEvent);
+    get_rfb_ver_event_status = rfb_event_read(&get_rfb_ver_event_len, (uint8_t *) &sGetRfbVerEvent);
     leave_critical_section();
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sCmnCnfEvent, RUCI_CNF_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sCmnCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_CNF_EVENT_NOT_AVAILABLE;
@@ -515,10 +581,10 @@ RFB_EVENT_STATUS rfb_comm_fw_version_get(uint32_t *rfb_version)
     }
     if (sCmnCnfEvent.status != RFB_CMN_EVENT_SUCCESS)
     {
-        return (RFB_EVENT_STATUS)sCmnCnfEvent.status;
+        return (RFB_EVENT_STATUS) sCmnCnfEvent.status;
     }
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sGetRfbVerEvent, RUCI_GET_FW_VER_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sGetRfbVerEvent, RUCI_GET_FW_VER_EVENT);
     if (get_rfb_ver_event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_RSP_EVENT_NOT_AVAILABLE;
@@ -534,21 +600,21 @@ RFB_EVENT_STATUS rfb_comm_fw_version_get(uint32_t *rfb_version)
 
 RFB_EVENT_STATUS rfb_comm_auto_state_set(bool rx_on_when_idle)
 {
-    ruci_para_set_rfb_auto_state_t sRfbAutoStateSet = {0};
-    ruci_para_cnf_event_t sCnfEvent = {0};
-    uint8_t event_len = 0;
-    RF_MCU_RX_CMDQ_ERROR event_status = RF_MCU_RX_CMDQ_ERR_INIT;
+    ruci_para_set_rfb_auto_state_t sRfbAutoStateSet = { 0 };
+    ruci_para_cnf_event_t sCnfEvent                 = { 0 };
+    uint8_t event_len                               = 0;
+    RF_MCU_RX_CMDQ_ERROR event_status               = RF_MCU_RX_CMDQ_ERR_INIT;
 
     SET_RUCI_PARA_SET_RFB_AUTO_STATE(&sRfbAutoStateSet, rx_on_when_idle);
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sRfbAutoStateSet, RUCI_SET_RFB_AUTO_STATE);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sRfbAutoStateSet, RUCI_SET_RFB_AUTO_STATE);
 
     enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sRfbAutoStateSet, RUCI_LEN_SET_RFB_AUTO_STATE);
-    event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
+    rfb_send_cmd((uint8_t *) &sRfbAutoStateSet, RUCI_LEN_SET_RFB_AUTO_STATE);
+    event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
     leave_critical_section();
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_CNF_EVENT_NOT_AVAILABLE;
@@ -559,28 +625,28 @@ RFB_EVENT_STATUS rfb_comm_auto_state_set(bool rx_on_when_idle)
     }
     if (sCnfEvent.status != RFB_EVENT_SUCCESS)
     {
-        return (RFB_EVENT_STATUS)sCnfEvent.status;
+        return (RFB_EVENT_STATUS) sCnfEvent.status;
     }
     return RFB_EVENT_SUCCESS;
 }
 
 RFB_EVENT_STATUS rfb_comm_clock_set(uint8_t modem_type, uint8_t band_type, uint8_t clock_mode)
 {
-    ruci_para_set_clock_mode_t sRfbClockModeSet = {0};
-    ruci_para_cnf_event_t sCnfEvent = {0};
-    uint8_t event_len = 0;
-    RF_MCU_RX_CMDQ_ERROR event_status = RF_MCU_RX_CMDQ_ERR_INIT;
+    ruci_para_set_clock_mode_t sRfbClockModeSet = { 0 };
+    ruci_para_cnf_event_t sCnfEvent             = { 0 };
+    uint8_t event_len                           = 0;
+    RF_MCU_RX_CMDQ_ERROR event_status           = RF_MCU_RX_CMDQ_ERR_INIT;
 
     SET_RUCI_PARA_SET_CLOCK_MODE(&sRfbClockModeSet, modem_type, band_type, clock_mode);
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sRfbClockModeSet, RUCI_SET_CLOCK_MODE);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sRfbClockModeSet, RUCI_SET_CLOCK_MODE);
 
     enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sRfbClockModeSet, RUCI_LEN_SET_CLOCK_MODE);
-    event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
+    rfb_send_cmd((uint8_t *) &sRfbClockModeSet, RUCI_LEN_SET_CLOCK_MODE);
+    event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
     leave_critical_section();
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_CNF_EVENT_NOT_AVAILABLE;
@@ -591,7 +657,7 @@ RFB_EVENT_STATUS rfb_comm_clock_set(uint8_t modem_type, uint8_t band_type, uint8
     }
     if (sCnfEvent.status != RFB_EVENT_SUCCESS)
     {
-        return (RFB_EVENT_STATUS)sCnfEvent.status;
+        return (RFB_EVENT_STATUS) sCnfEvent.status;
     }
     return RFB_EVENT_SUCCESS;
 }
@@ -600,19 +666,19 @@ RFB_EVENT_STATUS rfb_comm_tx_power_set(uint8_t band_type, uint8_t power_index)
 {
     ruci_para_set_tx_power_t sTxPwrSetCmd_t;
     ruci_para_cmn_cnf_event_t sCmnCnfEvent;
-    uint8_t event_len = 0;
+    uint8_t event_len                 = 0;
     RF_MCU_RX_CMDQ_ERROR event_status = RF_MCU_RX_CMDQ_ERR_INIT;
 
     SET_RUCI_PARA_SET_TX_POWER(&sTxPwrSetCmd_t, band_type, power_index);
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sTxPwrSetCmd_t, RUCI_SET_TX_POWER);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sTxPwrSetCmd_t, RUCI_SET_TX_POWER);
 
     enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sTxPwrSetCmd_t, RUCI_LEN_SET_TX_POWER);
-    event_status = rfb_event_read(&event_len, (uint8_t *)&sCmnCnfEvent);
+    rfb_send_cmd((uint8_t *) &sTxPwrSetCmd_t, RUCI_LEN_SET_TX_POWER);
+    event_status = rfb_event_read(&event_len, (uint8_t *) &sCmnCnfEvent);
     leave_critical_section();
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sCmnCnfEvent, RUCI_CMN_CNF_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sCmnCnfEvent, RUCI_CMN_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_CNF_EVENT_NOT_AVAILABLE;
@@ -623,31 +689,30 @@ RFB_EVENT_STATUS rfb_comm_tx_power_set(uint8_t band_type, uint8_t power_index)
     }
     if (sCmnCnfEvent.status != RFB_CMN_EVENT_SUCCESS)
     {
-        return (RFB_EVENT_STATUS)sCmnCnfEvent.status;
+        return (RFB_EVENT_STATUS) sCmnCnfEvent.status;
     }
     return RFB_EVENT_SUCCESS;
 }
 
-RFB_EVENT_STATUS rfb_comm_key_set(uint8_t *pKey)
+RFB_EVENT_STATUS rfb_comm_key_set(uint8_t * pKey)
 {
     ruci_para_set_rfe_security_t sKeyCmd_t;
-    ruci_para_cnf_event_t sCnfEvent = {0};
-    uint8_t event_len = 0;
+    ruci_para_cnf_event_t sCnfEvent   = { 0 };
+    uint8_t event_len                 = 0;
     RF_MCU_RX_CMDQ_ERROR event_status = RF_MCU_RX_CMDQ_ERR_INIT;
 
-    SET_RUCI_PARA_SET_RFE_SECURITY(&sKeyCmd_t, *pKey, *(pKey + 1), *(pKey + 2), *(pKey + 3), *(pKey + 4)
-                                   , *(pKey + 5), *(pKey + 6), *(pKey + 7), *(pKey + 8), *(pKey + 9), *(pKey + 10), *(pKey + 11)
-                                   , *(pKey + 12), *(pKey + 13), *(pKey + 14), *(pKey + 15)
-                                   , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
+    SET_RUCI_PARA_SET_RFE_SECURITY(&sKeyCmd_t, *pKey, *(pKey + 1), *(pKey + 2), *(pKey + 3), *(pKey + 4), *(pKey + 5), *(pKey + 6),
+                                   *(pKey + 7), *(pKey + 8), *(pKey + 9), *(pKey + 10), *(pKey + 11), *(pKey + 12), *(pKey + 13),
+                                   *(pKey + 14), *(pKey + 15), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sSecurityCmd_t, RUCI_SET_RFE_SECURITY);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sSecurityCmd_t, RUCI_SET_RFE_SECURITY);
 
     enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sKeyCmd_t, RUCI_LEN_SET_RFE_SECURITY);
-    event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
+    rfb_send_cmd((uint8_t *) &sKeyCmd_t, RUCI_LEN_SET_RFE_SECURITY);
+    event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
     leave_critical_section();
 
-    RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
     {
         return RFB_CNF_EVENT_NOT_AVAILABLE;
@@ -658,7 +723,7 @@ RFB_EVENT_STATUS rfb_comm_key_set(uint8_t *pKey)
     }
     if (sCnfEvent.status != RFB_CMN_EVENT_SUCCESS)
     {
-        return (RFB_EVENT_STATUS)sCnfEvent.status;
+        return (RFB_EVENT_STATUS) sCnfEvent.status;
     }
     return RFB_EVENT_SUCCESS;
 }

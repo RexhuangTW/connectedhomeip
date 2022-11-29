@@ -185,7 +185,7 @@ typedef struct rfb_zb_ctrl_s
     * @see
     * @image
     */
-    void (*data_send)(uint8_t *tx_data_address, uint16_t packet_length, uint8_t tx_control, uint8_t dsn);
+    uint32_t (*data_send)(uint8_t *tx_data_address, uint16_t packet_length, uint8_t tx_control, uint8_t dsn);
 
     /**
     * @brief Set TX continuous wave (for testing, tx timeout is not supported)
@@ -500,7 +500,7 @@ typedef struct rfb_wisun_ctrl_s
      * @see
      * @image
      */
-    void (*data_send)(uint8_t *tx_data_address, uint16_t packet_length, uint8_t tx_control, uint8_t dsn);
+    uint32_t (*data_send)(uint8_t *tx_data_address, uint16_t packet_length, uint8_t tx_control, uint8_t dsn);
 
     /**
      * @brief Set RFB to sleep state
@@ -706,7 +706,7 @@ typedef struct rfb_ble_ctrl_s
      * @see
      * @image
      */
-    void (*data_send)(uint8_t *tx_data_address, uint16_t packet_length, uint8_t tx_control, uint8_t dsn);
+    uint32_t (*data_send)(uint8_t *tx_data_address, uint16_t packet_length, uint8_t tx_control, uint8_t dsn);
     void (*ble_modem_set)(uint8_t data_rate, uint8_t coded_scheme);
     void (*ble_mac_set)(uint32_t sfd_content, uint8_t whitening_en, uint8_t whitening_init_value, uint32_t crc_init_value);
 
@@ -746,4 +746,7 @@ rfb_wisun_ctrl_t *rfb_wisun_init(void);
 #endif
 #if (defined RFB_BLE_ENABLED && RFB_BLE_ENABLED == 1)
 rfb_ble_ctrl_t *rfb_ble_init(void);
+#endif
+#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED ==1)
+rfb_zb_ctrl_t *rfb_multi_init(void);
 #endif

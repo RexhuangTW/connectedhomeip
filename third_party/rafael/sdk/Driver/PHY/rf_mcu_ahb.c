@@ -19,7 +19,7 @@ void RfMcu_MemorySetAhb(uint16_t sys_addr, const uint8_t *p_data, uint16_t data_
 {
     data_length = (uint16_t)AHB_ALIGN_4(data_length);
 
-    enter_critical_section();
+    //enter_critical_section();
     RfMcu_DmaBusyCheck();
 #if (RF_MCU_USING_REG_FIELD)
     RF_MCU_AHB_DMA_ADDR_REG                = (uint32_t)p_data;
@@ -33,7 +33,7 @@ void RfMcu_MemorySetAhb(uint16_t sys_addr, const uint8_t *p_data, uint16_t data_
     COMM_SUBSYSTEM_AHB->COMM_SUBSYSTEM_DMA_TYPE = COMM_SUBSYSTEM_DMA_TYPE_MEM_WRITE;
     COMM_SUBSYSTEM_AHB->COMM_SUBSYSTEM_HOST = COMM_SUBSYSTEM_HOST_CTRL_DMA_ENABLE;
 #endif
-    leave_critical_section();
+    //leave_critical_section();
     RfMcu_DmaBusyCheck();
 }
 
@@ -42,7 +42,7 @@ void RfMcu_MemoryGetAhb(uint16_t sys_addr, uint8_t *p_data, uint16_t data_length
 {
     data_length = (uint16_t)AHB_ALIGN_4(data_length);
 
-    enter_critical_section();
+    //enter_critical_section();
     RfMcu_DmaBusyCheck();
 #if (RF_MCU_USING_REG_FIELD)
     RF_MCU_AHB_DMA_ADDR_REG                = (uint32_t)p_data;
@@ -56,14 +56,14 @@ void RfMcu_MemoryGetAhb(uint16_t sys_addr, uint8_t *p_data, uint16_t data_length
     COMM_SUBSYSTEM_AHB->COMM_SUBSYSTEM_DMA_TYPE = COMM_SUBSYSTEM_DMA_TYPE_MEM_READ;
     COMM_SUBSYSTEM_AHB->COMM_SUBSYSTEM_HOST = COMM_SUBSYSTEM_HOST_CTRL_DMA_ENABLE;
 #endif
-    leave_critical_section();
+    //leave_critical_section();
     RfMcu_DmaBusyCheck();
 }
 
 
 void RfMcu_IoSetAhb(uint8_t queue_id, const uint8_t *p_data, uint16_t data_length)
 {
-    enter_critical_section();
+    //enter_critical_section();
     RfMcu_HostWakeUpMcuAhb();
     RfMcu_DmaBusyCheck();
 #if (RF_MCU_USING_REG_FIELD)
@@ -81,14 +81,14 @@ void RfMcu_IoSetAhb(uint8_t queue_id, const uint8_t *p_data, uint16_t data_lengt
     while ((COMM_SUBSYSTEM_AHB->COMM_SUBSYSTEM_INTR_STATUS & COMM_SUBSYSTEM_DMA_INT_CLR) == 0);
     COMM_SUBSYSTEM_AHB->COMM_SUBSYSTEM_INTR_CLR = COMM_SUBSYSTEM_DMA_INT_CLR;
 #endif
-    leave_critical_section();
+    //leave_critical_section();
     RfMcu_DmaBusyCheck();
 }
 
 
 void RfMcu_IoGetAhb(uint16_t queue_id, uint8_t *p_data, uint16_t data_length)
 {
-    enter_critical_section();
+    //enter_critical_section();
     RfMcu_DmaBusyCheck();
 #if (RF_MCU_USING_REG_FIELD)
     RF_MCU_AHB_DMA_ADDR_REG                = (uint32_t)p_data;
@@ -106,7 +106,7 @@ void RfMcu_IoGetAhb(uint16_t queue_id, uint8_t *p_data, uint16_t data_length)
     COMM_SUBSYSTEM_AHB->COMM_SUBSYSTEM_INTR_CLR = COMM_SUBSYSTEM_DMA_INT_CLR;
 #endif
 
-    leave_critical_section();
+    //leave_critical_section();
     RfMcu_DmaBusyCheck();
 }
 
@@ -417,9 +417,9 @@ void RfMcu_AhbIsrHandler(COMM_SUBSYSTEM_ISR_t isr_cb)
 
     if (status & COMM_SUBSYSTEM_INT_STATUS_MASK)
     {
-        enter_critical_section();
+        //enter_critical_section();
         isr_cb(status & COMM_SUBSYSTEM_INT_STATUS_MASK);
-        leave_critical_section();
+        //leave_critical_section();
     }
 
     status &= (~COMM_SUBSYSTEM_INT_STATUS_MASK);
@@ -436,11 +436,9 @@ void RfMcu_AhbIsrHandler(COMM_SUBSYSTEM_ISR_t isr_cb)
 
     if (status & COMM_SUBSYSTEM_INT_STATUS_MASK)
     {
-        enter_critical_section();
+        //enter_critical_section();
         isr_cb((status & 0xFF));
-        leave_critical_section();
+        //leave_critical_section();
     }
 #endif
 }
-
-

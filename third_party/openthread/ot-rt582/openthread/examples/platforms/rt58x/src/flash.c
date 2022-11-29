@@ -70,13 +70,11 @@ static inline uint32_t mapAddress(uint8_t aSwapIndex, uint32_t aOffset)
  */
 void otPlatFlashInit(otInstance * aInstance)
 {
-    info("otPlatFlashInit  -- %s\n", __func__);
+    // info("otPlatFlashInit  -- %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     sFlashDataStart = FLASH_START_ADDRESS;
     sFlashDataEnd   = FLASH_START_ADDRESS + (FLASH_PAGE_SIZE * PLATFORM_FLASH_PAGE_NUN);
-    otPlatFlashErase(NULL, 0);
-    otPlatFlashErase(NULL, 1);
 }
 
 /**
@@ -104,7 +102,9 @@ void otPlatFlashErase(otInstance * aInstance, uint8_t aSwapIndex)
     OT_UNUSED_VARIABLE(aInstance);
     while (flash_check_busy())
         ;
+    vPortEnterCritical();
     flash_erase(FLASH_ERASE_SECTOR, FLASH_START_ADDRESS + (aSwapIndex * FLASH_PAGE_SIZE));
+    vPortExitCritical();
     while (flash_check_busy())
         ;
 }
@@ -120,7 +120,7 @@ void otPlatFlashErase(otInstance * aInstance, uint8_t aSwapIndex)
  */
 void otPlatFlashWrite(otInstance * aInstance, uint8_t aSwapIndex, uint32_t aOffset, const void * aData, uint32_t aSize)
 {
-    info("otPlatFlashWrite  -- %s\n", __func__);
+    // info("otPlatFlashWrite  -- %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     uint32_t i;
@@ -148,7 +148,9 @@ void otPlatFlashWrite(otInstance * aInstance, uint8_t aSwapIndex, uint32_t aOffs
     {
         while (flash_check_busy())
             ;
+        vPortEnterCritical();
         flash_write_byte(FLASH_START_ADDRESS + (aSwapIndex * FLASH_SWAP_SIZE) + aOffset + i, pDest[i]);
+        vPortExitCritical();
     }
 }
 

@@ -27,19 +27,19 @@ static bsp_event_callback_t m_callback;
 static bsp_button_cfg_t m_button_cfg[BSP_BUTTON_COUNT] =
 {
 #ifdef BSP_BUTTON_0
-    {BSP_BUTTON_0, GPIO_PIN_INT_EDGE_FALLING},
+    {BSP_BUTTON_0, GPIO_PIN_INT_BOTH_EDGE},
 #endif
 #ifdef BSP_BUTTON_1
-    {BSP_BUTTON_1, GPIO_PIN_INT_EDGE_FALLING},
+    {BSP_BUTTON_1, GPIO_PIN_INT_BOTH_EDGE},
 #endif
 #ifdef BSP_BUTTON_2
-    {BSP_BUTTON_2, GPIO_PIN_INT_EDGE_FALLING},
+    {BSP_BUTTON_2, GPIO_PIN_INT_BOTH_EDGE},
 #endif
 #ifdef BSP_BUTTON_3
-    {BSP_BUTTON_3, GPIO_PIN_INT_EDGE_FALLING},
+    {BSP_BUTTON_3, GPIO_PIN_INT_BOTH_EDGE},
 #endif
 #ifdef BSP_BUTTON_4
-    {BSP_BUTTON_4, GPIO_PIN_INT_EDGE_FALLING},
+    {BSP_BUTTON_4, GPIO_PIN_INT_BOTH_EDGE},
 #endif
 };
 //=============================================================================
@@ -88,7 +88,7 @@ int bsp_button_init(bsp_event_callback_t callback)
         gpio_debounce_enable(m_button_cfg[i].pin_no);
         gpio_int_enable(m_button_cfg[i].pin_no);
     }
-    NVIC_SetPriority(Gpio_IRQn, 7);
+    NVIC_SetPriority(Gpio_IRQn, 6);
 
     m_callback = callback;
 

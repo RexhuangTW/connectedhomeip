@@ -63,6 +63,8 @@ static char bsp_c_g_msg[64] __attribute__((aligned(4))) = {0};
 
 exception_ctxt_t __exi_ctxt;
 
+extern void otSysEventSignalPending(void);
+
 void uart_isr_event_handle(void)
 {
     // receive data
@@ -86,8 +88,10 @@ void uart_isr_event_handle(void)
 
             g_uart_rx_io.uart_cache[wr_pos] = value[0];
             g_uart_rx_io.wr_idx = pos;
-
+#if ENABLE_CHIP_SHELL
             chip::NotifyShellProcessFromISR();
+#endif
+            //otSysEventSignalPending();
         }
     } while (0);
     return;
@@ -110,7 +114,7 @@ void uartConsoleInit(void)
         debug_console_drv_config.hwfc = UART_HWFC_DISABLED;
         debug_console_drv_config.parity = UART_PARITY_NONE;
         debug_console_drv_config.stop_bits = UART_STOPBIT_ONE;
-        debug_console_drv_config.irq_priority = 7;
+        debug_console_drv_config.irq_priority = 6;
 
         rval = bsp_uart_drv_init(0, &debug_console_drv_config, uart_isr_event_handle);
 

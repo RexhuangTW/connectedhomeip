@@ -76,6 +76,10 @@ class BLEManagerImpl final : public BLEManager, private BleLayer, private BlePla
 
     void NotifyChipConnectionClosed(BLE_CONNECTION_OBJECT conId) override;
 
+
+    CHIP_ERROR HandleThreadStateChange(const ChipDeviceEvent * event);
+    CHIP_ERROR HandleOperationalNetworkEnabled(const ChipDeviceEvent * event);
+
     // ===== Members for internal use by the following friends.
 
     friend BLEManager & BLEMgr(void);

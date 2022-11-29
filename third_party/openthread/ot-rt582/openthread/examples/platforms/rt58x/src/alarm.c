@@ -119,14 +119,14 @@ void rt58x_alarm_init()
 
     Timer_Open(0, cfg, _timer_isr_handler);
 
-    Timer_Int_Priority(0, 4);
+    Timer_Int_Priority(0, 6);
 
     cfg.int_en = ENABLE;
     cfg.mode = TIMER_PERIODIC_MODE;
     cfg.prescale = TIMER_PRESCALE_1;
 
     Timer_Open(4, cfg, _timer_milli_handler);
-    Timer_Int_Priority(4, 4);
+    Timer_Int_Priority(4, 6);
 }
 
 uint32_t otPlatTimeGetXtalAccuracy(void)

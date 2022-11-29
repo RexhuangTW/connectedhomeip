@@ -132,6 +132,20 @@ void rfb_port_zb_init(rfb_interrupt_event_t *_rfb_interrupt_event)
 }
 #endif
 
+#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
+void rfb_port_multi_init(rfb_interrupt_event_t *_rfb_interrupt_event)
+{
+    rfb_comm_multi_init(_rfb_interrupt_event);
+
+    /*Set the initial modem type*/
+    rfb_port_modem_set(RFB_MODEM_ZIGBEE);
+
+#if (RFB_DEBUG_PORT_EN)
+    rfb_debug_port_init();
+#endif
+}
+#endif
+
 #if (defined RFB_WISUN_ENABLED && RFB_WISUN_ENABLED == 1)
 void rfb_port_wisun_init(rfb_interrupt_event_t *_rfb_interrupt_event)
 {
@@ -258,14 +272,16 @@ bool rfb_port_wisun_is_channel_free(uint32_t rf_frequency, uint8_t rssi_threshol
 }
 #endif
 
-void rfb_port_data_send(uint8_t *tx_data_address, uint16_t packet_length, uint8_t InitialCwAckRequest, uint8_t Dsn)
+uint32_t rfb_port_data_send(uint8_t *tx_data_address, uint16_t packet_length, uint8_t InitialCwAckRequest, uint8_t Dsn)
 {
     RFB_WRITE_TXQ_STATUS rfb_write_tx_queue_status;
     rfb_write_tx_queue_status = rfb_comm_tx_data_send(packet_length, tx_data_address, InitialCwAckRequest, Dsn);
     if (rfb_write_tx_queue_status != RFB_WRITE_TXQ_SUCCESS)
     {
         printf("[W] Send TX fail\n");
+        return 1;
     }
+    return 0;
 }
 
 void rfb_port_tx_continuous_wave_set(uint32_t rf_frequency, tx_power_level_t tx_power)

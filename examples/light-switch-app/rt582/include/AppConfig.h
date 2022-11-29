@@ -1,6 +1,8 @@
 /*
  *
  *    Copyright (c) 2020 Project CHIP Authors
+ *    Copyright (c) 2019 Google LLC.
+ *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -17,8 +19,12 @@
 
 #pragma once
 
-// A list of shell commands provided by ChipShell
-void cmd_misc_init(void);
-void cmd_otcli_init(void);
-void cmd_app_server_init(void);
-void cmd_rafael_init(void);
+// #include "efr32_utils.h"
+
+// ---- Lighting Example App Config ----
+
+#define APP_TASK_NAME "Lit"
+
+// Time it takes in ms for the simulated actuator to move from one
+// state to another.
+#define ACTUATOR_MOVEMENT_PERIOS_MS 10

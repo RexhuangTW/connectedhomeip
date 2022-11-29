@@ -42,14 +42,12 @@ public:
 
     enum State_t
     {
-        kState_OffInitiated = 0,
-        kState_OffCompleted,
-        kState_OnInitiated,
-        kState_OnCompleted,
+        kState_On = 0,
+        kState_Off,
     } State;
 
     CHIP_ERROR Init();
-    bool IsLightOn();
+    bool IsTurnedOn();
     void EnableAutoTurnOff(bool aOn);
     void SetAutoTurnOffDuration(uint32_t aDurationInSecs);
     bool IsActionInProgress();

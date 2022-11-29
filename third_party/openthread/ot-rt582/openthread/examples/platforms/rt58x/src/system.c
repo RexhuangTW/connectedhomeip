@@ -50,7 +50,7 @@
 //=============================================================================
 //                Functions
 //=============================================================================
-void otSysInit(int argc, char * argv[])
+void otSysInit(int argc, char *argv[])
 {
     OT_UNUSED_VARIABLE(argc);
     OT_UNUSED_VARIABLE(argv);
@@ -58,8 +58,9 @@ void otSysInit(int argc, char * argv[])
     rt58x_alarm_init();
 
     random_number_init();
-
-    // rafael_rfb_init();
+#if (MODULE_ENABLE(SUPPORT_MATTER_CONCURRENT))
+    rafael_rfb_init();
+#endif
 }
 
 bool otSysPseudoResetWasRequested(void)
@@ -69,9 +70,9 @@ bool otSysPseudoResetWasRequested(void)
 
 void otSysDeinit(void) {}
 
-void otSysProcessDrivers(otInstance * aInstance)
+void otSysProcessDrivers(otInstance *aInstance)
 {
-    // UartProcessReceive();
+    //UartProcessReceive();
     rt58x_alarm_process(aInstance);
     platformRadioProcess();
 }

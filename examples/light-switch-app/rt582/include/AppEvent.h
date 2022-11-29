@@ -32,6 +32,12 @@ struct AppEvent
         kEventType_Install,
     };
 
+    enum AppActionTypes
+    {
+        kActionTypes_FactoryReset = 0,
+        kActionTypes_Switch_1,
+    };
+
     uint16_t Type;
 
     union
