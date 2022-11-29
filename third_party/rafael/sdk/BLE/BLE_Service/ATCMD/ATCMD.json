@@ -1,0 +1,155 @@
+{
+  "name": "ATCMD",
+  "value": "00112233445566778899AABBCCDDEEFF",
+  "type": "service",
+  "child": [
+    {
+      "name": "CHARAC01",
+      "value": "101112131415161718191A1B1C1D1E1F",
+      "type": "characteristic",
+      "child": [
+        {
+          "name": "value",
+          "value": "",
+          "type": "value",
+          "child": [
+            {
+              "name": "property",
+              "value": "read/write/write_without_response/notify/indicate",
+              "type": "property",
+              "child": []
+            },
+            {
+              "name": "permission",
+              "value": "no",
+              "type": "permission",
+              "child": []
+            }
+          ]
+        },
+        {
+          "name": "client configuration",
+          "value": "",
+          "type": "client configuration",
+          "child": [
+            {
+              "name": "permission",
+              "value": "no",
+              "type": "permission",
+              "child": []
+            },
+            {
+              "name": "bond",
+              "value": "on",
+              "type": "bond",
+              "child": []
+            }
+          ]
+        },
+        {
+          "name": "user description",
+          "value": "user description",
+          "type": "user description",
+          "child": [
+            {
+              "name": "permission",
+              "value": "no",
+              "type": "permission",
+              "child": []
+            }
+          ]
+        },
+        {
+          "name": "presentation format",
+          "value": "presentation format",
+          "type": "presentation format",
+          "child": []
+        },
+        {
+          "name": "report",
+          "value": "report",
+          "type": "report",
+          "child": []
+        }
+      ]
+    },
+    {
+      "name": "CHARAC02",
+      "value": "202122232425262728292A2B2C2D2E2F",
+      "type": "characteristic",
+      "child": [
+        {
+          "name": "value",
+          "value": "",
+          "type": "value",
+          "child": [
+            {
+              "name": "property",
+              "value": "read/write",
+              "type": "property",
+              "child": []
+            },
+            {
+              "name": "permission",
+              "value": "write_enc",
+              "type": "permission",
+              "child": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CHARAC03",
+      "value": "303132333435363738393A3B3C3D3E3F",
+      "type": "characteristic",
+      "child": [
+        {
+          "name": "value",
+          "value": "",
+          "type": "value",
+          "child": [
+            {
+              "name": "property",
+              "value": "write",
+              "type": "property",
+              "child": []
+            },
+            {
+              "name": "permission",
+              "value": "write_authe",
+              "type": "permission",
+              "child": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CHARAC04",
+      "value": "404142434445464748494A4B4C4D4E4F",
+      "type": "characteristic",
+      "child": [
+        {
+          "name": "value",
+          "value": "",
+          "type": "value",
+          "child": [
+            {
+              "name": "property",
+              "value": "write",
+              "type": "property",
+              "child": []
+            },
+            {
+              "name": "permission",
+              "value": "write_autho",
+              "type": "permission",
+              "child": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
