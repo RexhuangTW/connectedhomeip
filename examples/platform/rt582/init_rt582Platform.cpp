@@ -54,6 +54,18 @@ extern "C" {
 #include "uart.h"
 #include "cm3_mcu.h"
 
+
+typedef struct {
+    uint32_t onTimeMs;
+    uint32_t offTimeMs;
+    uint32_t nowTimeMs;
+    uint32_t state  : 1;
+    uint32_t used   : 1;
+    uint32_t        : 30;
+} flash_info_t;
+
+flash_info_t flash_table[32];
+
 static void init_default_pin_mux(void)
 {
     int i, j;
@@ -72,21 +84,88 @@ static void init_default_pin_mux(void)
 
     return;
 }
+static void _timer_isr_handler(uint32_t timer_id)
+{
+    int i;
+    for(i=0;i<32;i++)
+    {
+        if(!flash_table[i].used)
+            continue;
 
+        if(flash_table[i].state == 0)
+        {
+            flash_table[i].nowTimeMs++;
+            if(flash_table[i].nowTimeMs > flash_table[i].offTimeMs)
+            {
+                flash_table[i].state = 1;
+                gpio_pin_clear(i);
+                flash_table[i].nowTimeMs = 0;
+            }          
+        }
+        else
+        {
+            flash_table[i].nowTimeMs++;
+            if(flash_table[i].nowTimeMs > flash_table[i].onTimeMs)
+            {
+                flash_table[i].state = 0;
+                gpio_pin_set(i);
+                flash_table[i].nowTimeMs = 0;
+            }            
+        }
+    }
+    //printf("2");
+}
 void init_rt582Platform(void)
 {
+    timer_config_mode_t cfg;
     //NVIC_SetPriority(Uart0_IRQn, 0x02);
     NVIC_SetPriority(CommSubsystem_IRQn, 0x05);
 
+    gpio_cfg_output(20);
     gpio_cfg_output(21);
+    gpio_cfg_output(22);
+    gpio_cfg_output(23);
+    gpio_cfg_output(24);
 
+    gpio_pin_set(20);
     gpio_pin_set(21);
+    gpio_pin_set(22);
+    gpio_pin_set(23);
+    gpio_pin_set(24);
 
     init_default_pin_mux();
     Delay_Init();
     dma_init();
     uartConsoleInit();
     otSysInit(0, NULL);
+
+    cfg.int_en = ENABLE;
+    cfg.mode = TIMER_PERIODIC_MODE;
+    cfg.prescale = TIMER_PRESCALE_32;
+
+    Timer_Open(2, cfg, _timer_isr_handler);
+    Timer_Int_Priority(2, 7);
+
+    Timer_Start(2, 999);
+
+    memset(flash_table, 0, sizeof(flash_table));    
+}
+
+void init_rt582_led_flash(uint32_t pin, uint32_t onTimeMs, uint32_t offTimeMs)
+{
+    if(onTimeMs == 0 && offTimeMs == 0)
+    {
+        flash_table[pin].state = 0;
+        flash_table[pin].used = 0;
+    }
+    else
+    {
+        flash_table[pin].onTimeMs = onTimeMs;
+        flash_table[pin].offTimeMs = offTimeMs;
+        flash_table[pin].state = 0;
+        flash_table[pin].used = 1;
+    }
+    gpio_pin_set(pin);
 }
 
 #ifdef __cplusplus

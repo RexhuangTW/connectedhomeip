@@ -35,7 +35,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
         CHECK_HOST_ID(host_id);
 
         ble_gap_conn_param_t *con_param = item->ble_param->con_param;
-        printf("%u\n", con_param[host_id].periph_latency);
+        //printf(("%u\n", con_param[host_id].periph_latency);
         item->status = AT_CMD_STATUS_OK;
         return BLE_ERR_OK;
     }
@@ -43,7 +43,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+READCONLAT = <num>\n"
         "  read the connection latency of specific host ID\n"
         "    <num> : host ID\n"

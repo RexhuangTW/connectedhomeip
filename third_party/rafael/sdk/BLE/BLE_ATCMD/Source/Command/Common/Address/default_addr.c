@@ -52,14 +52,14 @@ static ble_err_t read_cmd(atcmd_item_t *item)
     ble_gap_peer_addr_t *peer_addr = &item->ble_param->peer_addr;
     char str[ADDR_FORMAT_SIZE + 1];
     parse_addr_array_to_string(str, peer_addr->addr);
-    printf("addr = %s, addr type = %u\n", str, peer_addr->addr_type);
+    //printf(("addr = %s, addr type = %u\n", str, peer_addr->addr_type);
 
     item->status = AT_CMD_STATUS_OK;
     return BLE_ERR_OK;
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+DADDR?\n"
         "  get the default address for +CRCON, +ENSCAN\n"
         "+DADDR = <addr>\n"

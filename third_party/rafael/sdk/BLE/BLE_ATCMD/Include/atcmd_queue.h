@@ -7,7 +7,7 @@
 
 #define NODE_ARR_MAX_SIZE 4
 
-#define PRINT_ERROR_MSG printf("queue error\n")
+#define PRINT_ERROR_MSG //printf(("queue error\n")
 
 #define ITEM atcmd_string_t
 #define PRINT_ITEM(node) atcmd_string_print(&(node->val))

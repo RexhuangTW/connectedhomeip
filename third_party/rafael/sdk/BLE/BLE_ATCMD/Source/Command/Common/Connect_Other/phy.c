@@ -56,7 +56,7 @@ static ble_err_t read_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+PHY?\n"
         "  read PHY rate of host ID 0\n"
         "+PHY =  <num1>,<num2>,<num3>,<num4>\n"

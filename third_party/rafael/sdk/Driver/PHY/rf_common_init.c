@@ -112,7 +112,7 @@ void rf_common_cmd_send(uint8_t *cmd_address, uint8_t cmd_length)
 {
     while (RF_MCU_TX_CMDQ_SET_SUCCESS != RfMcu_CmdQueueSend(cmd_address, cmd_length))
     {
-        // printf("[E] command queue is FULL\n");
+        // //printf(("[E] command queue is FULL\n");
     }
 }
 

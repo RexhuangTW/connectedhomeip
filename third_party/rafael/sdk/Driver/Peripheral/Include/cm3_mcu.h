@@ -407,6 +407,7 @@ typedef enum IRQn_Type
 
 #include "i2c_master.h"
 #include "flashctl.h"
+#include "flashds.h"
 #include "timer.h"
 #include "sysctrl.h"
 

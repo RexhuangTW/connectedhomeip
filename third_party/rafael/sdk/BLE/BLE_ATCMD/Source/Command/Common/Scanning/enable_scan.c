@@ -55,7 +55,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+ENSCAN = <addr>\n"
         "  enable scan. get one scan response or get three adv data without"
         "  any scan response, then print\n"

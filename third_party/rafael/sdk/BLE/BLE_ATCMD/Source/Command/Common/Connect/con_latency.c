@@ -65,13 +65,13 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 static ble_err_t read_cmd(atcmd_item_t *item)
 {
     ble_gap_conn_param_t *con_param = item->ble_param->con_param;
-    printf("%u\n", con_param[0].periph_latency);
+    //printf(("%u\n", con_param[0].periph_latency);
     item->status = AT_CMD_STATUS_OK;
     return BLE_ERR_OK;
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+CONLAT?\n"
         "  get the connection latency\n"
         "+CONLAT = <num1>, <num2>\n"

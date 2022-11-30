@@ -139,10 +139,10 @@ bool high_level_cmd_check(char *cmd_str)
 }
 void cmd_list_print(void)
 {
-    printf("The Cmd List :\n");
+    //printf(("The Cmd List :\n");
     for (int i = 0; i < cmd_list_len; i++)
     {
-        printf("AT%s: %s\n", cmd_list[i]->cmd_name, cmd_list[i]->description);
+        //printf(("AT%s: %s\n", cmd_list[i]->cmd_name, cmd_list[i]->description);
     }
 }
 

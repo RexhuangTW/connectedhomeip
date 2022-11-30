@@ -56,14 +56,14 @@ static ble_err_t read_cmd(atcmd_item_t *item)
 
     char scan_rsp_str[MAX_ADV_DATA_SIZE * 3];
     parse_hex_array_to_string_with_colon(scan_rsp_str, sizeof(scan_rsp_str), scan_rsp, scan_rsp_len);
-    printf("%s\n", scan_rsp_str);
+    //printf(("%s\n", scan_rsp_str);
 
     item->status = AT_CMD_STATUS_OK;
     return BLE_ERR_OK;
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+SCANRSP?\n"
         "  get the scan response data\n"
         "+SCANRSP = <string>\n"

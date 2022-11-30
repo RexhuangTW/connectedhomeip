@@ -60,7 +60,7 @@ static ble_err_t not_support_cmd( atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf("this command haven't finished the help infomation\n");
+    //printf(("this command haven't finished the help infomation\n");
 }
 static void check_event(ble_module_evt_t event, void *param, atcmd_item_t *item)
 {

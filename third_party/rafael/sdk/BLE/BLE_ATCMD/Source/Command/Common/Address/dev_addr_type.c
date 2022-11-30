@@ -45,13 +45,13 @@ static ble_err_t read_cmd(atcmd_item_t *item)
 {
     ble_gap_addr_t p_addr;
     ble_err_t status = ble_cmd_device_addr_get(&p_addr);
-    printf("addr type = %d\n", p_addr.addr_type);
+    //printf(("addr type = %d\n", p_addr.addr_type);
     item->status = AT_CMD_STATUS_OK;
     return status;
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+DEVADDRTYPE?\n"
         "  get the address type of device\n"
         "+DEVADDRTYPE = <num>\n"

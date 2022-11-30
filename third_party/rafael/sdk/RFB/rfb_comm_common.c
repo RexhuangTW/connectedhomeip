@@ -152,7 +152,7 @@ void rfb_send_cmd(uint8_t * cmd_address, uint8_t cmd_length)
 
     if (RF_MCU_TX_CMDQ_SET_SUCCESS != RfMcu_CmdQueueSend(cmd_address, cmd_length))
     {
-        printf("[E] command queue is FULL\n");
+        //printf(("[E] command queue is FULL\n");
     }
 }
 /**************************************************************************************************
@@ -177,7 +177,7 @@ void rfb_isr_handler(uint8_t interrupt_status)
     if (RfMcu_PowerStateCheck() != 0x03)
     {
         /* FOR LEVEL TRIGGER ONLY, the MCU will keep entering INT if status not cleared */
-        printf("[W] PWR state error in rfb_isr_handler\n");
+        //printf(("[W] PWR state error in rfb_isr_handler\n");
         return;
     }
 
@@ -202,15 +202,15 @@ void rfb_isr_handler(uint8_t interrupt_status)
     }
     if (interrupt_state_value.bf.RFB_TRAP)
     {
-        printf("[Error] RFB Trap !!!\n");
+        //printf(("[Error] RFB Trap !!!\n");
         RfMcu_MemoryGet(0x4008, (uint8_t *) &pro_grm_cnt, 4);
-        printf("PC= %X\n", pro_grm_cnt);
+        //printf(("PC= %X\n", pro_grm_cnt);
         RfMcu_MemoryGet(0x01E0, (uint8_t *) &pro_grm_cnt, 4);
-        printf("MAC err status= %X\n", pro_grm_cnt);
+        //printf(("MAC err status= %X\n", pro_grm_cnt);
         RfMcu_MemoryGet(0x0198, (uint8_t *) &pro_grm_cnt, 4);
-        printf("MAC task status= %X\n", pro_grm_cnt);
+        //printf(("MAC task status= %X\n", pro_grm_cnt);
         RfMcu_MemoryGet(0x0048, (uint8_t *) &pro_grm_cnt, 4);
-        printf("BMU err status= %X\n", pro_grm_cnt);
+        //printf(("BMU err status= %X\n", pro_grm_cnt);
         RfMcu_InterruptClear((interrupt_status & 0x04));
         while (1)
             ;
@@ -397,7 +397,7 @@ RFB_WRITE_TXQ_STATUS rfb_comm_tx_data_send(uint16_t packet_length, uint8_t * tx_
     RfMcu_HostWakeUpMcu();
     while (RfMcu_PowerStateCheck() != 0x03)
     {
-        printf("[TX] Pwr chk\n");
+        //printf(("[TX] Pwr chk\n");
     }
     SET_RUCI_PARA_SET_TX_CONTROL_FIELD(&sTxControlField, mac_control, mac_dsn);
     sTxControlField.length += packet_length;

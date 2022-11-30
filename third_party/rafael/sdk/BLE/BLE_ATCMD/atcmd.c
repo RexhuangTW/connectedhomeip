@@ -98,7 +98,7 @@ void atcmd_uart_handle(atcmd_t *this, uint8_t *data, uint8_t length)
     // check is AT cmd or not
     if (strlen(str) < 2 || (toupper(str[0]) != 'A') || (toupper(str[1]) != 'T'))
     {
-        printf("ERROR : this is not at command [%s] \n", data);
+        //printf(("ERROR : this is not at command [%s] \n", data);
         return;
     }
 
@@ -126,7 +126,7 @@ void atcmd_uart_handle(atcmd_t *this, uint8_t *data, uint8_t length)
         atcmd_string_t tmp;
         if (strlen(cmd) > (sizeof(tmp.str) - 1))
         {
-            printf("ERROR : this at command length is too long\r\n");
+            //printf(("ERROR : this at command length is too long\r\n");
             return;
         }
         strcpy(tmp.str, cmd);
@@ -199,7 +199,7 @@ static void atcmd_cmd_run(atcmd_t *this)
 
     case AT_CMD_STATUS_OK:
     {
-        printf(OK_STR);
+        //printf((OK_STR);
         running_at_item->status = AT_CMD_STATUS_QUEUE;
     }
     break;
@@ -254,34 +254,34 @@ static void atcmd_err_str_print(ble_err_t status)
     switch (status)
     {
     case BLE_BUSY:
-        printf("ERROR BUSY\r\n");
+        //printf(("ERROR BUSY\r\n");
         break;
     case BLE_ERR_INVALID_PARAMETER:
-        printf("ERROR INVALID_PARAM\r\n");
+        //printf(("ERROR INVALID_PARAM\r\n");
         break;
     case BLE_ERR_INVALID_STATE:
-        printf("ERROR INVALID_STATE\r\n");
+        //printf(("ERROR INVALID_STATE\r\n");
         break;
     case BLE_ERR_INVALID_HOST_ID:
-        printf("ERROR INVALID_HOST_ID\r\n");
+        //printf(("ERROR INVALID_HOST_ID\r\n");
         break;
     case BLE_ERR_INVALID_HANDLE:
-        printf("ERROR INVALID_HANDLE\r\n");
+        //printf(("ERROR INVALID_HANDLE\r\n");
         break;
     case BLE_ERR_CMD_NOT_SUPPORTED:
-        printf("ERROR CMD_NOT_SUPPORTED\r\n");
+        //printf(("ERROR CMD_NOT_SUPPORTED\r\n");
         break;
     case BLE_ERR_DB_PARSING_IN_PROGRESS:
-        printf("ERROR DB_PARSING_IN_PROGRESS\r\n");
+        //printf(("ERROR DB_PARSING_IN_PROGRESS\r\n");
         break;
     case BLE_ERR_SEQUENTIAL_PROTOCOL_VIOLATION:
-        printf("ERROR SEQUENTIAL_PROTOCOL_VIOLATION\r\n");
+        //printf(("ERROR SEQUENTIAL_PROTOCOL_VIOLATION\r\n");
         break;
     case BLE_ERR_WRONG_CONFIG:
-        printf("ERROR WRONG_CONFIG\r\n");
+        //printf(("ERROR WRONG_CONFIG\r\n");
         break;
     default:
-        printf("ERROR %02d\r\n", status);
+        //printf(("ERROR %02d\r\n", status);
         break;
     }
 }
@@ -301,7 +301,7 @@ static void atcmd_event_rsp_handle(atcmd_t *this, ble_module_evt_t event, void *
         }
         else
         {
-            printf("Advertising enable failed, status=0x%x.\n", p_adv_enable->status);
+            //printf(("Advertising enable failed, status=0x%x.\n", p_adv_enable->status);
         }
     }
     break;
@@ -313,17 +313,17 @@ static void atcmd_event_rsp_handle(atcmd_t *this, ble_module_evt_t event, void *
         {
             if (p_scan_enable->scan_enabled)
             {
-                printf("Scanning...\n");
+                //printf(("Scanning...\n");
                 scan_result_clear();
             }
             else
             {
-                printf("End Scanning...\n");
+                //printf(("End Scanning...\n");
             }
         }
         else
         {
-            printf("Scanning enable failed, status=%d.\n", p_scan_enable->status);
+            //printf(("Scanning enable failed, status=%d.\n", p_scan_enable->status);
         }
     }
     break;
@@ -343,7 +343,7 @@ static void atcmd_event_rsp_handle(atcmd_t *this, ble_module_evt_t event, void *
     case BLE_GAP_EVT_CONN_COMPLETE:
     {
         ble_evt_gap_conn_complete_t *p_conn_param = (ble_evt_gap_conn_complete_t *)p_param;
-        printf("Connected to %02x:%02x:%02x:%02x:%02x:%02x, addr_type=%d\n",
+        //printf(("Connected to %02x:%02x:%02x:%02x:%02x:%02x, addr_type=%d\n",
                p_conn_param->peer_addr.addr[5],
                p_conn_param->peer_addr.addr[4],
                p_conn_param->peer_addr.addr[3],
@@ -351,7 +351,7 @@ static void atcmd_event_rsp_handle(atcmd_t *this, ble_module_evt_t event, void *
                p_conn_param->peer_addr.addr[1],
                p_conn_param->peer_addr.addr[0],
                p_conn_param->peer_addr.addr_type);
-        printf("ID:%d, Status:%d, Interval:%d, Latency:%d, Timeout:%d, ",
+        //printf(("ID:%d, Status:%d, Interval:%d, Latency:%d, Timeout:%d, ",
                p_conn_param->host_id,
                p_conn_param->status,
                p_conn_param->conn_interval,
@@ -373,21 +373,21 @@ static void atcmd_event_rsp_handle(atcmd_t *this, ble_module_evt_t event, void *
 
     case BLE_GAP_EVT_CONN_CANCEL:
     {
-        printf("Cancel Create Connecting...\n");
+        //printf(("Cancel Create Connecting...\n");
     }
     break;
 
     case BLE_GAP_EVT_DISCONN_COMPLETE:
     {
         ble_evt_gap_disconn_complete_t *p_discon_param = (ble_evt_gap_disconn_complete_t *)p_param;
-        printf("Disconnected, ID:%d, Reason:0x%x\n", p_discon_param->host_id, p_discon_param->reason);
+        //printf(("Disconnected, ID:%d, Reason:0x%x\n", p_discon_param->host_id, p_discon_param->reason);
     }
     break;
 
     case BLE_GAP_EVT_CONN_PARAM_UPDATE:
     {
         ble_evt_gap_conn_param_update_t *p_update_conn_param = (ble_evt_gap_conn_param_update_t *)p_param;
-        printf("Connection Update, ID:%d, Status:%d, Interval:%d, Latency:%d, Timeout:%d\n",
+        //printf(("Connection Update, ID:%d, Status:%d, Interval:%d, Latency:%d, Timeout:%d\n",
                p_update_conn_param->host_id,
                p_update_conn_param->status,
                p_update_conn_param->conn_interval,
@@ -407,7 +407,7 @@ static void atcmd_event_rsp_handle(atcmd_t *this, ble_module_evt_t event, void *
     case BLE_GAP_EVT_PHY_UPDATE:
     {
         ble_evt_gap_phy_t *p_phy_param = (ble_evt_gap_phy_t *)p_param;
-        printf("Phy Update, Status:%d, ID:%d, TX:%d, RX:%d\n",
+        //printf(("Phy Update, Status:%d, ID:%d, TX:%d, RX:%d\n",
                p_phy_param->status,
                p_phy_param->host_id,
                p_phy_param->tx_phy,
@@ -418,7 +418,7 @@ static void atcmd_event_rsp_handle(atcmd_t *this, ble_module_evt_t event, void *
     case BLE_GAP_EVT_PHY_READ:
     {
         ble_evt_gap_phy_t *p_phy_param = (ble_evt_gap_phy_t *)p_param;
-        printf("Phy Read, Status:%d, ID:%d, TX:%d, RX:%d\n",
+        //printf(("Phy Read, Status:%d, ID:%d, TX:%d, RX:%d\n",
                p_phy_param->host_id,
                p_phy_param->status,
                p_phy_param->tx_phy,
@@ -429,7 +429,7 @@ static void atcmd_event_rsp_handle(atcmd_t *this, ble_module_evt_t event, void *
     case BLE_ATT_GATT_EVT_MTU_EXCHANGE:
     {
         ble_evt_mtu_t *p_mtu_param = (ble_evt_mtu_t *)p_param;
-        printf("ID:%d, MTU Size: %d\n",
+        //printf(("ID:%d, MTU Size: %d\n",
                p_mtu_param->host_id,
                p_mtu_param->mtu);
     }
@@ -438,7 +438,7 @@ static void atcmd_event_rsp_handle(atcmd_t *this, ble_module_evt_t event, void *
     case BLE_GAP_EVT_RSSI_READ:
     {
         ble_evt_gap_rssi_read_t *p_rssi_param = (ble_evt_gap_rssi_read_t *)p_param;
-        printf("Status:%d, ID:%d, RSSI:%d\n",
+        //printf(("Status:%d, ID:%d, RSSI:%d\n",
                p_rssi_param->status,
                p_rssi_param->host_id,
                p_rssi_param->rssi);
@@ -448,14 +448,14 @@ static void atcmd_event_rsp_handle(atcmd_t *this, ble_module_evt_t event, void *
     case BLE_ATT_GATT_EVT_WRITE_SUGGESTED_DEFAULT_DATA_LENGTH:
     {
         // ble_evt_suggest_data_length_set_t *p_data_len_param = (ble_evt_suggest_data_length_set_t *)p_param;
-        // printf("Default Data Length Update, status: 0x%x\n", p_data_len_param->status);
+        // //printf(("Default Data Length Update, status: 0x%x\n", p_data_len_param->status);
     }
     break;
 
     case BLE_ATT_GATT_EVT_DATA_LENGTH_CHANGE:
     {
         ble_evt_data_length_change_t *p_data_len_param = (ble_evt_data_length_change_t *)p_param;
-        printf("Data Length Update, ID:%d, TX:%d, RX:%d, TX_Time:%d, Rx_Time:%d\n",
+        //printf(("Data Length Update, ID:%d, TX:%d, RX:%d, TX_Time:%d, Rx_Time:%d\n",
                p_data_len_param->host_id,
                p_data_len_param->max_tx_octets,
                p_data_len_param->max_rx_octets,
@@ -482,7 +482,7 @@ static void atcmd_event_rsp_handle(atcmd_t *this, ble_module_evt_t event, void *
     case BLE_SM_EVT_AUTH_STATUS:
     {
         ble_evt_sm_auth_status_t *p_auth_result = (ble_evt_sm_auth_status_t *)p_param;
-        printf("AUTH Report, ID:%d , STATUS:%d\n", p_auth_result->host_id, p_auth_result->status);
+        //printf(("AUTH Report, ID:%d , STATUS:%d\n", p_auth_result->host_id, p_auth_result->status);
     }
     break;
 
@@ -503,10 +503,10 @@ static void atcmd_event_rsp_handle(atcmd_t *this, ble_module_evt_t event, void *
             status = link_svcs_handles_get(&ble_info_link[host_id]);
             if (status != BLE_ERR_OK)
             {
-                printf("get service information fail\n");
+                //printf(("get service information fail\n");
             }
         }
-        printf("Database Parsing Finished, ID:%d , Result:%d\n", p_db_parsing->host_id, p_db_parsing->result);
+        //printf(("Database Parsing Finished, ID:%d , Result:%d\n", p_db_parsing->host_id, p_db_parsing->result);
     }
     break;
 
@@ -522,7 +522,7 @@ static bool atcmd_matched_cmd_assign(char *cmd_str, atcmd_item_t *running_at_ite
     check = parse_cmd_string_to_item(cmd_str, running_at_item);
     if (!check)
     {
-        printf("command [%s] length is too long\n", cmd_str);
+        //printf(("command [%s] length is too long\n", cmd_str);
         return check;
     }
 
@@ -530,7 +530,7 @@ static bool atcmd_matched_cmd_assign(char *cmd_str, atcmd_item_t *running_at_ite
     check = cmd_assign(running_at_item);
     if (!check)
     {
-        printf("command [%s] doesn't exist\n", running_at_item->cmd_str);
+        //printf(("command [%s] doesn't exist\n", running_at_item->cmd_str);
         return check;
     }
 
@@ -544,19 +544,19 @@ static void atcmd_gap_event_rsp_handle(atcmd_t *this, ble_evt_att_param_t *p_par
     case BLESERVICE_GAPS_DEVICE_NAME_READ_RSP_EVENT:
     {
         uint8_t i;
-        printf("Device name: ");
+        //printf(("Device name: ");
         for (i = 0; i < p_param->length; i++)
         {
-            printf("%c", data[i]);
+            //printf(("%c", data[i]);
         }
-        printf("\n");
+        //printf(("\n");
 
     }
     break;
     case BLESERVICE_GAPS_APPEARANCE_READ_RSP_EVENT:
     {
         uint16_t appearance = (data[0] | (data[1] << 8));
-        printf("Appearance read: %d\n", appearance);
+        //printf(("Appearance read: %d\n", appearance);
     }
     break;
     case BLESERVICE_GAPS_PERIPHERAL_PREFERRED_CONNECTION_PARAMETERS_READ_RSP_EVENT:
@@ -568,7 +568,7 @@ static void atcmd_gap_event_rsp_handle(atcmd_t *this, ble_evt_att_param_t *p_par
         conn_param.periph_latency = (data[4] | (data[5] << 8));
         conn_param.supv_timeout = (data[6] | (data[7] << 8));
 
-        printf("Preferred connection parameters: %d %d %d %d\n",
+        //printf(("Preferred connection parameters: %d %d %d %d\n",
                conn_param.min_conn_interval,
                conn_param.max_conn_interval,
                conn_param.periph_latency,
@@ -620,54 +620,54 @@ static void atcmd_atcmd_event_rsp_handle(atcmd_t *this, ble_evt_att_param_t *p_p
     case BLESERVICE_ATCMD_CHARAC01_READ_RSP_EVENT:
         memcpy(data, p_param->data, length);
         data[length] = 0;
-        printf("Read:%s\n", data);
+        //printf(("Read:%s\n", data);
         break;
     case BLESERVICE_ATCMD_CHARAC01_WRITE_EVENT:
         memcpy(data, p_param->data, length);
         data[length] = 0;
-        printf("Write:%s\n", data);
+        //printf(("Write:%s\n", data);
         break;
     case BLESERVICE_ATCMD_CHARAC01_WRITE_WITHOUT_RSP_EVENT:
         memcpy(data, p_param->data, length);
         data[length] = 0;
-        printf("Write_without_rsp:%s\n", data);
+        //printf(("Write_without_rsp:%s\n", data);
         break;
     case BLESERVICE_ATCMD_CHARAC01_NOTIFY_EVENT:
         memcpy(data, p_param->data, length);
         data[length] = 0;
-        printf("Notify:%s\n", data);
+        //printf(("Notify:%s\n", data);
         break;
     case BLESERVICE_ATCMD_CHARAC01_INDICATE_EVENT:
         memcpy(data, p_param->data, length);
         data[length] = 0;
-        printf("Indicate:%s\n", data);
+        //printf(("Indicate:%s\n", data);
         break;
     case BLESERVICE_ATCMD_CHARAC01_CCCD_READ_RSP_EVENT:
         memcpy(data, p_param->data, length);
-        printf("CCCD:%d,%d\n", data[1], data[0]);
+        //printf(("CCCD:%d,%d\n", data[1], data[0]);
         break;
     case BLESERVICE_ATCMD_CHARAC02_WRITE_EVENT:
         memcpy(data, p_param->data, length);
         data[length] = 0;
-        printf("Write_enc:%s\n", data);
+        //printf(("Write_enc:%s\n", data);
         break;
     case BLESERVICE_ATCMD_CHARAC03_WRITE_EVENT:
         memcpy(data, p_param->data, length);
         data[length] = 0;
-        printf("Write_authe:%s\n", data);
+        //printf(("Write_authe:%s\n", data);
         break;
     case BLESERVICE_ATCMD_CHARAC04_WRITE_EVENT:
         memcpy(data, p_param->data, length);
         data[length] = 0;
-        printf("Write_autho:%s\n", data);
+        //printf(("Write_autho:%s\n", data);
         break;
     case BLESERVICE_ATCMD_CHARAC02_ERROR_RSP_EVENT:
         memcpy(data, p_param->data, length);
-        printf("Error_rsp: op_code=%d, error_code = %d\n", data[0], data[3]);
+        //printf(("Error_rsp: op_code=%d, error_code = %d\n", data[0], data[3]);
         break;
     case BLESERVICE_ATCMD_CHARAC01_RESTORE_BOND_DATA_EVENT:
         memcpy(data, p_param->data, length);
-        printf("Restore CCCD:%d\n", data[0]);
+        //printf(("Restore CCCD:%d\n", data[0]);
         break;
     default:
         break;

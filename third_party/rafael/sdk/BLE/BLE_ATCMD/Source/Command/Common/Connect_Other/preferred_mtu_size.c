@@ -52,13 +52,13 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static ble_err_t read_cmd(atcmd_item_t *item)
 {
-    printf("%u\n", item->ble_param->preferred_mtu_size);
+    //printf(("%u\n", item->ble_param->preferred_mtu_size);
     item->status = AT_CMD_STATUS_OK;
     return BLE_ERR_OK;
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+PFMTUS = <num1>, <num2>\n"
         "set preferred MTU size of specific host ID\n"
         "  <num1>: host ID\n"

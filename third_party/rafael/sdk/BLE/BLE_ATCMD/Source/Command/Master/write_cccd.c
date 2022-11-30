@@ -46,7 +46,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         " +WRITECCCD\n"
         "+WRITECCCD = <num1>, <num2>\n"
         "  write CCCD value for specific host ID\n"

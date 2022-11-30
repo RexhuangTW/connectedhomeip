@@ -1215,7 +1215,7 @@ Changes between V7.0.2 and V7.1.0 released December 13 2011
 
 	Miscellaneous / maintenance:
 
-	+ Removed all calls to printf() from the K60/IAR Kinetis demo so the project
+	+ Removed all calls to //printf(() from the K60/IAR Kinetis demo so the project
 	  can execute stand alone - without being connected to the debugger.
 	+ Completed the command interpreter framework.  Command handlers now receive
 	  the entire command string, giving them direct access to parameters.

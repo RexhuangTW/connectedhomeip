@@ -47,7 +47,7 @@ void at_cmd_item_init(atcmd_item_t *this, atcmd_ble_param_t *ble_param)
 }
 void atcmd_string_print(atcmd_string_t *str)
 {
-    printf("%s", str->str);
+    //printf(("%s", str->str);
 }
 bool parse_cmd_string_to_item(char *cmd_str, atcmd_item_t *item)
 {
@@ -354,7 +354,7 @@ static bool parse_param(atcmd_item_t *item, char *param_str)
 
         if (strlen(param) > (sizeof(item->param[i].str) - 1))
         {
-            printf("ERROR : this at command length is too long\r\n");
+            //printf(("ERROR : this at command length is too long\r\n");
             return false;
         }
         strcpy(item->param[i].str, param);

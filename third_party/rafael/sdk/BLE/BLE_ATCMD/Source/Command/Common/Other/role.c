@@ -24,20 +24,20 @@ static ble_err_t read_cmd(atcmd_item_t *item)
 {
     if (LINK_NUM == 0)
     {
-        printf("there is no link.");
+        //printf(("there is no link.");
     }
     for (int i = 0; i < LINK_NUM; i++)
     {
-        printf("Host Id:%d, ", i);
+        //printf(("Host Id:%d, ", i);
         PRINT_IF_ELSE(link_info[i].role == BLE_GATT_ROLE_CLIENT, "Master", "Slave");
-        printf("\n");
+        //printf(("\n");
     }
     item->status = AT_CMD_STATUS_OK;
     return BLE_ERR_OK;
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+ROLE?\n"
         "  read the role(master/slave)\n"
     );

@@ -45,7 +45,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 static ble_err_t read_cmd(atcmd_item_t *item)
 {
     ble_gap_create_conn_param_t *create_con_param = &item->ble_param->create_con_param;
-    printf("min:%u max:%u\n",
+    //printf(("min:%u max:%u\n",
            create_con_param->conn_param.min_conn_interval,
            create_con_param->conn_param.max_conn_interval
           );
@@ -54,7 +54,7 @@ static ble_err_t read_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+CCONINT?\n"
         "  get the create connection interval\n"
         "+CCONINT = <num1>, <num2>\n"

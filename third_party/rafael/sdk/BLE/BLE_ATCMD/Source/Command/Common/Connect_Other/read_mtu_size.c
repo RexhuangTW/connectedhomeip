@@ -42,7 +42,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
     ble_err_t status = ble_cmd_mtu_size_get(host_id, &mtu_size);
     if (status == BLE_ERR_OK)
     {
-        printf("mtu size = %d\n", mtu_size);
+        //printf(("mtu size = %d\n", mtu_size);
         item->status = AT_CMD_STATUS_OK;
     }
 
@@ -50,7 +50,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+RMTUS = <num>\n"
         "  read MTU size of specific host ID\n"
         "    <num> : host ID\n"

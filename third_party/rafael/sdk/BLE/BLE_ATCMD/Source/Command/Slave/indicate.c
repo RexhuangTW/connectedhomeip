@@ -57,7 +57,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+IND = <num1>, <num2>\n"
         "  send indication for specific host ID\n"
         "    <num1> : host ID\n"

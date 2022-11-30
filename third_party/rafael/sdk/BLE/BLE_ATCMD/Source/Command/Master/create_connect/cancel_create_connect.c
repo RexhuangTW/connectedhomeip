@@ -30,7 +30,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+CCCON\n"
         "  cancel create connection\n"
     );

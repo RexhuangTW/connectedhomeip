@@ -44,13 +44,13 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 static ble_err_t read_cmd(atcmd_item_t *item)
 {
     ble_gap_create_conn_param_t *create_con_param = &item->ble_param->create_con_param;
-    printf("%u\n", create_con_param->conn_param.supv_timeout);
+    //printf(("%u\n", create_con_param->conn_param.supv_timeout);
     item->status = AT_CMD_STATUS_OK;
     return BLE_ERR_OK;
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+CCONSUPTMO?\n"
         "  get the create connection supervision timeout\n"
         "+CCONSUPTMO = <num>\n"

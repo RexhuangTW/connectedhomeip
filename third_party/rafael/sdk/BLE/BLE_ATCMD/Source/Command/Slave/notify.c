@@ -53,7 +53,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+NFY = <num1>, <num2>\n"
         "  send notification for specific host ID\n"
         "    <num1> : host ID\n"

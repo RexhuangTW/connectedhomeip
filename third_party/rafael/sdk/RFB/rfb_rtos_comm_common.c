@@ -299,7 +299,7 @@ RFB_WRITE_TXQ_STATUS rfb_comm_tx_data_send(uint16_t packet_length, uint8_t *tx_d
 
     if (pci_comm_msg.pci_msg.param_type.pci_msg_ptr != NULL)
     {
-        //printf("rfb data send 0x%02x%02x%02x %d %d\n", txData[0], txData[1], txData[2], packet_length, packet_length+RUCI_LEN_SET_TX_CONTROL_FIELD);
+        ////printf(("rfb data send 0x%02x%02x%02x %d %d\n", txData[0], txData[1], txData[2], packet_length, packet_length+RUCI_LEN_SET_TX_CONTROL_FIELD);
         memcpy(pci_comm_msg.pci_msg.param_type.pci_msg_ptr, txData, packet_length + RUCI_LEN_SET_TX_CONTROL_FIELD);
 
         if (zboss_send_data_to_pci(pci_comm_msg) == FALSE)

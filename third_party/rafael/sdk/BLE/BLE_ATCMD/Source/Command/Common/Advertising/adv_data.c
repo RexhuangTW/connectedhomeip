@@ -55,14 +55,14 @@ static ble_err_t read_cmd(atcmd_item_t *item)
 
     char adv_data_str[MAX_ADV_DATA_SIZE * 3];
     parse_hex_array_to_string_with_colon(adv_data_str, sizeof(adv_data_str), adv_data, adv_data_len);
-    printf("%s\n", adv_data_str);
+    //printf(("%s\n", adv_data_str);
 
     item->status = AT_CMD_STATUS_OK;
     return BLE_ERR_OK;
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+ADVDATA?\n"
         "  get the advertising data\n"
         "+ADVDATA = <string>\n"

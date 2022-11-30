@@ -40,7 +40,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
         {
             char data_str[150] = "";
             parse_hex_array_to_string_with_colon(data_str, sizeof(data_str), p_data, p_data_length);
-            printf("scan_rsp_len=%d scan_rsp=%s\n", p_data_length, data_str);
+            //printf(("scan_rsp_len=%d scan_rsp=%s\n", p_data_length, data_str);
             item->status = AT_CMD_STATUS_OK;
         }
         return status;
@@ -49,7 +49,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+PARSSCAN?\n"
         "get scan response data by BLE_GAP_AD_TYPE\n"
         "+PARSSCAN = <num>\n"

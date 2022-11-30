@@ -42,17 +42,17 @@ static void  hmac_drbg_update_index(hmac_drbg_state *state, uint8_t *data, uint3
     sha256_finish((sha256_context *)  &hmac_cntx, state->key);
 
 #ifdef _DEBUG_
-    printf("key is :");
+    //printf(("key is :");
 
     tmp_ptr = state->key;
 
     /*little_endian <-> big_endian is just  byte change, not include bit reverse.*/
     for (i = 0; i < SHA256_DIGEST_SIZE; i++)
     {
-        printf("%02X ", tmp_ptr[i]);
+        //printf(("%02X ", tmp_ptr[i]);
     }
 
-    printf("\n");
+    //printf(("\n");
 #endif
 
     /* K= HMAC (K, V) */
@@ -60,17 +60,17 @@ static void  hmac_drbg_update_index(hmac_drbg_state *state, uint8_t *data, uint3
     hmac_sha256(state->key, SHA256_DIGEST_SIZE, state->v, SHA256_DIGEST_SIZE, state->v);
 
 #ifdef _DEBUG_
-    printf("v is :");
+    //printf(("v is :");
 
     tmp_ptr = state->v;
 
     /*little_endian <-> big_endian is just  byte change, not include bit reverse.*/
     for (i = 0; i < SHA256_DIGEST_SIZE; i++)
     {
-        printf("%02X ", tmp_ptr[i]);
+        //printf(("%02X ", tmp_ptr[i]);
     }
 
-    printf("\n \n");
+    //printf(("\n \n");
 #endif
 
 }

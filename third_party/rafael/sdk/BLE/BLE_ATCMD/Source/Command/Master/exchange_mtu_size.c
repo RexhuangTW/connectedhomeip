@@ -45,7 +45,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+EXMTUS = <num1>, <num2>\n"
         "  exchange MTU size of specific host ID with server\n"
         "    <num1> : host ID\n"

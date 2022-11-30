@@ -52,7 +52,7 @@
 #include "uart.h"
 #include "util_log.h"
 #include "cm3_mcu.h"
-
+#include "init_rt582Platform.h"
 #include "bsp.h"
 #include "bsp_button.h"
 
@@ -68,11 +68,15 @@ using namespace ::chip::DeviceLayer;
 #define APP_EVENT_QUEUE_SIZE 10
 #define LIGHT_ENDPOINT_ID (1)
 
+
+
 namespace {
 
+bool sIsThreadBLEAdvertising = false;
 bool sIsThreadProvisioned = false;
 bool sIsThreadEnabled     = false;
-bool sHaveBLEConnections  = false;        
+bool sHaveBLEConnections  = false;
+bool sCommissioned        = false;
 static TaskHandle_t sAppTaskHandle;
 static QueueHandle_t sAppEventQueue;
 
@@ -187,12 +191,16 @@ void AppTask::ActionInitiated(LightingManager::Action_t aAction, int32_t aActor)
     // Placeholder for light action
     if (aAction == LightingManager::ON_ACTION)
     {
-        gpio_pin_clear(21);
+        gpio_pin_clear(22);
+        gpio_pin_clear(23);
+        gpio_pin_clear(24);
         ChipLogProgress(NotSpecified, "Light goes on");
     }
     else if (aAction == LightingManager::OFF_ACTION)
     {
-        gpio_pin_set(21);
+        gpio_pin_set(22);
+        gpio_pin_set(23);
+        gpio_pin_set(24);
         ChipLogProgress(NotSpecified, "Light goes off ");
     }
 }
@@ -272,6 +280,60 @@ void AppTask::InitServer(intptr_t arg)
 
 }
 
+void AppTask::UpdateStatusLED()
+{
+    if (sIsThreadBLEAdvertising && !sHaveBLEConnections)
+    {
+        init_rt582_led_flash(20, 250, 150);
+    }
+    else if (sIsThreadProvisioned && sIsThreadEnabled)
+    {
+        init_rt582_led_flash(20, 0, 0);
+        init_rt582_led_flash(21, 850, 150); 
+    }
+    else if (sHaveBLEConnections)
+    {
+        init_rt582_led_flash(20, 150, 50);
+    }
+    if(sCommissioned)
+    {
+        gpio_pin_clear(20);
+    }
+}
+
+void AppTask::ChipEventHandler(const ChipDeviceEvent * aEvent, intptr_t /* arg */)
+{
+    ChipLogProgress(NotSpecified, "ChipEventHandler: %x", aEvent->Type);
+    switch (aEvent->Type)
+    {
+    case DeviceEventType::kCHIPoBLEAdvertisingChange:
+
+        sIsThreadBLEAdvertising = true;
+        UpdateStatusLED();   
+        break;
+    case DeviceEventType::kThreadStateChange:
+        sIsThreadProvisioned = ConnectivityMgr().IsThreadProvisioned();
+        sIsThreadEnabled     = ConnectivityMgr().IsThreadEnabled();
+        UpdateStatusLED();    
+        break;
+    case DeviceEventType::kThreadConnectivityChange:
+        break;
+
+    case DeviceEventType::kCHIPoBLEConnectionEstablished:
+        sHaveBLEConnections = true;
+        UpdateStatusLED(); 
+        break;
+
+    case DeviceEventType::kCommissioningComplete:
+        sCommissioned = true;
+        UpdateStatusLED();
+        break;
+    default:
+        break;
+    }
+}
+
+
 CHIP_ERROR AppTask::Init()
 {
     CHIP_ERROR err;
@@ -302,14 +364,32 @@ CHIP_ERROR AppTask::Init()
     }
     LightMgr().SetCallbacks(ActionInitiated, ActionCompleted);
 
-    vTaskSuspendAll();
-    PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
-    xTaskResumeAll();
+    if(LightMgr().IsTurnedOn())
+    {
+        gpio_pin_clear(22);
+        gpio_pin_clear(23);
+        gpio_pin_clear(24);
+    }
+    else
+    {
+        gpio_pin_set(22);
+        gpio_pin_set(23);
+        gpio_pin_set(24);        
+    }
+
 
     // Open commissioning after boot if no fabric was available
     if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0)
     {
-        PlatformMgr().ScheduleWork(OpenCommissioning, 0);
+        //PlatformMgr().ScheduleWork(OpenCommissioning, 0);
+        vTaskSuspendAll();
+        PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
+        xTaskResumeAll();        
+    }
+    else
+    {
+        sCommissioned = true;
+        UpdateStatusLED();
     }
 
     return CHIP_NO_ERROR;
@@ -332,6 +412,8 @@ CHIP_ERROR AppTask::StartAppTask()
     {
         return CHIP_ERROR_NO_MEMORY;
     }
+
+    PlatformMgr().AddEventHandler(ChipEventHandler, 0);
 
     return CHIP_NO_ERROR;
 }
@@ -471,6 +553,6 @@ void AppTask::AppTaskMain(void * pvParameter)
         {
             sAppTask.DispatchEvent(&event);
             eventReceived = xQueueReceive(sAppEventQueue, &event, 0);
-        }    
+        }
     }
 }

@@ -52,7 +52,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+WRITENRSP = <num1>, <num2>\n"
         "  send write value for specific host ID, which will not get response\n"
         "    <num1> : host ID\n"

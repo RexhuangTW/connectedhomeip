@@ -118,16 +118,16 @@ typedef unsigned long UBaseType_t;
  * the formatted string.
  * A carriage return and a linefeed are appended to the output.
  * stdout is redirected to the USART configured by configDBG_USART.
- * The parameters are the same as for the standard printf function.
+ * The parameters are the same as for the standard //printf( function.
  * There is no return value.
- * SHALL NOT BE CALLED FROM WITHIN AN INTERRUPT as fputs and printf use malloc,
+ * SHALL NOT BE CALLED FROM WITHIN AN INTERRUPT as fputs and //printf( use malloc,
  * which is interrupt-unsafe with the current __malloc_lock and __malloc_unlock.
  */
 #if configDBG
 #define portDBG_TRACE(...) \
 {\
   fputs(__FILE__ ":" ASTRINGZ(__LINE__) ": ", stdout);\
-  printf(__VA_ARGS__);\
+  //printf((__VA_ARGS__);\
   fputs("\r\n", stdout);\
 }
 #else

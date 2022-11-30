@@ -125,15 +125,15 @@ static void atcmd_queue_print(atcmd_queue_t *q)
 {
     atcmd_node_t *node = q->front_node;
 
-    printf("size:%d \n", q->length);
+    //printf(("size:%d \n", q->length);
     while (node != NULL)
     {
         PRINT_ITEM(node);
-        printf("->\n");
+        //printf(("->\n");
         node = node->next;
     }
 
-    printf("NULL\n");
+    //printf(("NULL\n");
     return;
 }
 

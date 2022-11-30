@@ -41,7 +41,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+SEC\n"
         "request security to specific host ID\n"
         "+SEC = <num>\n"

@@ -43,22 +43,6 @@ using namespace ::chip::DeviceLayer::Internal;
 // ================================================================================
 // Main Code
 // ================================================================================
-
-void ChipEventHandler(const ChipDeviceEvent * event, intptr_t /* arg */)
-{
-    switch (event->Type)
-    {
-    case DeviceEventType::kCHIPoBLEAdvertisingChange:
-        break;
-    case DeviceEventType::kThreadStateChange:
-        break;
-    case DeviceEventType::kThreadConnectivityChange:
-        break;
-    default:
-        break;
-    }
-}
-
 int main(void)
 {
     CHIP_ERROR err;
@@ -72,8 +56,6 @@ int main(void)
         return 0;
     }
 
-    // DeviceLayer::ConfigurationMgr().InitiateFactoryReset();
-    // ConfigurationManagerImpl::DoFactoryReset(0);
 #if ENABLE_CHIP_SHELL
     startShellTask();
 #endif
@@ -88,7 +70,6 @@ int main(void)
         goto exit;
     }
     
-
     err = ThreadStackMgr().InitThreadStack();
     if (err != CHIP_NO_ERROR)
     {
@@ -109,8 +90,6 @@ int main(void)
         ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
         goto exit;
     }    
-
-    PlatformMgr().AddEventHandler(ChipEventHandler, 0);
 
     if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
     {

@@ -111,23 +111,23 @@ static void scan_result_print(const scan_result_t *scan_res)
 
     //get addr str
     parse_addr_array_to_string(addr_str, scan_res->peer_addr.addr);
-    printf("adv_type:%d, addr_type:%d, addr:%s, RSSI:%d\n",
+    //printf(("adv_type:%d, addr_type:%d, addr:%s, RSSI:%d\n",
            scan_res->adv_type, scan_res->peer_addr.addr_type, addr_str, scan_res->rssi);
 
     //get adv_data str
-    printf("adv_data_len=%d\n", scan_res->adv_data_len);
+    //printf(("adv_data_len=%d\n", scan_res->adv_data_len);
     parse_hex_array_to_string_with_colon(data_str, sizeof(data_str), scan_res->adv_data, scan_res->adv_data_len);
-    printf("adv_data=%s\n", data_str);
+    //printf(("adv_data=%s\n", data_str);
 
     if (scan_res->is_scan_rsp_exist)
     {
         //get scan_rsp str
-        printf("scan_rsp_len=%d\n", scan_res->scan_rsp_len);
+        //printf(("scan_rsp_len=%d\n", scan_res->scan_rsp_len);
         parse_hex_array_to_string_with_colon(data_str, sizeof(data_str), scan_res->scan_rsp, scan_res->scan_rsp_len);
-        printf("scan_rsp=%s\n", data_str);
+        //printf(("scan_rsp=%s\n", data_str);
     }
     else
     {
-        printf("there is no scan_rsp\n");
+        //printf(("there is no scan_rsp\n");
     }
 }

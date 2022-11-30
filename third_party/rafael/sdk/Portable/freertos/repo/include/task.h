@@ -1670,8 +1670,8 @@ UBaseType_t uxTaskGetSystemState( TaskStatus_t * const pxTaskStatusArray, const 
  * bloat the code size, use a lot of stack, and provide different results on
  * different platforms.  An alternative, tiny, third party, and limited
  * functionality implementation of sprintf() is provided in many of the
- * FreeRTOS/Demo sub-directories in a file called printf-stdarg.c (note
- * printf-stdarg.c does not provide a full snprintf() implementation!).
+ * FreeRTOS/Demo sub-directories in a file called //printf(-stdarg.c (note
+ * //printf(-stdarg.c does not provide a full snprintf() implementation!).
  *
  * It is recommended that production systems call uxTaskGetSystemState()
  * directly to get access to raw stats data, rather than indirectly through a
@@ -1724,8 +1724,8 @@ void vTaskList( char * pcWriteBuffer ) PRIVILEGED_FUNCTION; /*lint !e971 Unquali
  * that might bloat the code size, use a lot of stack, and provide different
  * results on different platforms.  An alternative, tiny, third party, and
  * limited functionality implementation of sprintf() is provided in many of the
- * FreeRTOS/Demo sub-directories in a file called printf-stdarg.c (note
- * printf-stdarg.c does not provide a full snprintf() implementation!).
+ * FreeRTOS/Demo sub-directories in a file called //printf(-stdarg.c (note
+ * //printf(-stdarg.c does not provide a full snprintf() implementation!).
  *
  * It is recommended that production systems call uxTaskGetSystemState() directly
  * to get access to raw stats data, rather than indirectly through a call to

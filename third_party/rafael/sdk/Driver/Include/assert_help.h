@@ -13,9 +13,10 @@
 
 #include <stdint.h>
 #include "stdio.h"
+#include "util_log.h"
 
-#define dprintf(msg, ...)  do { printf(msg, __VA_ARGS__); }while(0)
-#define dprintf0(msg)     do { printf(msg);}while(0)
+#define dprintf(msg, ...)  do { //printf((msg, __VA_ARGS__); }while(0)
+#define dprintf0(msg)     do { //printf((msg);}while(0)
 
 #define assert_param(expr)    \
         do {                  \
@@ -24,7 +25,7 @@
             }                 \
             else              \
             {                 \
-                printf("ASSERT Failed in File %s line %d \n", __FILE__, __LINE__ ); \
+                err(("ASSERT Failed in File %s line %d \n", __FILE__, __LINE__ ); \
                 while(1);   \
             }                 \
         } while(0)

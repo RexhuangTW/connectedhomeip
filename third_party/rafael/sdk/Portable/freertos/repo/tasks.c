@@ -4397,7 +4397,7 @@ TCB_t *pxTCB;
 		 * results on different platforms.  An alternative, tiny, third party,
 		 * and limited functionality implementation of sprintf() is provided in
 		 * many of the FreeRTOS/Demo sub-directories in a file called
-		 * printf-stdarg.c (note printf-stdarg.c does not provide a full
+		 * //printf(-stdarg.c (note //printf(-stdarg.c does not provide a full
 		 * snprintf() implementation!).
 		 *
 		 * It is recommended that production systems call uxTaskGetSystemState()
@@ -4503,7 +4503,7 @@ TCB_t *pxTCB;
 		 * provide different results on different platforms.  An alternative,
 		 * tiny, third party, and limited functionality implementation of
 		 * sprintf() is provided in many of the FreeRTOS/Demo sub-directories in
-		 * a file called printf-stdarg.c (note printf-stdarg.c does not provide
+		 * a file called //printf(-stdarg.c (note //printf(-stdarg.c does not provide
 		 * a full snprintf() implementation!).
 		 *
 		 * It is recommended that production systems call uxTaskGetSystemState()
@@ -4556,7 +4556,7 @@ TCB_t *pxTCB;
 						#else
 						{
 							/* sizeof( int ) == sizeof( long ) so a smaller
-							printf() library can be used. */
+							//printf(() library can be used. */
 							sprintf( pcWriteBuffer, "\t%u\t\t%u%%\r\n", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, ( unsigned int ) ulStatsAsPercentage ); /*lint !e586 sprintf() allowed as this is compiled with many compilers and this is a utility function only - not part of the core kernel implementation. */
 						}
 						#endif
@@ -4572,7 +4572,7 @@ TCB_t *pxTCB;
 						#else
 						{
 							/* sizeof( int ) == sizeof( long ) so a smaller
-							printf() library can be used. */
+							//printf(() library can be used. */
 							sprintf( pcWriteBuffer, "\t%u\t\t<1%%\r\n", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter ); /*lint !e586 sprintf() allowed as this is compiled with many compilers and this is a utility function only - not part of the core kernel implementation. */
 						}
 						#endif

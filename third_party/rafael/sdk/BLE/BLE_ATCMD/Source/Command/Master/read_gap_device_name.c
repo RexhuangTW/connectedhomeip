@@ -58,7 +58,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+READDEVNAME = <num>\n"
         "  read GAP device name for specific host ID\n"
         "    <num> : host ID\n"

@@ -50,7 +50,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+READCCCD = <num>\n"
         "  read CCCD value for specific host ID\n"
         "    <num> : host ID\n"

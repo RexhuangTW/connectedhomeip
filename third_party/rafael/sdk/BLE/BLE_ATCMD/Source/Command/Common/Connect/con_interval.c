@@ -67,13 +67,13 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 static ble_err_t read_cmd(atcmd_item_t *item)
 {
     ble_gap_conn_param_t *con_param = item->ble_param->con_param;
-    printf("min:%u max:%u\n", con_param[0].min_conn_interval, con_param[0].max_conn_interval);
+    //printf(("min:%u max:%u\n", con_param[0].min_conn_interval, con_param[0].max_conn_interval);
     item->status = AT_CMD_STATUS_OK;
     return BLE_ERR_OK;
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+CONINT?\n"
         "  get the connection interval of host ID 0\n"
         "+CONINT = <num1>, <num2>, <num3>\n"

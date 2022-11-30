@@ -28,7 +28,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+SLEEP\n"
         "  enter the sleep mode\n"
     );

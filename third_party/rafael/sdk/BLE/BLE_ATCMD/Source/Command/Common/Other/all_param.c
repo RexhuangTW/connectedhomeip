@@ -1,10 +1,10 @@
 #include "atcmd_command_list.h"
 
-#define PRINT_INT(name,value) printf("%s = %d\n",name,value);
-#define PRINT_STR(name,value) printf("%s = %s\n",name,value);
+#define PRINT_INT(name,value) //printf(("%s = %d\n",name,value);
+#define PRINT_STR(name,value) //printf(("%s = %s\n",name,value);
 #define PRINT_ADDR(name,value,str) \
 parse_addr_array_to_string(str, (value).addr); \
-printf("%s = %s (type=%d)\n",name,str,(value).addr_type);
+//printf(("%s = %s (type=%d)\n",name,str,(value).addr_type);
 
 // PRIVATE FUNCTION DECLARE
 static ble_err_t read_cmd(atcmd_item_t *item);
@@ -32,7 +32,7 @@ static ble_err_t read_cmd(atcmd_item_t *item)
     atcmd_ble_param_t *ble_param = item->ble_param;
     PRINT_ADDR("device_addr", ble_param->device_addr, str);
 
-    printf("adv_param:\n");
+    //printf(("adv_param:\n");
     PRINT_INT("    adv_type", ble_param->adv_param.adv_type);
     PRINT_INT("    adv_interval_min", ble_param->adv_param.adv_interval_min);
     PRINT_INT("    adv_interval_max", ble_param->adv_param.adv_interval_max);
@@ -40,7 +40,7 @@ static ble_err_t read_cmd(atcmd_item_t *item)
     PRINT_INT("    adv_channel_map", ble_param->adv_param.adv_channel_map);
     PRINT_INT("    adv_filter_policy", ble_param->adv_param.adv_filter_policy);
 
-    printf("scan_param:\n");
+    //printf(("scan_param:\n");
     PRINT_INT("    scan_type", ble_param->scan_param.scan_type);
     PRINT_INT("    scan_interval", ble_param->scan_param.scan_interval);
     PRINT_INT("    scan_window", ble_param->scan_param.scan_window);
@@ -51,33 +51,33 @@ static ble_err_t read_cmd(atcmd_item_t *item)
     parse_hex_array_to_string_with_colon(str, sizeof(str), ble_param->scan_rsp.data, ble_param->scan_rsp.length);
     PRINT_STR("scan_rsp", str);
 
-    printf("read_data_len:\n");
+    //printf(("read_data_len:\n");
     for (int i = 0; i < LINK_NUM; i++)
     {
-        printf("    read_data_len[%d] = %d\n", i, ble_param->read_data_len[i]);
+        //printf(("    read_data_len[%d] = %d\n", i, ble_param->read_data_len[i]);
     }
 
-    printf("error_code:\n");
+    //printf(("error_code:\n");
     for (int i = 0; i < LINK_NUM; i++)
     {
-        printf("    error_code[%d] = %d\n", i, ble_param->error_code[i]);
+        //printf(("    error_code[%d] = %d\n", i, ble_param->error_code[i]);
     }
 
-    printf("connection param:\n");
+    //printf(("connection param:\n");
     for (int i = 0; i < LINK_NUM; i++)
     {
-        printf("%d :\n", i);
+        //printf(("%d :\n", i);
         PRINT_INT("    min_conn_interval", ble_param->con_param[i].min_conn_interval);
         PRINT_INT("    max_conn_interval", ble_param->con_param[i].max_conn_interval);
         PRINT_INT("    periph_latency", ble_param->con_param[i].periph_latency);
         PRINT_INT("    supv_timeout", ble_param->con_param[i].supv_timeout);
     }
 
-    printf("create connection param:\n");
+    //printf(("create connection param:\n");
     PRINT_INT("    scan_interval", ble_param->create_con_param.scan_interval);
     PRINT_INT("    scan_window", ble_param->create_con_param.scan_window);
     PRINT_INT("    init_filter_policy", ble_param->create_con_param.init_filter_policy);
-    printf("    create connection param - conn_param:\n");
+    //printf(("    create connection param - conn_param:\n");
     PRINT_INT("        min_conn_interval", ble_param->create_con_param.conn_param.min_conn_interval);
     PRINT_INT("        max_conn_interval", ble_param->create_con_param.conn_param.max_conn_interval);
     PRINT_INT("        periph_latency", ble_param->create_con_param.conn_param.periph_latency);
@@ -93,7 +93,7 @@ static ble_err_t read_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+ALLPARAM?\n"
         "  read the all param\n"
     );

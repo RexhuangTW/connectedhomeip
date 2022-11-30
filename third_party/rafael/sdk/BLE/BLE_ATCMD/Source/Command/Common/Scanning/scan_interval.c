@@ -49,13 +49,13 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 static ble_err_t read_cmd(atcmd_item_t *item)
 {
     ble_scan_param_t *scan_param = &item->ble_param->scan_param;
-    printf("scan interval = %d\n", scan_param->scan_interval);
+    //printf(("scan interval = %d\n", scan_param->scan_interval);
     item->status = AT_CMD_STATUS_OK;
     return BLE_ERR_OK;
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+SCANINT?\n"
         "  get the scan interval\n"
         "+SCANINT = <num>\n"

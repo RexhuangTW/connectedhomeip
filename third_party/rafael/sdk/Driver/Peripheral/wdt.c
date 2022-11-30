@@ -119,7 +119,7 @@ void Wdt_Handler(void)
         /*this is debug only.. it should be removed.*/
         while (1)
         {
-            printf("what ??? \n"); /*debug*/
+            //printf(("what ??? \n"); /*debug*/
         }
     }
 }

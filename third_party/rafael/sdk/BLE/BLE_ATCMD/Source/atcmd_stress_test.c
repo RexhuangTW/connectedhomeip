@@ -29,11 +29,11 @@ static void stress_test_timer_init(stress_test_t *st_test)
     stress_test_timer = xTimerCreate("Stress_Test_Timer", pdMS_TO_TICKS(50), pdTRUE, ( void * ) 0, stress_test_timer_handler);
     if (stress_test_timer == NULL)
     {
-        printf("The Stress_Test_Timer was not created.\n");
+        //printf(("The Stress_Test_Timer was not created.\n");
     }
     if ( xTimerIsTimerActive( stress_test_timer ) != pdFALSE )
     {
-        printf("The Stress_Test_Timer was not active.\n");
+        //printf(("The Stress_Test_Timer was not active.\n");
     }
 }
 static void stress_test_timer_handler(TimerHandle_t timer)
@@ -135,7 +135,7 @@ static void stress_test_unit_send_data(stress_test_unit_t *this)
     else if (err == BLE_BUSY) {}
     else
     {
-        printf("[Err]TX_E = %d\n", err);
+        //printf(("[Err]TX_E = %d\n", err);
     }
 
 }
@@ -174,14 +174,14 @@ static void stress_test_unit_receive_data(stress_test_unit_t *this, uint8_t cmdA
     //check length
     if (length != this->tx_data_len)
     {
-        printf("[Err]ErrLen = %d\n", length);
+        //printf(("[Err]ErrLen = %d\n", length);
         return;
     }
 
     //check first index
     if (data[0] != this->rx_index)
     {
-        printf("[Err]ErrFirst[%d] = %d\n", this->rx_index, data[0]);
+        //printf(("[Err]ErrFirst[%d] = %d\n", this->rx_index, data[0]);
         error_counter++;
     }
 
@@ -190,7 +190,7 @@ static void stress_test_unit_receive_data(stress_test_unit_t *this, uint8_t cmdA
     {
         if (data[i] != i)
         {
-            printf("[Err]ErrIdx[%d] = %d\n", i, data[i]);
+            //printf(("[Err]ErrIdx[%d] = %d\n", i, data[i]);
             error_counter++;
             break;
         }
@@ -203,11 +203,11 @@ static void stress_test_unit_receive_data(stress_test_unit_t *this, uint8_t cmdA
     // print info
     if (error_counter == 0)
     {
-        printf(".\n");
+        //printf((".\n");
     }
     else
     {
-        printf("[Err]ErrCount = %d, First_Idx = %d\n", error_counter, data[0]);
+        //printf(("[Err]ErrCount = %d, First_Idx = %d\n", error_counter, data[0]);
     }
 }
 static void stress_test_unit_reset(stress_test_unit_t *this)
@@ -252,7 +252,7 @@ static void stress_test_start(stress_test_t *this)
 {
     if (!stress_test_timer_start())
     {
-        printf("The Stress_Test_Timer start failed.\n");
+        //printf(("The Stress_Test_Timer start failed.\n");
     }
     this->is_enable = true;
 
@@ -319,13 +319,13 @@ static void stress_test_ble_event_handle(stress_test_t *this, ble_module_evt_t e
             err = ble_cmd_mtu_size_update(host_id, BLE_GATT_ATT_MTU_MAX);
             if (err != BLE_ERR_OK)
             {
-                printf("[Err]ble_gatt_exchange_mtu_req fail, id=%d\n", host_id);
+                //printf(("[Err]ble_gatt_exchange_mtu_req fail, id=%d\n", host_id);
             }
 
             err = ble_svcs_cccd_set(host_id, hdl_num, BLEGATT_CCCD_NOTIFICATION);
             if (err != BLE_ERR_OK)
             {
-                printf("[Err]ble_svcs_cccd_set fail, id=%d\n", host_id);
+                //printf(("[Err]ble_svcs_cccd_set fail, id=%d\n", host_id);
             }
         }
     }

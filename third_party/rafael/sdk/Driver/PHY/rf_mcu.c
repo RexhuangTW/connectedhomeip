@@ -972,12 +972,12 @@ void commsubsystem_handler(void)
 
 void BusFault_Handler (void)
 {
-    printf("BusFault_Handler\n");
+    //printf(("BusFault_Handler\n");
 }
 
 
 void UsageFault_Handler(void)
 {
-    printf("UsageFault_Handler\n");
+    //printf(("UsageFault_Handler\n");
 }
 

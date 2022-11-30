@@ -765,7 +765,7 @@ void Sadc_Compensation_Offset_Update(sadc_value_t adc_val)
     }
 
 #if (SADC_COMP_DEBUG == 1)
-    printf("\nOffset = %d, ADC = %d, VCMADC = %d\n", sadc_compensation_offset, adc_val, mp_cal_vcmadc.adc_1);
+    //printf(("\nOffset = %d, ADC = %d, VCMADC = %d\n", sadc_compensation_offset, adc_val, mp_cal_vcmadc.adc_1);
 #endif
 }
 
@@ -861,7 +861,7 @@ void Sadc_Compensation_Int_Handler(sadc_cb_t *p_cb)
         {
 #if (SADC_COMP_DEBUG == 1)
             gpio_pin_toggle(0);
-            printf("\nVCM ADC = %d\n", sadc_comp_value);
+            //printf(("\nVCM ADC = %d\n", sadc_comp_value);
 #endif
 
             Sadc_Compensation_Offset_Update(sadc_comp_value);

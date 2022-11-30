@@ -2057,7 +2057,7 @@ void wait_crypto_operation_finish(uint8_t op_num, uint8_t sb_num)
     if (ulNotifiedValue != CRYPTO_ISR_FINISH)
     {
         /*Oops...debug.. almost impossible*/
-        //printf("Error \n");
+        ////printf(("Error \n");
         while (1);
     }
 }

@@ -9,36 +9,36 @@
 
 #include "stdbool.h"
 
-#define PRINTERR(status) printf("ERROR Happened! %s:%d status:%d\n",__FILE__,__LINE__,status);
-#define PRINTERRR(reason) printf("ERROR Happened! %s:%d Reason:%s\n",__FILE__,__LINE__,reason);
+#define PRINTERR(status) //printf(("ERROR Happened! %s:%d status:%d\n",__FILE__,__LINE__,status);
+#define PRINTERRR(reason) //printf(("ERROR Happened! %s:%d Reason:%s\n",__FILE__,__LINE__,reason);
 
 #define CHECK(status)                                          \
     if(status != BLE_ERR_OK)                           \
     {                                                          \
-        printf("ERROR Happened! %s:%d status:%d \n",__FILE__,__LINE__,status); \
+        //printf(("ERROR Happened! %s:%d status:%d \n",__FILE__,__LINE__,status); \
         return status;                                         \
     }
 
 #define CHECKNR(status)                                                        \
     if(status != BLE_ERR_OK)                                                   \
     {                                                                          \
-        printf("ERROR Happened! %s:%d status:%d \n",__FILE__,__LINE__,status); \
+        //printf(("ERROR Happened! %s:%d status:%d \n",__FILE__,__LINE__,status); \
     }
 
 #define CHECK_BOOL(check_bool)                                                    \
     if(!check_bool)                                                               \
     {                                                                             \
-        /*printf("ERROR Happened! %s:%d check:%d \n",__FILE__,__LINE__,check_bool);*/ \
+        /*//printf(("ERROR Happened! %s:%d check:%d \n",__FILE__,__LINE__,check_bool);*/ \
     }
 
 #define PRINT_IF_ELSE(cmp,print_true,print_false) \
     if (cmp)                                      \
     {                                             \
-        printf(print_true);                       \
+        //printf((print_true);                       \
     }                                             \
     else                                          \
     {                                             \
-        printf(print_false);                      \
+        //printf((print_false);                      \
     }
 
 #define CHECK_HOST_ID(host_id)                  \

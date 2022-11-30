@@ -47,13 +47,13 @@ static ble_err_t read_cmd(atcmd_item_t *item)
     ble_err_t status = ble_cmd_device_addr_get(&p_addr);
     char addr_str[ADDR_FORMAT_SIZE + 1];
     parse_addr_array_to_string(addr_str, p_addr.addr);
-    printf("addr = %s\n", addr_str);
+    //printf(("addr = %s\n", addr_str);
     item->status = AT_CMD_STATUS_OK;
     return status;
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+DEVADDR?\n"
         "  get the address of device\n"
         "+DEVADDR = <addr>\n"

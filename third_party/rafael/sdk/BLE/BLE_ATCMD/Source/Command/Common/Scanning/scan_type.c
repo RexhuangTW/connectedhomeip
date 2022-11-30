@@ -49,13 +49,13 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 static ble_err_t read_cmd(atcmd_item_t *item)
 {
     ble_scan_param_t *scan_param = &item->ble_param->scan_param;
-    printf("scan type = %d\n", scan_param->scan_type);
+    //printf(("scan type = %d\n", scan_param->scan_type);
     item->status = AT_CMD_STATUS_OK;
     return BLE_ERR_OK;
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+SCANTYPE?\n"
         "  get scan type\n"
         "+SCANTYPE = <num>\n"

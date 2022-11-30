@@ -77,7 +77,7 @@ static ble_err_t set_cmd(atcmd_item_t *item)
 }
 static void test_cmd(atcmd_item_t *item)
 {
-    printf(
+    //printf((
         "+CRCON\n"
         "  create connection with default value\n"
         "+CRCON = <num1>,<num2>,<addr>\n"
