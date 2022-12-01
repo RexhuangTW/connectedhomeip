@@ -19,38 +19,6 @@
 
 #include "util_log.h"
 
-// RTT Buffer size and name
-#ifndef LOG_RTT_BUFFER_INDEX
-#define LOG_RTT_BUFFER_INDEX 0
-#endif
-
-/**
- * @def LOG_RTT_BUFFER_NAME
- *
- * RTT's name. Only used if LOG_RTT_BUFFER_INDEX is not 0. Otherwise,
- * the buffer name is fixed to "Terminal".
- *
- */
-#ifndef LOG_RTT_BUFFER_NAME
-#define LOG_RTT_BUFFER_NAME "Terminal"
-#endif
-
-/**
- * @def LOG_RTT_BUFFER_SIZE
- *
- * LOG RTT's buffer size. Only used if LOG_RTT_BUFFER_INDEX is not 0. To
- * configure buffer #0 size, check the BUFFER_SIZE_UP definition in
- * SEGGER_RTT_Conf.h
- *
- */
-#ifndef LOG_RTT_BUFFER_SIZE
-#define LOG_RTT_BUFFER_SIZE 256
-#endif
-
-// FreeRTOS includes
-// #include "SEGGER_RTT.h"
-// #include "SEGGER_RTT_Conf.h"
-
 #define LOG_ERROR "<error > "
 #define LOG_WARN "<warn  > "
 #define LOG_INFO "<info  > "
@@ -71,9 +39,6 @@ static uint8_t sLogBuffer[LOG_RTT_BUFFER_SIZE];
 static uint8_t sCmdLineBuffer[LOG_RTT_BUFFER_SIZE];
 #endif
 
-/**
- * Print a log message to RTT
- */
 static void PrintLog(const char * msg)
 {
     info("%s\r\n", msg);

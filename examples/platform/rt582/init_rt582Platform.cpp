@@ -81,7 +81,17 @@ static void init_default_pin_mux(void)
     /*uart0 pinmux*/
     pin_set_mode(16, MODE_UART); /*GPIO16 as UART0 RX*/
     pin_set_mode(17, MODE_UART); /*GPIO17 as UART0 TX*/
+    gpio_cfg_output(20);
+    gpio_cfg_output(21);
+    gpio_cfg_output(22);
+    gpio_cfg_output(23);
+    gpio_cfg_output(24);
 
+    gpio_pin_set(20);
+    gpio_pin_set(21);
+    gpio_pin_set(22);
+    gpio_pin_set(23);
+    gpio_pin_set(24);
     return;
 }
 static void _timer_isr_handler(uint32_t timer_id)
@@ -118,20 +128,7 @@ static void _timer_isr_handler(uint32_t timer_id)
 void init_rt582Platform(void)
 {
     timer_config_mode_t cfg;
-    //NVIC_SetPriority(Uart0_IRQn, 0x02);
-    NVIC_SetPriority(CommSubsystem_IRQn, 0x05);
-
-    gpio_cfg_output(20);
-    gpio_cfg_output(21);
-    gpio_cfg_output(22);
-    gpio_cfg_output(23);
-    gpio_cfg_output(24);
-
-    gpio_pin_set(20);
-    gpio_pin_set(21);
-    gpio_pin_set(22);
-    gpio_pin_set(23);
-    gpio_pin_set(24);
+    NVIC_SetPriority(CommSubsystem_IRQn, 0x04);
 
     init_default_pin_mux();
     Delay_Init();
@@ -144,7 +141,7 @@ void init_rt582Platform(void)
     cfg.prescale = TIMER_PRESCALE_32;
 
     Timer_Open(2, cfg, _timer_isr_handler);
-    Timer_Int_Priority(2, 7);
+    Timer_Int_Priority(2, 3);
 
     Timer_Start(2, 999);
 
