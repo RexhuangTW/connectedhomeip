@@ -5,5 +5,9 @@
 # And some specific generated files
 src/controller/python/chip/clusters/CHIPClusters.py linguist-generated
 src/controller/python/chip/clusters/Objects.py linguist-generated
+
+* text=auto
 # Let bat file use CRLF linebreak
 **/*.bat eol=crlf
+# Let sh file use LF linebreak
+**/*.sh eol=lf
