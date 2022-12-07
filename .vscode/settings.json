@@ -139,7 +139,11 @@
         "compare": "cpp",
         "concepts": "cpp",
         "rfb_comm.h": "c",
-        "rf_common_init.h": "c"
+        "rf_common_init.h": "c",
+        "freertos.h": "c",
+        "freertosconfig.h": "c",
+        "chipprojectconfig.h": "c",
+        "chip_define.h": "c"
     },
     // Configure paths or glob patterns to exclude from file watching.
     "files.watcherExclude": {
