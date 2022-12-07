@@ -25,11 +25,7 @@ declare_args() {
   rt582_static_sdk_root = "${chip_root}/third_party/rafael/rt58x_sdk"
   sdk_support_root = "${chip_root}/third_party/rafael/matter_support"
 
-<<<<<<< Updated upstream
   use_static_sdk_lib = false
-=======
-  use_static_sdk_lib = true
->>>>>>> Stashed changes
   # Build openthread with prebuilt rafael lib
   use_rafael_thread_lib = false
   enable_openthread_cli = true
@@ -108,14 +104,11 @@ template("rt582_sdk") {
         "${rt582_sdk_root}/RF_FW_Control_Task/Internal/Include",
 
         "${rt582_sdk_root}/FOTA/Include",
-<<<<<<< Updated upstream
 
         #Hardware Crypto Engine Inclide Dirs
         "${chip_root}/third_party/mbedtls/repo/include/mbedtls",
         "${chip_root}/third_party/mbedtls/repo/library",
         "${rt582_sdk_root}/Crypto/Include",
-=======
->>>>>>> Stashed changes
       ]
     }
 
@@ -164,11 +157,7 @@ template("rt582_sdk") {
   }
 
   source_set(sdk_target_name) {
-<<<<<<< Updated upstream
     sources = []
-=======
-    sources =[]
->>>>>>> Stashed changes
     if (defined(invoker.sources)) {
       sources += invoker.sources
     }
