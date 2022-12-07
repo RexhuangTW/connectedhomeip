@@ -288,8 +288,7 @@ void AppTask::UpdateStatusLED()
     }
     else if (sIsThreadProvisioned && sIsThreadEnabled)
     {
-        init_rt582_led_flash(20, 0, 0);
-        init_rt582_led_flash(21, 850, 150); 
+        init_rt582_led_flash(20, 850, 150);
     }
     else if (sHaveBLEConnections)
     {
@@ -297,7 +296,7 @@ void AppTask::UpdateStatusLED()
     }
     if(sCommissioned)
     {
-        gpio_pin_clear(20);
+        gpio_pin_clear(21);
     }
 }
 

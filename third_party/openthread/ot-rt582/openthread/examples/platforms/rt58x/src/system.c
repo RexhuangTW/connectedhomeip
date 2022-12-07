@@ -50,7 +50,7 @@
 //=============================================================================
 //                Functions
 //=============================================================================
-void otSysInit(int argc, char *argv[])
+void otSysInit(int argc, char * argv[])
 {
     OT_UNUSED_VARIABLE(argc);
     OT_UNUSED_VARIABLE(argv);
@@ -70,11 +70,11 @@ bool otSysPseudoResetWasRequested(void)
 
 void otSysDeinit(void) {}
 
-void otSysProcessDrivers(otInstance *aInstance)
+void otSysProcessDrivers(otInstance * aInstance)
 {
-    //UartProcessReceive();
+    // UartProcessReceive();
     rt58x_alarm_process(aInstance);
-    platformRadioProcess();
+    platformRadioProcess(aInstance);
 }
 
 // void otSysEventSignalPending(void)

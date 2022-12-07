@@ -53,6 +53,7 @@ extern "C" {
 #include "init_rt582Platform.h"
 #include "uart.h"
 #include "cm3_mcu.h"
+#include "crypto_util.h"
 
 
 typedef struct {
@@ -134,6 +135,7 @@ void init_rt582Platform(void)
     Delay_Init();
     dma_init();
     uartConsoleInit();
+    crypto_lib_init();
     otSysInit(0, NULL);
 
     cfg.int_en = ENABLE;

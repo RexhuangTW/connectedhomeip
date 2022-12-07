@@ -41,3 +41,6 @@
 #endif
 
 #define BLE_SUPPORT_NUM_CONN_MAX 1
+
+/* definition for crypto hw engine */
+#define CRYPTO_SECP256R1_ENABLE             1
