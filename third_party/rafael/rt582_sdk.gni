@@ -203,7 +203,6 @@ template("rt582_sdk") {
         "${rt582_sdk_root}/Driver/Peripheral/uart_retarget.c",
         "${rt582_sdk_root}/Driver/Peripheral/wdt.c",
         "${rt582_sdk_root}/Driver/Peripheral/lpm.c",
-        "${rt582_sdk_root}/Driver/Peripheral/flashds.c",
         "${rt582_sdk_root}/Portable/Utility/util.c",
         "${rt582_sdk_root}/Portable/Utility/util_log.c",
         "${rt582_sdk_root}/Portable/Utility/util_printf.c",
@@ -273,6 +272,17 @@ template("rt582_sdk") {
         "${rt582_sdk_root}/BLE_App_Profile/ble_profile_def.c",
 
         "${rt582_sdk_root}/Portable/System/sys_arch.c",
+
+        #Crypto Engine
+        "${rt582_sdk_root}/Crypto/crypto.c",
+        "${rt582_sdk_root}/Crypto/crypto_util.c",
+        "${rt582_sdk_root}/Crypto/sha256.c",
+        "${rt582_sdk_root}/Crypto/aes.c",
+        "${rt582_sdk_root}/Crypto/hw_ecdh.c",
+        "${rt582_sdk_root}/Crypto/hw_ecdsa.c",
+        "${rt582_sdk_root}/Crypto/test/tst_ecdh.c",
+        "${rt582_sdk_root}/Crypto/test/tst_sha256.c",
+        "${rt582_sdk_root}/Crypto/test/tst_ecdsa.c",
       ]
     }
   }
