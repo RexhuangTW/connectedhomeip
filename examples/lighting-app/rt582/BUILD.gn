@@ -68,7 +68,6 @@ assert(!(disable_lcd && show_qr_code))
 assert(!(chip_enable_wifi && chip_enable_openthread))
 
 rt582_sdk("sdk") {
-
   sources = [
     "${rt582_project_dir}/include/CHIPProjectConfig.h",
     "${examples_plat_dir}/config/FreeRTOSConfig.h",
