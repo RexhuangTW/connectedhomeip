@@ -12,7 +12,7 @@
         },
         {
             "cwd": "${workspaceRoot}",
-            "executable": "./out/lighting-app/RT582/chip-rt582-lighting-example.out",
+            "executable": "${workspaceFolder}/out/lighting-app/RT582/chip-rt582-lighting-example.out",
             "name": "(RT) lighting Debug Microcontroller",
             "request": "launch",
             "type": "cortex-debug",
@@ -22,13 +22,13 @@
             "device": "ARMCM3",
             "interface": "swd",
             // "serialNumber": "", // add J-Link serial number if having multiple attached the same time.
-            "runToMain": true,
+            "runToMain": true
             // "svdFile": "",
             // "showDevDebugOutput": "raw", // true
         },
         {
             "cwd": "${workspaceRoot}",
-            "executable": "./out/light-switch-app/RT582/chip-rt582-light-switch-example.out",
+            "executable": "${workspaceFolder}/out/light-switch-app/RT582/chip-rt582-light-switch-example.out",
             "name": "(RT) light-switch Debug Microcontroller",
             "request": "launch",
             "type": "cortex-debug",
@@ -38,7 +38,7 @@
             "device": "ARMCM3",
             "interface": "swd",
             // "serialNumber": "", // add J-Link serial number if having multiple attached the same time.
-            "runToMain": true,
+            "runToMain": true
             // "svdFile": "",
             // "showDevDebugOutput": "raw", // true
         },

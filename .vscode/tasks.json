@@ -7,46 +7,81 @@
             "command": "echo 'Env setup finished'",
             "dependsOrder": "sequence",
             "dependsOn": [
-                "RT matter image build (Step I)", 
-                "RT matter container build (Step II)", 
+                "RT matter image build (Step I)",
+                "RT matter container build (Step II)",
                 "RT matter container env setup (Step III)"
-            ],
+            ]
         },
         {
             "label": "RT matter image build (Step I)",
             "type": "shell",
-            "command": "docker build -f .\\.devcontainer\\RT582_Dockerfile -t rafael_matter . --no-cache",
-            "group": "build",
+            "command": "docker build -f ${workspaceFolder}\\.devcontainer\\RT582_Dockerfile -t rafael_matter . --no-cache",
+            "group": "build"
         },
         {
             "label": "RT matter container build (Step II)",
             "type": "shell",
-            "command": "docker run -i -d --name RT_matter_builder -v D:\\workspace\\connectedhomeip:/var/chip rafael_matter",
-            "group": "build",
+            "command": "docker run -i -d --name RT_matter_builder -v ${workspaceFolder}:/var/chip rafael_matter",
+            "group": "build"
         },
         {
-            "label": "RT matter container env setup (Step III)",
+            "label": "RT matter container env run/setup (Step III)",
             "type": "shell",
             "command": "docker exec RT_matter_builder bash /var/chip/scripts/activate.sh",
-            "group": "build",
+            "group": "build"
         },
         {
-            "label": "Build RT lighting example",
+            "label": "Build RT example",
             "type": "shell",
-            "command": "docker exec RT_matter_builder /var/chip/scripts/examples/gn_rt582_example.sh /var/chip/examples/lighting-app/rt582 /var/chip/out/lighting-app",
+            "command": "docker exec RT_matter_builder /var/chip/scripts/examples/gn_rt582_example.sh /var/chip/examples/${input:exampleproject}/rt582 /var/chip/out/${input:exampleproject}",
             "group": "build",
-            "problemMatcher": { 
-                "base": "$gcc" 
+            "problemMatcher": {
+                "base": "$gcc"
             }
         },
         {
-            "label": "Build RT light-switch example",
+            "label": "Remove output of RT building example",
             "type": "shell",
-            "command": "docker exec RT_matter_builder /var/chip/scripts/examples/gn_rt582_example.sh /var/chip/examples/light-switch-app/rt582 /var/chip/out/light-switch-app",
+            "command": "docker exec RT_matter_builder rm -fr /var/chip/out/${input:exampleproject}/RT582",
             "group": "build",
-            "problemMatcher": { 
-                "base": "$gcc" 
+            "problemMatcher": {
+                "base": "$gcc"
             }
         },
+        {
+            // Clean Build RT example
+            "label": "Clean build RT example",
+            "type": "shell",
+            "command": "echo '${input:exampleproject} building finished'",
+            "dependsOrder": "sequence",
+            "dependsOn": ["Remove out of RT example", "Build RT example"]
+        }
+        // { // Build RT lighting example
+        //     "label": "Build RT lighting example",
+        //     "type": "shell",
+        //     "command": "docker exec RT_matter_builder /var/chip/scripts/examples/gn_rt582_example.sh /var/chip/examples/lighting-app/rt582 /var/chip/out/lighting-app",
+        //     "group": "build",
+        //     "problemMatcher": {
+        //         "base": "$gcc"
+        //     }
+        // },
+        // { // Build RT light-switch example
+        //     "label": "Build RT light-switch example",
+        //     "type": "shell",
+        //     "command": "docker exec RT_matter_builder /var/chip/scripts/examples/gn_rt582_example.sh /var/chip/examples/light-switch-app/rt582 /var/chip/out/light-switch-app",
+        //     "group": "build",
+        //     "problemMatcher": {
+        //         "base": "$gcc"
+        //     }
+        // },
+    ],
+    "inputs": [
+        {
+            "type": "pickString",
+            "id": "exampleproject",
+            "description": "Which example do you want to create?",
+            "options": ["lighting-app", "light-switch-app"],
+            "default": ""
+        }
     ]
 }
