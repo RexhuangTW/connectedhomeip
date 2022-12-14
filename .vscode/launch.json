@@ -11,7 +11,7 @@
             "pid": "${command:pickProcess}"
         },
         {
-            "cwd": "${workspaceRoot}",
+            "cwd": "${workspaceFolder}/out/lighting-app/RT582/",
             "executable": "${workspaceFolder}/out/lighting-app/RT582/chip-rt582-lighting-example.out",
             "name": "(RT) lighting Debug Microcontroller",
             "request": "launch",
@@ -27,7 +27,7 @@
             // "showDevDebugOutput": "raw", // true
         },
         {
-            "cwd": "${workspaceRoot}",
+            "cwd": "${workspaceFolder}/out/light-switch-app/RT582/",
             "executable": "${workspaceFolder}/out/light-switch-app/RT582/chip-rt582-light-switch-example.out",
             "name": "(RT) light-switch Debug Microcontroller",
             "request": "launch",

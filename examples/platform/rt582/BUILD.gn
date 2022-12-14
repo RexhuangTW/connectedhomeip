@@ -20,7 +20,6 @@ import("${rt582_sdk_build_root}/rt582_sdk.gni")
 
 declare_args() {
   # Configuration file for openthread.
-  # openthread_config = "${chip_root}/third_party/openthread/ot-rt582/openthread/examples/platforms/rt58x/"
   openthread_config = "${chip_root}/examples/platform/rt582/project_include"
 }
 
