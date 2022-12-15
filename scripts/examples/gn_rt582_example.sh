@@ -123,7 +123,7 @@ else
         gn gen --check --fail-on-unused-args --export-compile-commands --root="$ROOT" --args="$optArgs" "$BUILD_DIR"
     fi
     # ninja -C "$BUILD_DIR"/
-    ninja -v -C "$BUILD_DIR"/
+    ninja -j16 -v -C "$BUILD_DIR"/
     #print stats
     arm-none-eabi-size -A "$BUILD_DIR"/*.out
 fi

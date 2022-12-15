@@ -194,6 +194,7 @@ template("rt582_sdk") {
         "${rt582_sdk_root}/Driver/PHY/rt569mp/rt569mp_init.c",
         "${rt582_sdk_root}/Driver/Peripheral/dma.c",
         "${rt582_sdk_root}/Driver/Peripheral/flashctl.c",
+        "${rt582_sdk_root}/Driver/Peripheral/flashds.c",
         "${rt582_sdk_root}/Driver/Peripheral/Include/flashctl.h",
         "${rt582_sdk_root}/Driver/Peripheral/gpio.c",
         "${rt582_sdk_root}/Driver/Peripheral/mp_sector.c",
