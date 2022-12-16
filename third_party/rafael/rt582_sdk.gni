@@ -25,7 +25,7 @@ declare_args() {
   rt582_static_sdk_root = "${chip_root}/third_party/rafael/rt58x_sdk"
   sdk_support_root = "${chip_root}/third_party/rafael/matter_support"
 
-  use_static_sdk_lib = true # false
+  use_static_sdk_lib =  false #true # false
   # Build openthread with prebuilt rafael lib
   use_rafael_thread_lib = false
   enable_openthread_cli = true

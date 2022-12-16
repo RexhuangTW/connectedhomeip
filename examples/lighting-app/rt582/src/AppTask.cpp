@@ -376,7 +376,7 @@ CHIP_ERROR AppTask::Init()
         gpio_pin_set(24);        
     }
 
-
+    ConfigurationMgr().LogDeviceConfig();
     // Open commissioning after boot if no fabric was available
     if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0)
     {

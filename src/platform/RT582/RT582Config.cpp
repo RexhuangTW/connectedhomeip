@@ -48,6 +48,7 @@ static size_t storage_read(uint32_t id, size_t bufSize, uint8_t *buf)
 
     t_ds_r.type = flash_keyid;
     t_ds_r.len = 0;
+    flush_cache();
     ds_read(&t_ds_r);
 
     if(t_ds_r.address != 0 && t_ds_r.len !=0)
@@ -99,19 +100,23 @@ size_t storage_write(uint32_t id, size_t dataLen, uint8_t *data)
     uint32_t ds_ret = 0;
     ds_rw_t t_ds_w;
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
-    ChipLogDetail(DeviceLayer, "storage_write key id: 0x%02x, flash id: 0x%02x size %d", id, flash_keyid, dataLen);
+    ChipLogProgress(DeviceLayer, "storage_write key id: 0x%02x, flash id: 0x%02x size %d", id, flash_keyid, dataLen);
 
     t_ds_w.type = flash_keyid;
     t_ds_w.len = dataLen;
     t_ds_w.address = (uint32_t)data;
-    ds_ret = ds_write(&t_ds_w);
-    if(ds_ret != STATUS_SUCCESS)
+    if(dataLen > 0)
     {
-        ChipLogError(DeviceLayer, "ds_write failed %d", ds_ret);
-    }
-    else
-    {
-       flush_cache();
+
+        ds_ret = ds_write(&t_ds_w);
+        if(ds_ret != STATUS_SUCCESS)
+        {
+            ChipLogError(DeviceLayer, "ds_write failed %d", ds_ret);
+        }
+        else
+        {
+        //flush_cache();
+        }
     }
 #if 0
     uint32_t sector_addr, id_addr, i, offset;

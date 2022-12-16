@@ -33,7 +33,7 @@
 #define CHIP_DEVICE_CONFIG_USE_TEST_SETUP_PIN_CODE 20202021
 #endif
 
-#define CHIP_DEVICE_CONFIG_USE_TEST_SETUP_DISCRIMINATOR 3840
+#define CHIP_DEVICE_CONFIG_USE_TEST_SETUP_DISCRIMINATOR 3841
 
 // For convenience, Chip Security Test Mode can be enabled and the
 // requirement for authentication in various protocols can be disabled.
@@ -55,7 +55,7 @@
  *
  * 0x8005: example lighting app
  */
-#define CHIP_DEVICE_CONFIG_DEVICE_PRODUCT_ID 0x8005
+#define CHIP_DEVICE_CONFIG_DEVICE_PRODUCT_ID 0x8004
 
 /**
  * CHIP_DEVICE_CONFIG_DEVICE_HARDWARE_VERSION
@@ -131,7 +131,7 @@
 
 #define CONFIG_ENABLE_CHIP_SHELL 1
 
-//#define CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION 0
+// #define CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION 0
 
 #define CHIP_PROGRESS_LOGGING 1
 #define CHIP_DETAIL_LOGGING 0
@@ -140,7 +140,6 @@
 
 #define CHIP_CONFIG_MAX_FABRICS 4
 #define CHIP_IM_MAX_REPORTS_IN_FLIGHT 2
-#define CHIP_CONFIG_SLOW_CRYPTO 0
 
 #define CHIP_DEVICE_CONFIG_USE_TEST_SPAKE2P_VERIFIER                                                                               \
     "uWFwqugDNGiEck/po7KHwwMwwqZgN10XuyBajPGuyzUEV/iree4lOrao5GuwnlQ65CJzbeUB49s31EH+NEkg0JVI5MGCQGMMT/SRPFNRODm3wH/MBiehuFc6FJ/"  \

@@ -238,16 +238,12 @@ CHIP_ERROR AppTask::Init()
         ChipLogError(NotSpecified, "InitBindingHandler() failed");
         return err;
     }
-    // LightMgr().SetCallbacks(ActionInitiated, ActionCompleted);
-
-    vTaskSuspendAll();
-    PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
-    xTaskResumeAll();
-
     // Open commissioning after boot if no fabric was available
     if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0)
     {
-        PlatformMgr().ScheduleWork(OpenCommissioning, 0);
+        vTaskSuspendAll();
+        PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
+        xTaskResumeAll(); 
     }
 
     return CHIP_NO_ERROR;
