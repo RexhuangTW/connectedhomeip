@@ -277,6 +277,18 @@ void AppTask::InitServer(intptr_t arg)
     {
         ChipLogError(NotSpecified, "chip::Server::init faild %s", ErrorStr(err));
     }
+    if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0)
+    {
+        vTaskSuspendAll();
+        ConfigurationMgr().LogDeviceConfig();
+        PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
+        xTaskResumeAll();
+    }
+    else
+    {
+        sCommissioned = true;
+        UpdateStatusLED();
+    }
 
 }
 
@@ -337,23 +349,9 @@ CHIP_ERROR AppTask::Init()
 {
     CHIP_ERROR err;
     ChipLogProgress(NotSpecified, "Current Software Version: %s", CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING);
-    PlatformMgr().ScheduleWork(InitServer, 0);
+    
 
     bsp_init(BSP_INIT_LEDS | BSP_INIT_BUTTONS, ButtonEventHandler);
-
-#if CONFIG_CHIP_FACTORY_DATA
-    ReturnErrorOnFailure(mFactoryDataProvider.Init());
-    SetDeviceInstanceInfoProvider(&mFactoryDataProvider);
-    SetCommissionableDataProvider(&mFactoryDataProvider);
-    SetDeviceAttestationCredentialsProvider(&mFactoryDataProvider);    
-#else
-    uint32_t pass_code = CHIP_DEVICE_CONFIG_USE_TEST_SETUP_PIN_CODE;
-    uint16_t discriminator = CHIP_DEVICE_CONFIG_USE_TEST_SETUP_DISCRIMINATOR;
-    GetCommissionableDataProvider()->SetSetupPasscode(pass_code);
-    GetCommissionableDataProvider()->SetSetupDiscriminator(discriminator);
-    SetDeviceAttestationCredentialsProvider(Examples::GetExampleDACProvider());
-#endif
-
     // Setup light
     err = LightMgr().Init();
     if (err != CHIP_NO_ERROR)
@@ -375,22 +373,6 @@ CHIP_ERROR AppTask::Init()
         gpio_pin_set(23);
         gpio_pin_set(24);        
     }
-
-    ConfigurationMgr().LogDeviceConfig();
-    // Open commissioning after boot if no fabric was available
-    if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0)
-    {
-        //PlatformMgr().ScheduleWork(OpenCommissioning, 0);
-        vTaskSuspendAll();
-        PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
-        xTaskResumeAll();        
-    }
-    else
-    {
-        sCommissioned = true;
-        UpdateStatusLED();
-    }
-
     return CHIP_NO_ERROR;
 }
 
@@ -413,6 +395,17 @@ CHIP_ERROR AppTask::StartAppTask()
     }
 
     PlatformMgr().AddEventHandler(ChipEventHandler, 0);
+
+#if CONFIG_CHIP_FACTORY_DATA
+    ReturnErrorOnFailure(mFactoryDataProvider.Init());
+    SetDeviceInstanceInfoProvider(&mFactoryDataProvider);
+    SetCommissionableDataProvider(&mFactoryDataProvider);
+    SetDeviceAttestationCredentialsProvider(&mFactoryDataProvider);    
+#else
+    SetDeviceAttestationCredentialsProvider(Examples::GetExampleDACProvider());
+#endif
+
+    PlatformMgr().ScheduleWork(InitServer, 0);
 
     return CHIP_NO_ERROR;
 }

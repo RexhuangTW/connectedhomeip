@@ -71,9 +71,11 @@ using namespace ::chip::DeviceLayer;
 
 namespace {
 
+bool sIsThreadBLEAdvertising = false;
 bool sIsThreadProvisioned = false;
 bool sIsThreadEnabled     = false;
-bool sHaveBLEConnections  = false;     
+bool sHaveBLEConnections  = false;
+bool sCommissioned        = false;  
 static TaskHandle_t sAppTaskHandle;
 static QueueHandle_t sAppEventQueue;
 
@@ -203,31 +205,22 @@ void AppTask::InitServer(intptr_t arg)
     {
         ChipLogError(NotSpecified, "chip::Server::init faild %s", ErrorStr(err));
     }
-
+    if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0)
+    {
+        vTaskSuspendAll();
+        ConfigurationMgr().LogDeviceConfig();
+        PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
+        xTaskResumeAll();
+    }
 }
 
 CHIP_ERROR AppTask::Init()
 {
     CHIP_ERROR err;
     ChipLogProgress(NotSpecified, "Current Software Version: %s", CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING);
-    PlatformMgr().ScheduleWork(InitServer, 0);
 
     bsp_init(BSP_INIT_LEDS | BSP_INIT_BUTTONS, ButtonEventHandler);
     bsp_led_init(NULL);
-
-
-#if CONFIG_CHIP_FACTORY_DATA
-    ReturnErrorOnFailure(mFactoryDataProvider.Init());
-    SetDeviceInstanceInfoProvider(&mFactoryDataProvider);
-    SetCommissionableDataProvider(&mFactoryDataProvider);
-    SetDeviceAttestationCredentialsProvider(&mFactoryDataProvider);    
-#else
-    uint32_t pass_code = CHIP_DEVICE_CONFIG_USE_TEST_SETUP_PIN_CODE;
-    uint16_t discriminator = CHIP_DEVICE_CONFIG_USE_TEST_SETUP_DISCRIMINATOR;
-    GetCommissionableDataProvider()->SetSetupPasscode(pass_code);
-    GetCommissionableDataProvider()->SetSetupDiscriminator(discriminator);
-    SetDeviceAttestationCredentialsProvider(Examples::GetExampleDACProvider());
-#endif
 
     ConfigurationMgr().LogDeviceConfig();
     
@@ -237,13 +230,6 @@ CHIP_ERROR AppTask::Init()
     {
         ChipLogError(NotSpecified, "InitBindingHandler() failed");
         return err;
-    }
-    // Open commissioning after boot if no fabric was available
-    if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0)
-    {
-        vTaskSuspendAll();
-        PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
-        xTaskResumeAll(); 
     }
 
     return CHIP_NO_ERROR;
@@ -266,7 +252,16 @@ CHIP_ERROR AppTask::StartAppTask()
     {
         return CHIP_ERROR_NO_MEMORY;
     }
+#if CONFIG_CHIP_FACTORY_DATA
+    ReturnErrorOnFailure(mFactoryDataProvider.Init());
+    SetDeviceInstanceInfoProvider(&mFactoryDataProvider);
+    SetCommissionableDataProvider(&mFactoryDataProvider);
+    SetDeviceAttestationCredentialsProvider(&mFactoryDataProvider);    
+#else
+    SetDeviceAttestationCredentialsProvider(Examples::GetExampleDACProvider());
+#endif
 
+    PlatformMgr().ScheduleWork(InitServer, 0);
     return CHIP_NO_ERROR;
 }
 

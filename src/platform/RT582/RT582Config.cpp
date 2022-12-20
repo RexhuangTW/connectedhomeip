@@ -35,32 +35,39 @@
 #define RT582CONFIG_FLASH_PAGE_SIZE 0x100
 #define RT582CONFIG_SECTOR_SIZE     0x1000
 
+#define RT582CONFIG_USE_FLASH_DS    1
+
+
 namespace chip {
 namespace DeviceLayer {
 namespace Internal {
 
-//static uint8_t storage_backup[RT582CONFIG_SECTOR_SIZE];
+///static uint8_t storage_backup[RT582CONFIG_SECTOR_SIZE];
 static size_t storage_read(uint32_t id, size_t bufSize, uint8_t *buf)
 {
+#if RT582CONFIG_USE_FLASH_DS
     ds_rw_t t_ds_r;
+    uint32_t ds_ret = 0;
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
     ChipLogDetail(DeviceLayer, "storage_read key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
 
     t_ds_r.type = flash_keyid;
     t_ds_r.len = 0;
-    flush_cache();
-    ds_read(&t_ds_r);
+    t_ds_r.address = 0;
 
-    if(t_ds_r.address != 0 && t_ds_r.len !=0)
+    ds_ret = ds_read(&t_ds_r);
+
+    if(ds_ret != STATUS_SUCCESS)
+    {
+        //ChipLogError(DeviceLayer, "ds_read failed %d", ds_ret);
+    }
+    else
     {
         for(int i=0;i<t_ds_r.len;i++)
-        {
-            buf[i] = flash_read_byte(t_ds_r.address+i);
-        }
+            buf[i] = flash_read_byte(t_ds_r.address + i);
     }
-
     return t_ds_r.len;
-#if 0
+#else
     uint32_t sector_addr, id_addr, i, offset, chk, data_size;
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
     ChipLogDetail(DeviceLayer, "storage_read key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
@@ -97,28 +104,32 @@ static size_t storage_read(uint32_t id, size_t bufSize, uint8_t *buf)
 
 size_t storage_write(uint32_t id, size_t dataLen, uint8_t *data)
 {
+#if RT582CONFIG_USE_FLASH_DS
     uint32_t ds_ret = 0;
     ds_rw_t t_ds_w;
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
-    ChipLogProgress(DeviceLayer, "storage_write key id: 0x%02x, flash id: 0x%02x size %d", id, flash_keyid, dataLen);
+    ChipLogDetail(DeviceLayer, "storage_write key id: 0x%02x, flash id: 0x%02x size %d", id, flash_keyid, dataLen);
 
     t_ds_w.type = flash_keyid;
     t_ds_w.len = dataLen;
     t_ds_w.address = (uint32_t)data;
+
     if(dataLen > 0)
     {
-
         ds_ret = ds_write(&t_ds_w);
         if(ds_ret != STATUS_SUCCESS)
         {
             ChipLogError(DeviceLayer, "ds_write failed %d", ds_ret);
+            while(1);
         }
         else
         {
-        //flush_cache();
+            vTaskSuspendAll();
+            flush_cache();
+            xTaskResumeAll();
         }
     }
-#if 0
+#else
     uint32_t sector_addr, id_addr, i, offset;
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
     ChipLogDetail(DeviceLayer, "storage_write key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
@@ -161,10 +172,17 @@ size_t storage_write(uint32_t id, size_t dataLen, uint8_t *data)
 
 void storage_erase(uint32_t id)
 {
+
+#if RT582CONFIG_USE_FLASH_DS
     ChipLogDetail(DeviceLayer, "storage_erase key id: 0x%02x", id);
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
+
     ds_delete_type(flash_keyid);
-#if 0
+    vTaskSuspendAll();
+    flush_cache();
+    xTaskResumeAll();
+
+#else
     uint32_t sector_addr, id_addr, i, offset, ignore_page = 0;
     uint32_t flash_keyid = RT582Config::RT582KeyaddrPasser(id);
     //ChipLogDetail(DeviceLayer, "storage_erase key id: 0x%02x, flash id: 0x%02x", id, flash_keyid);
@@ -207,6 +225,7 @@ void storage_erase(uint32_t id)
 
 CHIP_ERROR RT582Config::Init()
 {
+#if RT582CONFIG_USE_FLASH_DS
     ds_config_t ds_init_cfg;
     uint32_t ds_ret = 0;
 
@@ -221,7 +240,7 @@ CHIP_ERROR RT582Config::Init()
         ChipLogError(DeviceLayer, "ds_initial fail %d", ds_ret);
         while(1);
     }
-
+#endif
     
     return ChipError(0);
 }
@@ -311,8 +330,30 @@ CHIP_ERROR RT582Config::FactoryResetConfig(void)
     //ChipLogDetail(DeviceLayer, "RT582Config %s", __func__);
     // for (Key key = kMinConfigKey_MatterFactory; key < kMaxConfigKey_MatterFactory; key++)
     //     ClearConfigValue(key);
+    vTaskSuspendAll();
+    while (flash_check_busy());
+    flash_erase(FLASH_ERASE_SECTOR, 0xF3000);
+    while (flash_check_busy());
+    flash_erase(FLASH_ERASE_SECTOR, 0xF4000);
+    while (flash_check_busy());
+    flash_erase(FLASH_ERASE_SECTOR, 0xF5000);
+    while (flash_check_busy());
+    flash_erase(FLASH_ERASE_SECTOR, 0xF6000);
+    while (flash_check_busy());
+    flash_erase(FLASH_ERASE_SECTOR, 0xF7000);
+    while (flash_check_busy());
+    flash_erase(FLASH_ERASE_SECTOR, 0xF8000);
+    while (flash_check_busy());
+    flash_erase(FLASH_ERASE_SECTOR, 0xF9000);
+    while (flash_check_busy());
+    flash_erase(FLASH_ERASE_SECTOR, 0xFA000);
+    while (flash_check_busy());
+    flash_erase(FLASH_ERASE_SECTOR, 0xFB000);
+    while (flash_check_busy());
 
     ds_reset_to_default();
+
+    xTaskResumeAll();
 #if 0
     for (Key key = kMinConfigKey_MatterConfig; key < kMaxConfigKey_MatterConfig; key++)
         ClearConfigValue(key);

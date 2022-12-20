@@ -385,7 +385,28 @@ uint32_t ds_reset_to_default(void);
 */
 uint32_t ds_delete_type(uint8_t ds_type);
 /*@}*/ /* end of group flash_ds_driver*/
-
+/**
+* @brief ds_update_type
+*
+* @param[in]	ds_type : data set type
+*
+* @details The function update dsinfo.typemax
+*                
+* @return
+* @retval   STATUS_SUCCESS 				----update type success
+*/
+uint32_t ds_update_type( uint8_t type);
+/**
+* @brief ds_update_crrent_sn
+*
+* @param[in]	serial_number : data set serial number
+*
+* @details The function update data set serial number
+*                
+* @return
+* @retval   STATUS_SUCCESS 	----update serial number success
+*/
+uint32_t ds_update_crrent_sn(uint32_t serial_number);
 #ifdef __cplusplus
 }
 #endif
