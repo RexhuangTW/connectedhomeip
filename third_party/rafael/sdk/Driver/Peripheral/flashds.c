@@ -70,8 +70,6 @@ uint32_t ds_initinal(ds_config_t ds_init)
 
     ds_pagex_check();
 
-    flush_cache();
-
     return STATUS_SUCCESS;
 }
 
@@ -382,10 +380,8 @@ uint32_t ds_vaild(ds_search_t * dssearch, ds_t * ds_get_vaild)
 
         if (dssearch->flag == DS_VAILD_TYPE_SEARCH)
         {
-            if (dspack.type >= dsinfo.type_max)
-            {
-                dsinfo.type_max = dspack.type;
-            }
+
+            ds_update_type(dspack.type);
 
             if (dspack.sn >= dsinfo.current_sn)
             {
@@ -551,6 +547,11 @@ uint32_t ds_write(ds_rw_t * ds_write)
 
     dswraddress = dsinfo.current_address + DS_HEADER_OFFSET + ds_write->len + DS_TAIL_OFFSET;
 
+    if (dswraddress >= dsinfo.end_address)
+    {
+        return STATUS_INVALID_REQUEST;
+    }
+
     if ((dswraddress > dsmaxaddress))
     {
 
@@ -559,18 +560,28 @@ uint32_t ds_write(ds_rw_t * ds_write)
             ds_migration_erase(DS_PAGE_0);
             ds_migration(DS_PAGE_1);
             dsinfo.current_page = DS_PAGE_0;
+
+            dswraddress = dsinfo.migration_address + DS_HEADER_OFFSET + ds_write->len + DS_TAIL_OFFSET;
         }
         else
         {
             ds_migration_erase(DS_PAGE_1);
             ds_migration(DS_PAGE_0);
             dsinfo.current_page = DS_PAGE_1;
+
+            dswraddress = dsinfo.migration_address + DS_HEADER_OFFSET + ds_write->len + DS_TAIL_OFFSET;
         }
 
-        dsinfo.current_address = dsinfo.migration_address;
+        if ((dswraddress > dsmaxaddress))
+        {
+            dsinfo.current_address = dsinfo.migration_address;
+            return STATUS_INVALID_REQUEST;
+        }
     }
 
     dswraddress = dsinfo.current_address;
+
+    ds_update_type(ds_write->type);
 
     flash_write_byte(dswraddress, ds_write->type);
     while (flash_check_busy())
@@ -972,4 +983,24 @@ uint8_t ds_cal_crc(ds_rw_t * ds_crc, uint32_t sn)
     }
 
     return crc_result;
+}
+
+uint32_t ds_update_type(uint8_t type)
+{
+    if (type >= dsinfo.type_max)
+    {
+        dsinfo.type_max = type;
+    }
+
+    return STATUS_SUCCESS;
+}
+
+uint32_t ds_update_crrent_sn(uint32_t serial_number)
+{
+    if (serial_number >= dsinfo.current_sn)
+    {
+        dsinfo.current_sn = serial_number;
+    }
+
+    return STATUS_SUCCESS;
 }
