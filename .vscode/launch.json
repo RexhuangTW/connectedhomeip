@@ -16,15 +16,21 @@
             "name": "(RT) lighting Debug Microcontroller",
             "request": "launch",
             "type": "cortex-debug",
-            "servertype": "jlink",
-            "serverpath": "C:/Program Files (x86)/SEGGER/JLink/JLinkGDBServerCL.exe",
-            "armToolchainPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/12.2 mpacbti-bet1/bin",
-            "device": "ARMCM3",
-            "interface": "swd",
-            // "serialNumber": "", // add J-Link serial number if having multiple attached the same time.
-            "runToMain": true
-            // "svdFile": "",
-            // "showDevDebugOutput": "raw", // true
+            "servertype": "external",
+            "gdbTarget": "${env:WSL_HOST_IP}:2331",
+
+            // "serverpath": "/mnt/c/Program Files (x86)/SEGGER/JLink/JLinkGDBServerCL.exe",
+            "armToolchainPath": "${workspaceFolder}/.environment/cipd/packages/arm/bin",
+            // "device": "ARMCM3",
+            // "interface": "swd",    
+            // "ipAddress": "172.28.128.1",
+            "serialNumber": "", // add J-Link serial number if having multiple attached the same time.
+            "runToEntryPoint": "main",
+            "svdFile": "",
+            "showDevDebugOutput": "raw", // true
+            "preLaunchTask": "launchJLink",
+            "postDebugTask": "postDebugKill",
+            "postLaunchCommands": ["monitor halt", "monitor reset"],
         },
         {
             "cwd": "${workspaceFolder}/out/light-switch-app/RT582/",

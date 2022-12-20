@@ -15,3 +15,4 @@
 
 FROM resghst/matter_build
 VOLUME ["/var/chip"]
+RUN git config --global --add safe.directory '*'
