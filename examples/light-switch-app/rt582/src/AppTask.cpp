@@ -208,7 +208,6 @@ void AppTask::InitServer(intptr_t arg)
     if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0)
     {
         vTaskSuspendAll();
-        ConfigurationMgr().LogDeviceConfig();
         PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
         xTaskResumeAll();
     }
@@ -221,9 +220,6 @@ CHIP_ERROR AppTask::Init()
 
     bsp_init(BSP_INIT_LEDS | BSP_INIT_BUTTONS, ButtonEventHandler);
     bsp_led_init(NULL);
-
-    ConfigurationMgr().LogDeviceConfig();
-    
     // Setup light
     err = InitBindingHandler();
     if (err != CHIP_NO_ERROR)

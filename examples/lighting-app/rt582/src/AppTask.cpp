@@ -280,7 +280,6 @@ void AppTask::InitServer(intptr_t arg)
     if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0)
     {
         vTaskSuspendAll();
-        ConfigurationMgr().LogDeviceConfig();
         PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
         xTaskResumeAll();
     }
