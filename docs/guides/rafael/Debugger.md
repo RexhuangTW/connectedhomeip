@@ -23,7 +23,11 @@ $ New-NetFirewallRule -DisplayName "WSL" -Direction Inbound -InterfaceAlias "vEt
     $ source ~/.bashrc
     $ source ~/.bash_profile
     ```
-
+    - Install some package for debugger
+    ```
+    $ sudo apt-get install libncurses5
+    ```
+    - \* Close all Vscode window, and reopen it (This action will help VScode refetch the WSL's environment values) 
 ---
 
 ## Setup Configure
