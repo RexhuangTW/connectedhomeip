@@ -3,10 +3,6 @@
 ## Prerequest
 
 -   Visual Studio Code: [Download](https://code.visualstudio.com/Download)
--   Docker Desktop:
-    [Download](https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe?utm_source=docker&utm_medium=webreferral&utm_campaign=dd-smartbutton&utm_location=module)
--   Git bash: [Download](https://git-scm.com/download/win)
-
 ---
 
 ## Install WSL2 and setup Network
