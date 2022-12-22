@@ -2,6 +2,13 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "ISP flash tool",
+            "command": "/mnt/c/Users/SW/Desktop/VM/isp_download_cmd/isp_download_tool.exe -b ${workspaceFolder}/bootloader.bin -a ${workspaceFolder}/out/${input:exampleproject}/RT582/chip-rt582-${input:exampleproject}-example.bin -p COM${input:COMPort}",
+            "type": "shell",
+            "isBackground": true,
+            "problemMatcher": []
+        },
+        {
             "label": "launchJLink",
             "command": "'/mnt/c/Program Files (x86)/SEGGER/JLink/JLinkGDBServerCL.exe' -if swd -device ARMCM3 -nolocalhostonly",
             "type": "shell",
@@ -48,18 +55,12 @@
             "type": "shell",
             "command": "docker exec RT_matter_builder /var/chip/scripts/examples/gn_rt582_example.sh /var/chip/examples/${input:exampleproject}/rt582 /var/chip/out/${input:exampleproject}",
             "group": "build",
-            "problemMatcher": {
-                "base": "$gcc"
-            }
         },
         {
             "label": "Remove output of RT building example",
             "type": "shell",
             "command": "docker exec RT_matter_builder rm -fr /var/chip/out/${input:exampleproject}/RT582",
             "group": "build",
-            "problemMatcher": {
-                "base": "$gcc"
-            }
         },
         {
             // Clean Build RT example
@@ -95,6 +96,12 @@
             "description": "Which example do you want to create?",
             "options": ["lighting-app", "light-switch-app"],
             "default": ""
-        }
+        },
+        {
+            "type": "promptString",
+            "id": "COMPort",
+            "description": "Which COM port's number do you want to flash? (input the number of port number)",
+            "default": "",
+        },
     ]
 }
