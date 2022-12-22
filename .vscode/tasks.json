@@ -3,7 +3,7 @@
     "tasks": [
         {
             "label": "ISP flash tool",
-            "command": "/mnt/c/Users/SW/Desktop/VM/isp_download_cmd/isp_download_tool.exe -b ${workspaceFolder}/bootloader.bin -a ${workspaceFolder}/out/${input:exampleproject}/RT582/chip-rt582-${input:exampleproject}-example.bin -p COM${input:COMPort}",
+            "command": "/mnt/c/Users/SW/Desktop/VM/isp_download_cmd/isp_download_tool.exe -a ${workspaceFolder}/out/${input:exampleproject}/RT582/chip-rt582-${input:exampleproject}-example.bin -p COM${input:COMPort}",
             "type": "shell",
             "isBackground": true,
             "problemMatcher": []

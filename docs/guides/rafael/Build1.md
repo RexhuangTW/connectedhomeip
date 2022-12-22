@@ -9,6 +9,16 @@
 
 ---
 
+## Install WSL2 and setup Network
+
+- Windows should accept WSL to access host network, so we need to setup FireWall setting with "powershell administrator"
+```
+$ wsl --install
+$ New-NetFirewallRule -DisplayName "WSL" -Direction Inbound -InterfaceAlias "vEthernet (WSL)" -Action Allow
+```
+
+---
+
 ## Activate WSL2
 
 - open VScode and install some extention for develop envoriment 
