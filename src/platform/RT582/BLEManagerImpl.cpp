@@ -122,7 +122,7 @@ const ChipBleUUID ChipUUID_CHIPoBLEChar_RX = { { 0x18, 0xEE, 0x2E, 0xF5, 0x26, 0
 const ChipBleUUID ChipUUID_CHIPoBLEChar_TX = { { 0x18, 0xEE, 0x2E, 0xF5, 0x26, 0x3D, 0x45, 0x59, 0x95, 0x9F, 0x4F, 0x9C, 0x42, 0x9F,
                                                  0x9D, 0x12 } };
 
-static uint8_t g_use_slow_adv_interval = true;
+static uint8_t g_use_slow_adv_interval = false;
 
 #define BLE_ERR_STATE_TRANSLATE(state)  (state == BLE_ERR_OK)?CHIP_NO_ERROR:\
                                         (state == BLE_ERR_UNKNOW_TYPE)?CHIP_ERROR_WELL_EMPTY:\
@@ -903,7 +903,7 @@ CHIP_ERROR BLEManagerImpl::_Init()
 #endif
     mFlags.Set(Flags::kRTBLEStackInitialized);
     // mFlags.Set(Flags::kAdvertisingEnabled, CHIP_DEVICE_CONFIG_CHIPOBLE_ENABLE_ADVERTISING_AUTOSTART ? true : false);
-    // mFlags.Set(Flags::kFastAdvertisingEnabled);
+    mFlags.Set(Flags::kFastAdvertisingEnabled);
 exit:
     return err;
 }
@@ -1422,26 +1422,26 @@ exit:
 
 void BLEManagerImpl::CancelBleAdvTimeoutTimer(void)
 {
-    if (xTimerStop(sbleAdvTimeoutTimer, 0) == pdFAIL)
-    {
-        ChipLogError(DeviceLayer, "Failed to stop BledAdv timeout timer");
-    }
+    ///, 0) == pdFAIL)
+    //{
+    //    ChipLogError(DeviceLayer, "Failed to stop BledAdv timeout timer");
+    //}
 }
 
 void BLEManagerImpl::StartBleAdvTimeoutTimer(uint32_t aTimeoutInMs)
 {
-    if (xTimerIsTimerActive(sbleAdvTimeoutTimer))
-    {
-        CancelBleAdvTimeoutTimer();
-    }
+    //if (xTimerIsTimerActive(sbleAdvTimeoutTimer))
+    //{
+    //    CancelBleAdvTimeoutTimer();
+    //}
 
     // timer is not active, change its period to required value (== restart).
     // FreeRTOS- Block for a maximum of 100 ticks if the change period command
     // cannot immediately be sent to the timer command queue.
-    if (xTimerChangePeriod(sbleAdvTimeoutTimer, aTimeoutInMs / portTICK_PERIOD_MS, 100) != pdPASS)
-    {
-        ChipLogError(DeviceLayer, "Failed to start BledAdv timeout timer");
-    }
+    //if (xTimerChangePeriod(sbleAdvTimeoutTimer, aTimeoutInMs / portTICK_PERIOD_MS, 100) != pdPASS)
+    //{
+    //    ChipLogError(DeviceLayer, "Failed to start BledAdv timeout timer");
+    //}
 }
 
 

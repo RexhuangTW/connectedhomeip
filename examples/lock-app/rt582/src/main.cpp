@@ -70,33 +70,7 @@ int main(void)
         goto exit;
     }
     
-    err = ThreadStackMgr().InitThreadStack();
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
-        goto exit;
-    }
-
-    err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_Router);
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "ConnectivityMgr().SetThreadDeviceType() failed");
-        goto exit;
-    }
-
-    err = ThreadStackMgr().StartThreadTask();
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
-        goto exit;
-    }    
-
-    if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
-    {
-       ChipLogError(NotSpecified, "Error during PlatformMgr().StartEventLoopTask();");
-    }
-
-    err = GetAppTask().StartAppTask();
+    err = AppTask::GetAppTask().StartAppTask();
     if (err != CHIP_NO_ERROR)
     {
        ChipLogError(NotSpecified, "GetAppTask().StartAppTask() failed %s", ErrorStr(err));

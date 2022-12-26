@@ -143,7 +143,8 @@
         "freertos.h": "c",
         "freertosconfig.h": "c",
         "chipprojectconfig.h": "c",
-        "chip_define.h": "c"
+        "chip_define.h": "c",
+        "prg_multi_mpb_asic_fw.h": "c"
     },
     // Configure paths or glob patterns to exclude from file watching.
     "files.watcherExclude": {
