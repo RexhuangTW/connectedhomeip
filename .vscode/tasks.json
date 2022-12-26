@@ -19,7 +19,7 @@
         {
             "label": "postDebugKill",
             "command": "echo ${input:terminate}",
-            "type": "shell",
+            "type": "shell"
         },
         {
             "label": "RT matter dev setup",
@@ -54,13 +54,13 @@
             "label": "Build RT example",
             "type": "shell",
             "command": "docker exec RT_matter_builder /var/chip/scripts/examples/gn_rt582_example.sh /var/chip/examples/${input:exampleproject}/rt582 /var/chip/out/${input:exampleproject}",
-            "group": "build",
+            "group": "build"
         },
         {
             "label": "Remove output of RT building example",
             "type": "shell",
             "command": "docker exec RT_matter_builder rm -fr /var/chip/out/${input:exampleproject}/RT582",
-            "group": "build",
+            "group": "build"
         },
         {
             // Clean Build RT example
@@ -94,14 +94,14 @@
             "type": "pickString",
             "id": "exampleproject",
             "description": "Which example do you want to create?",
-            "options": ["lighting-app", "light-switch-app"],
+            "options": ["lighting-app", "light-switch-app", "lock-app"],
             "default": ""
         },
         {
             "type": "promptString",
             "id": "COMPort",
             "description": "Which COM port's number do you want to flash? (input the number of port number)",
-            "default": "",
-        },
+            "default": ""
+        }
     ]
 }
