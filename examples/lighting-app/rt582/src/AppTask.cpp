@@ -349,8 +349,6 @@ CHIP_ERROR AppTask::Init()
     CHIP_ERROR err;
     ChipLogProgress(NotSpecified, "Current Software Version: %s", CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING);
     
-
-    bsp_init(BSP_INIT_LEDS | BSP_INIT_BUTTONS, ButtonEventHandler);
     // Setup light
     err = LightMgr().Init();
     if (err != CHIP_NO_ERROR)
@@ -372,11 +370,37 @@ CHIP_ERROR AppTask::Init()
         gpio_pin_set(23);
         gpio_pin_set(24);        
     }
+
+    err = ThreadStackMgr().InitThreadStack();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
+    }
+
+    err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_Router);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "ConnectivityMgr().SetThreadDeviceType() failed");
+    }
+
+    err = ThreadStackMgr().StartThreadTask();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
+    }
+    
+    if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
+    {
+       ChipLogError(NotSpecified, "Error during PlatformMgr().StartEventLoopTask();");
+    }
+    
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR AppTask::StartAppTask()
 {
+    bsp_init(BSP_INIT_LEDS | BSP_INIT_BUTTONS, ButtonEventHandler);
+
     sAppEventQueue = xQueueCreateStatic(APP_EVENT_QUEUE_SIZE, sizeof(AppEvent), 
                                     sAppEventQueueBuffer, &sAppEventQueueStruct);
     if (sAppEventQueue == nullptr)
