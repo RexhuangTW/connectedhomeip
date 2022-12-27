@@ -1277,7 +1277,7 @@ CHIP_ERROR BLEManagerImpl::HandleOperationalNetworkEnabled(const ChipDeviceEvent
     ChipDeviceEvent disconnectEvent;
 
     ChipLogDetail(DeviceLayer, "HandleOperationalNetworkEnabled");
-    //ble_cmd_conn_terminate(0);
+    ble_cmd_conn_terminate(0);
 
     return CHIP_NO_ERROR;
 }

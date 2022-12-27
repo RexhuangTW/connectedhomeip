@@ -53,7 +53,7 @@ int main(void)
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "Platform::MemoryInit() failed");
-        return 0;
+        return 0; 
     }
 
 #if ENABLE_CHIP_SHELL

@@ -933,16 +933,6 @@ namespace BridgedDeviceBasic {
 } // namespace BridgedDeviceBasic
 
 namespace Switch {
-
-// Bitmap for SwitchFeature
-enum class SwitchFeature : uint32_t
-{
-    kLatchingSwitch            = 0x1,
-    kMomentarySwitch           = 0x2,
-    kMomentarySwitchRelease    = 0x4,
-    kMomentarySwitchLongPress  = 0x8,
-    kMomentarySwitchMultiPress = 0x10,
-};
 } // namespace Switch
 
 namespace AdministratorCommissioning {
@@ -2003,13 +1993,6 @@ enum class PlaybackStateEnum : uint8_t
     kNotPlaying       = 0x02,
     kBuffering        = 0x03,
     kUnknownEnumValue = 4,
-};
-
-// Bitmap for MediaPlaybackFeature
-enum class MediaPlaybackFeature : uint32_t
-{
-    kAdvancedSeek  = 0x1,
-    kVariableSpeed = 0x2,
 };
 } // namespace MediaPlayback
 

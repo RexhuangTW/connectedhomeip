@@ -49,9 +49,9 @@ CHIP_ERROR LightingManager::Init()
 {
     bool currentLedState;
     // read current on/off value on endpoint one.
-    chip::DeviceLayer::PlatformMgr().LockChipStack();
+    //chip::DeviceLayer::PlatformMgr().LockChipStack();
     OnOffServer::Instance().getOnOffValue(1, &currentLedState);
-    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+    //chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
     mState                 = currentLedState ? kState_On : kState_Off;
     mAutoTurnOffTimerArmed = false;

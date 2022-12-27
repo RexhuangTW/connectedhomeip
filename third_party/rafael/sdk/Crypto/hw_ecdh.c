@@ -20,7 +20,7 @@ int rt582_ecc_public_key_gen(uint8_t * pt_pri_k, uint8_t * pt_pub_k_x, uint8_t *
 
     ECPoint_P256 Public_key;
 
-        /* initial the ECC Engine */
+    /* initial the ECC Engine */
     gfp_ecc_curve_p256_init();
 
     /* generate the publick key by */
@@ -38,7 +38,7 @@ int rt582_ecc_shared_secert_gen(uint8_t * pt_sh_k_x, uint8_t * pt_sh_k_y, uint8_
 
     ECPoint_P256 Share_key, Public_key;
 
-    printf("    caculate shared secret by using hardware ECDH\n");
+    // printf("    caculate shared secret by using hardware ECDH\n");
 
     memcpy(Public_key.x, pt_pub_k_x, secp256r1_op_num_in_byte);
     memcpy(Public_key.y, pt_pub_k_y, secp256r1_op_num_in_byte);

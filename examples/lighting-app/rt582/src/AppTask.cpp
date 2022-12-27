@@ -289,6 +289,27 @@ void AppTask::InitServer(intptr_t arg)
         UpdateStatusLED();
     }
 
+    // Setup light
+    err = LightMgr().Init();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "LightingMgr().Init() failed");
+        //return err;
+    }
+    LightMgr().SetCallbacks(ActionInitiated, ActionCompleted);
+
+    if(LightMgr().IsTurnedOn())
+    {
+        gpio_pin_clear(22);
+        gpio_pin_clear(23);
+        gpio_pin_clear(24);
+    }
+    else
+    {
+        gpio_pin_set(22);
+        gpio_pin_set(23);
+        gpio_pin_set(24);        
+    }
 }
 
 void AppTask::UpdateStatusLED()
@@ -349,28 +370,6 @@ CHIP_ERROR AppTask::Init()
     CHIP_ERROR err;
     ChipLogProgress(NotSpecified, "Current Software Version: %s", CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING);
     
-    // Setup light
-    err = LightMgr().Init();
-    if (err != CHIP_NO_ERROR)
-    {
-        ChipLogError(NotSpecified, "LightingMgr().Init() failed");
-        return err;
-    }
-    LightMgr().SetCallbacks(ActionInitiated, ActionCompleted);
-
-    if(LightMgr().IsTurnedOn())
-    {
-        gpio_pin_clear(22);
-        gpio_pin_clear(23);
-        gpio_pin_clear(24);
-    }
-    else
-    {
-        gpio_pin_set(22);
-        gpio_pin_set(23);
-        gpio_pin_set(24);        
-    }
-
     err = ThreadStackMgr().InitThreadStack();
     if (err != CHIP_NO_ERROR)
     {
@@ -388,17 +387,19 @@ CHIP_ERROR AppTask::Init()
     {
         ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
     }
-    
+
     if (PlatformMgr().StartEventLoopTask() != CHIP_NO_ERROR)
     {
        ChipLogError(NotSpecified, "Error during PlatformMgr().StartEventLoopTask();");
     }
-    
+    PlatformMgr().ScheduleWork(InitServer, 0);
+    PlatformMgr().AddEventHandler(ChipEventHandler, 0);
     return CHIP_NO_ERROR;
 }
 
 CHIP_ERROR AppTask::StartAppTask()
 {
+    CHIP_ERROR err;
     bsp_init(BSP_INIT_LEDS | BSP_INIT_BUTTONS, ButtonEventHandler);
 
     sAppEventQueue = xQueueCreateStatic(APP_EVENT_QUEUE_SIZE, sizeof(AppEvent), 
@@ -417,8 +418,6 @@ CHIP_ERROR AppTask::StartAppTask()
         return CHIP_ERROR_NO_MEMORY;
     }
 
-    PlatformMgr().AddEventHandler(ChipEventHandler, 0);
-
 #if CONFIG_CHIP_FACTORY_DATA
     ReturnErrorOnFailure(mFactoryDataProvider.Init());
     SetDeviceInstanceInfoProvider(&mFactoryDataProvider);
@@ -427,8 +426,6 @@ CHIP_ERROR AppTask::StartAppTask()
 #else
     SetDeviceAttestationCredentialsProvider(Examples::GetExampleDACProvider());
 #endif
-
-    PlatformMgr().ScheduleWork(InitServer, 0);
 
     return CHIP_NO_ERROR;
 }

@@ -30,10 +30,11 @@
 #include <platform/OpenThread/GenericThreadStackManagerImpl_OpenThread.cpp>
 #include <platform/OpenThread/OpenThreadUtils.h>
 #include <platform/ThreadStackManager.h>
-
 #include <openthread/platform/entropy.h>
 
 #include <lib/support/CHIPPlatformMemory.h>
+
+
 
 #define __WEAK __attribute__((__WEAK__))
 
@@ -45,6 +46,9 @@ using namespace ::chip::DeviceLayer::Internal;
 
 ThreadStackManagerImpl ThreadStackManagerImpl::sInstance;
 
+
+extern "C"  void otSysInit(int argc, char *argv[]);
+
 CHIP_ERROR ThreadStackManagerImpl::_InitThreadStack(void)
 {
     return InitThreadStack(NULL);
@@ -54,6 +58,8 @@ CHIP_ERROR ThreadStackManagerImpl::InitThreadStack(otInstance * otInst)
 {
 
     CHIP_ERROR err = CHIP_NO_ERROR;
+
+    otSysInit(0, NULL);
     // Initialize the generic implementation base classes.
     err = GenericThreadStackManagerImpl_FreeRTOS<ThreadStackManagerImpl>::DoInit();
     SuccessOrExit(err);

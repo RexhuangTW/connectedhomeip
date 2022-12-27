@@ -136,7 +136,6 @@ void init_rt582Platform(void)
     dma_init();
     uartConsoleInit();
     crypto_lib_init();
-    otSysInit(0, NULL);
 
     cfg.int_en = ENABLE;
     cfg.mode = TIMER_PERIODIC_MODE;
