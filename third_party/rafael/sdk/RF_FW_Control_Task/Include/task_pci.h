@@ -104,7 +104,7 @@ typedef struct
 {
     union
     {
-        pci_message_struct_t  *pci_msg_ptr;    /**< pci sub-parameter pointer.  */
+        pci_message_struct_t  *p_pci_msg;    /**< pci sub-parameter pointer.  */
         uint32_t              pci_msg_var;     /**< pci sub-parameter variable. */
     } param_type;
 } pci_message_param_type_struct_t;

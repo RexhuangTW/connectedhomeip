@@ -10,7 +10,7 @@ extern "C" {
  *    INCLUDES
  *************************************************************************************************/
 #include "sys_arch.h"
-#if (MODULE_ENABLE(SUPPORT_ZB))
+#if (MODULE_ENABLE(SUPPORT_15P4))
 #include "task_pci.h"
 #endif
 #if (MODULE_ENABLE(SUPPORT_BLE))
@@ -42,7 +42,7 @@ typedef struct
 #if (MODULE_ENABLE(SUPPORT_BLE))
         ble_hci_message_struct_t *hci_msg_ptr;        /**< this parameter saving pointer. */
 #endif
-#if (MODULE_ENABLE(SUPPORT_ZB))
+#if (MODULE_ENABLE(SUPPORT_15P4))
         pci_message_param_type_struct_t pci_msg;     /**< this parameter saving pointer or variable. */
         uint32_t param_var;                          /**< this parameter saving variable.*/
 #endif

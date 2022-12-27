@@ -33,11 +33,11 @@
 /**************************************************************************************************
  *    PUBLIC FUNCTIONS
  *************************************************************************************************/
-#if (MODULE_ENABLE(SUPPORT_BLE)) && (MODULE_ENABLE(SUPPORT_ZB))
+#if (MODULE_ENABLE(SUPPORT_BLE)) && (MODULE_ENABLE(SUPPORT_15P4))
 void task_dual_init(void)
 #elif (MODULE_ENABLE(SUPPORT_BLE))
 void task_hci_init(void)
-#elif (MODULE_ENABLE(SUPPORT_ZB))
+#elif (MODULE_ENABLE(SUPPORT_15P4))
 void task_pci_init(void)
 #endif
 {
@@ -53,6 +53,3 @@ void task_hci_delete(void)
     task_rx_delete();
 #endif
 }
-
-
-

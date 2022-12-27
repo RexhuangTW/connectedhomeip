@@ -12,24 +12,28 @@
 /**************************************************************************************************
  *    INCLUDES
  *************************************************************************************************/
+#include "cm3_mcu.h"
+#include "project_config.h"
+#include "ruci.h"
+#include "rfb.h"
+#include "rfb_comm.h"
+#include "rf_common_init.h"
+
+
+
+#include "sys_arch.h"
+#include "task_pci.h"
 #include <stdio.h>
 #include <string.h>
 
-#include "cm3_mcu.h"
-#include "ruci.h"
-
-#include "rfb.h"
-#include "rfb_comm.h"
-
-#include "rf_common_init.h"
-#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
 #include "mem_mgmt.h"
-#include "task_hci.h"
+
 #include "util_log.h"
-#endif
+
 /**************************************************************************************************
  *    MACROS
  *************************************************************************************************/
+#define RFB_CMD_QUEUE_SIZE 15
 
 /**************************************************************************************************
  *    CONSTANTS AND DEFINES
@@ -59,83 +63,128 @@ typedef struct _rfb_rx_queue_t
     rfb_rx_buffer_t rx_buf[MAX_RX_BUFF_NUM];
 } rfb_rx_queue_t;
 
-#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
-typedef struct
-{
-    uint16_t msg_tag; /**< message tag. */
-    uint16_t msg_len; /**< message length. */
-    uint8_t * p_msg;  /**< message payload. */
-} rf_fw_rx_ctrl_msg_t;
-#endif
 /**************************************************************************************************
  *    GLOBAL VARIABLES
  *************************************************************************************************/
+sys_queue_t g_rfb_event_queue_handle;
+
 rfb_interrupt_event_t * rfb_interrupt_event;
-static rfb_rx_queue_t g_rx_queue;
 extern void enter_critical_section(void);
 extern void leave_critical_section(void);
 extern void RfMcu_MemoryGet(uint16_t reg_address, uint8_t * p_rx_data, uint16_t rx_data_length);
 /**************************************************************************************************
  *    LOCAL FUNCTIONS
  *************************************************************************************************/
-
-RF_MCU_RX_CMDQ_ERROR rfb_event_read(uint8_t * packet_length, uint8_t * event_address)
+uint8_t rfb_send_cmd_to_pci(pci_task_common_queue_t pci_comm_msg)
 {
-#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
-    rf_fw_rx_ctrl_msg_t comm_msg;
-#endif
-    RF_MCU_RX_CMDQ_ERROR rx_confirm_error = RF_MCU_RX_CMDQ_ERR_INIT;
-    uint8_t state                         = 0;
-    do
-    {
-        state = (uint8_t) RfMcu_McuStateRead();
-        state = state & RF_MCU_STATE_EVENT_DONE;
-    } while (RF_MCU_STATE_EVENT_DONE != state);
-    RfMcu_HostCmdSet(RF_MCU_STATE_EVENT_DONE);
-    state = 0;
-    do
-    {
-        state = (uint8_t) RfMcu_McuStateRead();
-        state = state & RF_MCU_STATE_EVENT_DONE;
-    } while (0 != state);
+    uint8_t status = FALSE;
+    uint32_t remaining_size;
 
-#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
-    while (1)
-    {
-        (*packet_length) = RfMcu_EvtQueueRead(event_address, &rx_confirm_error);
+    vPortEnterCritical();
 
-        if (event_address[0] != BLE_TRANSPORT_HCI_EVENT)
+    if (sys_queue_remaining_size(&g_pci_common_handle) > 5)
+    {
+        remaining_size = sys_queue_remaining_size(&g_pci_tx_cmd_handle);
+        if (remaining_size > (NUM_QUEUE_PCI_CMD >> 1))
         {
-            break;
+            if (sys_queue_trysend(&g_pci_common_handle, (void *) &pci_comm_msg) == ERR_OK)
+            {
+                status = TRUE;
+            }
+            else
+            {
+                // ZB_PRINTF(ZIGBEE_DEBUG_ERR, "[ZIGBEE_DEBUG_ERR] send hci common q fail\n");
+            }
         }
         else
         {
-            comm_msg.msg_tag = MSG_RX_EVENT;
-            comm_msg.msg_len = (*packet_length);
-            comm_msg.p_msg   = mem_malloc((*packet_length));
-            memcpy(comm_msg.p_msg, event_address, comm_msg.msg_len);
-
-            sys_queue_send(&g_rx_common_queue_handle, &comm_msg);
-            state = 0;
-            do
-            {
-                state = (uint8_t) RfMcu_McuStateRead();
-                state = state & RF_MCU_STATE_EVENT_DONE;
-            } while (RF_MCU_STATE_EVENT_DONE != state);
-            RfMcu_HostCmdSet(RF_MCU_STATE_EVENT_DONE);
-            state = 0;
-            do
-            {
-                state = (uint8_t) RfMcu_McuStateRead();
-                state = state & RF_MCU_STATE_EVENT_DONE;
-            } while (0 != state);
+            // ZB_PRINTF(ZIGBEE_DEBUG_ERR, "[ZIGBEE_DEBUG_ERR] pci tx cmd q remaining size insufficient %d\n", remaining_size);
         }
     }
-#else
-    (*packet_length) = RfMcu_EvtQueueRead(event_address, &rx_confirm_error);
-#endif
+    else
+    {
+        // ZB_PRINTF(ZIGBEE_DEBUG_ERR, "[ZIGBEE_DEBUG_ERR] pci send cmd fail cause pci common q full\n");
+    }
 
-    return rx_confirm_error;
+    vPortExitCritical();
+    if (status == FALSE)
+    {
+        // ZB_PRINTF(ZIGBEE_DEBUG_ERR, "[ZIGBEE_DEBUG_ERR] cmd sub_header:%d length:%d fail\n",
+        // pci_comm_msg.pci_msg.param_type.p_pci_msg->msg_type.pci_tx_hdr.sub_header,
+        // pci_comm_msg.pci_msg.param_type.p_pci_msg->msg_type.pci_tx_hdr.length);
+    }
+    return status;
+}
+
+uint8_t rfb_send_data_to_pci(pci_task_common_queue_t pci_comm_msg)
+{
+    uint8_t status = FALSE;
+    uint32_t remaining_size;
+
+    vPortEnterCritical();
+    remaining_size = sys_queue_remaining_size(&g_pci_tx_data_handle);
+    if (sys_queue_remaining_size(&g_pci_common_handle) > 5)
+    {
+        if (remaining_size > (NUM_QUEUE_PCI_DATA >> 1))
+        {
+            if (sys_queue_trysend(&g_pci_common_handle, (void *) &pci_comm_msg) == ERR_OK)
+            {
+                status = TRUE;
+            }
+            else
+            {
+                // ZB_PRINTF(ZIGBEE_DEBUG_ERR, "[ZIGBEE_DEBUG_ERR] send pci common q fail\n");
+            }
+        }
+        else
+        {
+            send_data_to_pci_fail(TX_SW_QUEUE_FULL);
+        }
+    }
+    else
+    {
+        // ZB_PRINTF(ZIGBEE_DEBUG_ERR, "[ZIGBEE_DEBUG_ERR] pci common q full\n");
+    }
+
+    vPortExitCritical();
+    if (status == FALSE)
+    {
+        // ZB_PRINTF(ZIGBEE_DEBUG_ERR, "[ZIGBEE_DEBUG_ERR] data sub_header:%d length:%d fail\n",
+        // pci_comm_msg.pci_msg.param_type.p_pci_msg->msg_type.pci_tx_data_hdr.sub_header,
+        // pci_comm_msg.pci_msg.param_type.p_pci_msg->msg_type.pci_tx_data_hdr.length);
+    }
+    return status;
+}
+
+RF_MCU_RX_CMDQ_ERROR rfb_event_read(uint8_t * packet_length, uint8_t * event_address)
+{
+
+    {
+        rfb_event_msg_t rfb_event_msg;
+
+        if (sys_queue_recv(&g_rfb_event_queue_handle, &rfb_event_msg, 2000) == SYS_ARCH_TIMEOUT)
+        {
+            // err("rfb event wait timeout!!!\n");
+            info("rfb event wait timeout!!!\n");
+            return RF_MCU_RX_CMDQ_ERR_INIT;
+        }
+        else
+        {
+            memcpy(event_address, rfb_event_msg.p_data, rfb_event_msg.length);
+            *packet_length = rfb_event_msg.length;
+            if (rfb_event_msg.length == 0)
+            {
+
+                return RF_MCU_RX_CMDQ_NOT_AVAILABLE;
+            }
+            else
+            {
+                mem_free(rfb_event_msg.p_data);
+
+                return RF_MCU_RX_CMDQ_GET_SUCCESS;
+            }
+        }
+    }
 }
 
 RF_MCU_RXQ_ERROR rfb_comm_rx_data_read(uint8_t * rx_data_address, rfb_rx_ctrl_field_t * rx_control_field)
@@ -148,116 +197,41 @@ RF_MCU_RXQ_ERROR rfb_comm_rx_data_read(uint8_t * rx_data_address, rfb_rx_ctrl_fi
     return RxQueueError;
 }
 
-void rfb_send_cmd(uint8_t * cmd_address, uint8_t cmd_length)
+bool rfb_send_cmd(uint8_t * cmd_address, uint8_t cmd_length)
 {
 
-    if (RF_MCU_TX_CMDQ_SET_SUCCESS != RfMcu_CmdQueueSend(cmd_address, cmd_length))
     {
-        // printf(("[E] command queue is FULL\n");
+        pci_task_common_queue_t pci_comm_msg;
+
+        pci_comm_msg.pci_msg_tag                  = PCI_MSG_TX_PCI_CMD;
+        pci_comm_msg.pci_msg.param_type.p_pci_msg = mem_malloc(cmd_length);
+
+        rfb_event_msg_t rfb_event_msg;
+
+        while (sys_arch_queue_tryrecv(&g_rfb_event_queue_handle, &rfb_event_msg) == ERR_OK)
+        {
+            err("legacy RFB cmd confirm event found!!!\n");
+        }
+
+        if (pci_comm_msg.pci_msg.param_type.p_pci_msg != NULL)
+        {
+            memcpy(pci_comm_msg.pci_msg.param_type.p_pci_msg, cmd_address, cmd_length);
+            if (rfb_send_cmd_to_pci(pci_comm_msg) == FALSE)
+            {
+                mem_free(pci_comm_msg.pci_msg.param_type.p_pci_msg);
+                // err("rfb cmd send fail!!!\n");
+                info("rtos rfb cmd send fail\n");
+                return false;
+            }
+
+            return true;
+        }
+        return false;
     }
 }
 /**************************************************************************************************
  *    GLOBAL FUNCTIONS
  *************************************************************************************************/
-
-void rfb_isr_handler(uint8_t interrupt_status)
-{
-    static COMM_SUBSYSTEM_INTERRUPT interrupt_state_value;
-#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
-    rf_fw_rx_ctrl_msg_t isr_msg;
-#endif
-    uint32_t pro_grm_cnt;
-    uint8_t tx_status, rx_numIdx;
-    bool isRemainingRxQ;
-    RF_MCU_RXQ_ERROR rxq_status      = RF_MCU_RXQ_ERR_INIT;
-    static rfb_rx_queue_t * pRxQueue = &g_rx_queue;
-    interrupt_state_value.u8         = interrupt_status;
-
-    /* wake up RF to clear interrupt status */
-    RfMcu_HostWakeUpMcu();
-    if (RfMcu_PowerStateCheck() != 0x03)
-    {
-        /* FOR LEVEL TRIGGER ONLY, the MCU will keep entering INT if status not cleared */
-        // printf(("[W] PWR state error in rfb_isr_handler\n");
-        return;
-    }
-
-    if (interrupt_state_value.bf.EVENT_DONE)
-    {
-        RfMcu_InterruptClear((interrupt_status & 0x01));
-#if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
-        isr_msg.msg_tag = ISR_MSG_RX_EVENT;
-        sys_queue_send_from_isr(&g_rx_common_queue_handle, &isr_msg);
-        RfMcu_HostCmdSet(RF_MCU_STATE_EVENT_DONE);
-#endif
-    }
-    if (interrupt_state_value.bf.TX_DONE)
-    {
-        /* Read Tx Status */
-        tx_status = (uint8_t) RfMcu_McuStateRead();
-
-        /* Clear MCU state by sending host command */
-        RfMcu_HostCmdSet((tx_status & 0xF8));
-        RfMcu_InterruptClear((interrupt_status & 0x02));
-        rfb_interrupt_event->tx_done(tx_status);
-    }
-    if (interrupt_state_value.bf.RFB_TRAP)
-    {
-        err("[Error] RFB Trap !!!\n");
-        RfMcu_MemoryGet(0x4008, (uint8_t *) &pro_grm_cnt, 4);
-        err("PC= %X\n", pro_grm_cnt);
-        RfMcu_MemoryGet(0x01E0, (uint8_t *) &pro_grm_cnt, 4);
-        err("MAC err status= %X\n", pro_grm_cnt);
-        RfMcu_MemoryGet(0x0198, (uint8_t *) &pro_grm_cnt, 4);
-        err("MAC task status= %X\n", pro_grm_cnt);
-        RfMcu_MemoryGet(0x0048, (uint8_t *) &pro_grm_cnt, 4);
-        err("BMU err status= %X\n", pro_grm_cnt);
-        RfMcu_InterruptClear((interrupt_status & 0x04));
-        while (1)
-            ;
-    }
-    if (interrupt_state_value.bf.RX_DONE)
-    {
-        RfMcu_InterruptClear((interrupt_status & 0x20));
-        g_rx_queue.rx_num = 0;
-        do
-        {
-            rxq_status = rfb_comm_rx_data_read(pRxQueue->rx_buf[g_rx_queue.rx_num].rx_data,
-                                               &pRxQueue->rx_buf[g_rx_queue.rx_num].rx_control_field);
-            if (rxq_status != RF_MCU_RXQ_GET_SUCCESS)
-            {
-                return;
-            }
-            isRemainingRxQ = RfMcu_RxQueueCheck();
-            g_rx_queue.rx_num++;
-            if (g_rx_queue.rx_num > MAX_RX_BUFF_NUM)
-            {
-                return;
-            }
-        } while (isRemainingRxQ);
-
-        for (rx_numIdx = 0; rx_numIdx < g_rx_queue.rx_num; rx_numIdx++)
-            rfb_interrupt_event->rx_done(pRxQueue->rx_buf[rx_numIdx].rx_control_field.Length, pRxQueue->rx_buf[rx_numIdx].rx_data,
-                                         pRxQueue->rx_buf[rx_numIdx].rx_control_field.CrcStatus,
-                                         pRxQueue->rx_buf[rx_numIdx].rx_control_field.Rssi,
-                                         pRxQueue->rx_buf[rx_numIdx].rx_control_field.Snr);
-    }
-
-    if (interrupt_state_value.bf.RTC_WAKEUP)
-    {
-        rfb_interrupt_event->rtc();
-        RfMcu_InterruptClear((interrupt_status & 0x80));
-    }
-    if (interrupt_state_value.bf.RX_TIMEOUT)
-    {
-        RfMcu_InterruptClear((interrupt_status & 0x08));
-        rfb_interrupt_event->rx_timeout();
-    }
-    if (interrupt_state_value.bf.MHR_DONE)
-    {
-        RfMcu_InterruptClear((interrupt_status & 0x10));
-    }
-}
 
 RFB_EVENT_STATUS rfb_comm_frequency_set(uint32_t rf_frequency)
 {
@@ -270,10 +244,13 @@ RFB_EVENT_STATUS rfb_comm_frequency_set(uint32_t rf_frequency)
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sSetFrequencyCmd, RUCI_SET_RF_FREQUENCY);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *) &sSetFrequencyCmd, RUCI_LEN_SET_RF_FREQUENCY);
+    // enter_critical_section();
+    if (rfb_send_cmd((uint8_t *) &sSetFrequencyCmd, RUCI_LEN_SET_RF_FREQUENCY) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
-    leave_critical_section();
+    // leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -303,10 +280,13 @@ RFB_EVENT_STATUS rfb_comm_single_tone_mode_set(uint8_t single_tone_mode)
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sStModeEnCmd_t, RUCI_SET_SINGLE_TONE_MODE);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *) &sStModeEnCmd_t, RUCI_LEN_SET_SINGLE_TONE_MODE);
+    // enter_critical_section();
+    if (rfb_send_cmd((uint8_t *) &sStModeEnCmd_t, RUCI_LEN_SET_SINGLE_TONE_MODE) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
-    leave_critical_section();
+    // leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -335,10 +315,13 @@ RFB_EVENT_STATUS rfb_comm_rx_enable_set(bool rx_continuous, uint32_t rx_timeout)
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sRxReqCmd, RUCI_SET_RX_ENABLE);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *) &sRxReqCmd, RUCI_LEN_SET_RX_ENABLE);
+    // enter_critical_section();
+    if (rfb_send_cmd((uint8_t *) &sRxReqCmd, RUCI_LEN_SET_RX_ENABLE) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
-    leave_critical_section();
+    // leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -368,10 +351,13 @@ RFB_EVENT_STATUS rfb_comm_rf_idle_set(void)
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sRfIdleSetCmd, RUCI_SET_RF_IDLE);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *) &sRfIdleSetCmd, RUCI_LEN_SET_RF_IDLE);
+    // enter_critical_section();
+    if (rfb_send_cmd((uint8_t *) &sRfIdleSetCmd, RUCI_LEN_SET_RF_IDLE) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
-    leave_critical_section();
+    // leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -392,14 +378,12 @@ RFB_EVENT_STATUS rfb_comm_rf_idle_set(void)
 
 RFB_WRITE_TXQ_STATUS rfb_comm_tx_data_send(uint16_t packet_length, uint8_t * tx_data_address, uint8_t mac_control, uint8_t mac_dsn)
 {
+    
+    
     ruci_para_set_tx_control_field_t sTxControlField = { 0 };
     static uint8_t txData[MAX_RF_LEN];
-    /* wake up RF to clear interrupt status */
-    RfMcu_HostWakeUpMcu();
-    while (RfMcu_PowerStateCheck() != 0x03)
-    {
-        // printf(("[TX] Pwr chk\n");
-    }
+    pci_task_common_queue_t pci_comm_msg;
+
     SET_RUCI_PARA_SET_TX_CONTROL_FIELD(&sTxControlField, mac_control, mac_dsn);
     sTxControlField.length += packet_length;
 
@@ -407,13 +391,27 @@ RFB_WRITE_TXQ_STATUS rfb_comm_tx_data_send(uint16_t packet_length, uint8_t * tx_
     memcpy(&txData[0], (uint8_t *) &sTxControlField, RUCI_LEN_SET_TX_CONTROL_FIELD);
     memcpy(&txData[RUCI_LEN_SET_TX_CONTROL_FIELD], tx_data_address, packet_length);
 
-    if (RF_MCU_TXQ_FULL == RfMcu_TxQueueSendById(RF_TX_Q_ID, &txData[0], packet_length + RUCI_LEN_SET_TX_CONTROL_FIELD))
+    pci_comm_msg.pci_msg_tag                  = PCI_MSG_TX_PCI_DATA;
+    pci_comm_msg.pci_msg.param_type.p_pci_msg = mem_malloc(packet_length + RUCI_LEN_SET_TX_CONTROL_FIELD);
+
+    if (pci_comm_msg.pci_msg.param_type.p_pci_msg != NULL)
     {
+        memcpy(pci_comm_msg.pci_msg.param_type.p_pci_msg, txData, packet_length + RUCI_LEN_SET_TX_CONTROL_FIELD);
+
+        if (rfb_send_data_to_pci(pci_comm_msg) == FALSE)
+        {
+            mem_free(pci_comm_msg.pci_msg.param_type.p_pci_msg);
+            return RFB_WRITE_TXQ_FULL;
+        }
+    }
+    else
+    {
+        send_data_to_pci_fail(TX_MALLOC_FAIL);
         return RFB_WRITE_TXQ_FULL;
     }
     return RFB_WRITE_TXQ_SUCCESS;
+    
 }
-
 void rfb_comm_init_to_idle(void)
 {
     RfMcu_HostResetMcu();
@@ -424,17 +422,18 @@ void rfb_comm_init_to_idle(void)
 void rfb_comm_multi_init(rfb_interrupt_event_t * _rfb_interrupt_event)
 {
     /* Rsgister Interrupt event for application use*/
+    info("RFB init\n");
     rfb_interrupt_event = _rfb_interrupt_event;
-
-    rf_common_init_by_fw(RF_FW_LOAD_SELECT_MULTI_PROTCOL_2P4G, rfb_isr_handler);
+    //rf_common_init_by_fw(RF_FW_LOAD_SELECT_MULTI_PROTCOL_2P4G, rfb_isr_handler);
+    sys_queue_new(&g_rfb_event_queue_handle, RFB_CMD_QUEUE_SIZE, sizeof(rfb_event_msg_t));
 }
 
 void rfb_comm_init(rfb_interrupt_event_t * _rfb_interrupt_event)
 {
     /* Rsgister Interrupt event for application use*/
     rfb_interrupt_event = _rfb_interrupt_event;
-
-    rf_common_init_by_fw(RF_FW_LOAD_SELECT_RUCI_CMD, rfb_isr_handler);
+    //rf_common_init_by_fw(RF_FW_LOAD_SELECT_RUCI_CMD, rfb_isr_handler);
+    sys_queue_new(&g_rfb_event_queue_handle, RFB_CMD_QUEUE_SIZE, sizeof(rfb_event_msg_t));
 }
 
 RFB_EVENT_STATUS rfb_comm_rssi_read(uint8_t * rssi)
@@ -451,11 +450,14 @@ RFB_EVENT_STATUS rfb_comm_rssi_read(uint8_t * rssi)
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sGetRssiCmd, RUCI_GET_RSSI);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *) &sGetRssiCmd, RUCI_LEN_GET_RSSI);
+    // enter_critical_section();
+    if (rfb_send_cmd((uint8_t *) &sGetRssiCmd, RUCI_LEN_GET_RSSI) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status          = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
     get_rssi_event_status = rfb_event_read(&get_rssi_event_len, (uint8_t *) &sGetRssiEvent);
-    leave_critical_section();
+    // leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -496,10 +498,13 @@ RFB_EVENT_STATUS rfb_comm_agc_set(uint8_t agc_enable, uint8_t lna_gain, uint8_t 
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sAgcSetCmd, RUCI_SET_AGC);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *) &sAgcSetCmd, RUCI_LEN_SET_AGC);
+    // enter_critical_section();
+    if (rfb_send_cmd((uint8_t *) &sAgcSetCmd, RUCI_LEN_SET_AGC) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
-    leave_critical_section();
+    // leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -529,10 +534,13 @@ RFB_EVENT_STATUS rfb_comm_rf_sleep_set(bool enable_flag)
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sRfSleepSetCmd, RUCI_SET_RF_SLEEP);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *) &sRfSleepSetCmd, RUCI_LEN_SET_RF_SLEEP);
+    // enter_critical_section();
+    if (rfb_send_cmd((uint8_t *) &sRfSleepSetCmd, RUCI_LEN_SET_RF_SLEEP) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
-    leave_critical_section();
+    // leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -565,11 +573,14 @@ RFB_EVENT_STATUS rfb_comm_fw_version_get(uint32_t * rfb_version)
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sGetRfbVerCmd, RUCI_GET_FW_VER);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *) &sGetRfbVerCmd, RUCI_LEN_GET_FW_VER);
+    // enter_critical_section();
+    if (rfb_send_cmd((uint8_t *) &sGetRfbVerCmd, RUCI_LEN_GET_FW_VER) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status             = rfb_event_read(&event_len, (uint8_t *) &sCmnCnfEvent);
     get_rfb_ver_event_status = rfb_event_read(&get_rfb_ver_event_len, (uint8_t *) &sGetRfbVerEvent);
-    leave_critical_section();
+    // leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sCmnCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -608,12 +619,15 @@ RFB_EVENT_STATUS rfb_comm_auto_state_set(bool rx_on_when_idle)
 
     SET_RUCI_PARA_SET_RFB_AUTO_STATE(&sRfbAutoStateSet, rx_on_when_idle);
 
-    RUCI_ENDIAN_CONVERT((uint8_t *) &sRfbAutoStateSet, RUCI_SET_RFB_AUTO_STATE);
+    RUCI_ENDIAN_CONVERT((uint8_t *) &sRfbStateInit, RUCI_SET_RFB_AUTO_STATE);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *) &sRfbAutoStateSet, RUCI_LEN_SET_RFB_AUTO_STATE);
+    // enter_critical_section();
+    if (rfb_send_cmd((uint8_t *) &sRfbAutoStateSet, RUCI_LEN_SET_RFB_AUTO_STATE) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
-    leave_critical_section();
+    // leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -642,10 +656,13 @@ RFB_EVENT_STATUS rfb_comm_clock_set(uint8_t modem_type, uint8_t band_type, uint8
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sRfbClockModeSet, RUCI_SET_CLOCK_MODE);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *) &sRfbClockModeSet, RUCI_LEN_SET_CLOCK_MODE);
+    // enter_critical_section();
+    if (rfb_send_cmd((uint8_t *) &sRfbClockModeSet, RUCI_LEN_SET_CLOCK_MODE) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
-    leave_critical_section();
+    // leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -674,10 +691,13 @@ RFB_EVENT_STATUS rfb_comm_tx_power_set(uint8_t band_type, uint8_t power_index)
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sTxPwrSetCmd_t, RUCI_SET_TX_POWER);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *) &sTxPwrSetCmd_t, RUCI_LEN_SET_TX_POWER);
+    // enter_critical_section();
+    if (rfb_send_cmd((uint8_t *) &sTxPwrSetCmd_t, RUCI_LEN_SET_TX_POWER) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *) &sCmnCnfEvent);
-    leave_critical_section();
+    // leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sCmnCnfEvent, RUCI_CMN_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -708,10 +728,12 @@ RFB_EVENT_STATUS rfb_comm_key_set(uint8_t * pKey)
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sSecurityCmd_t, RUCI_SET_RFE_SECURITY);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *) &sKeyCmd_t, RUCI_LEN_SET_RFE_SECURITY);
-    event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
-    leave_critical_section();
+    // enter_critical_section();
+    if (rfb_send_cmd((uint8_t *) &sKeyCmd_t, RUCI_LEN_SET_RFE_SECURITY) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
+    // leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)

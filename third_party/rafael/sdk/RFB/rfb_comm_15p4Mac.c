@@ -38,7 +38,7 @@
 extern RF_MCU_RX_CMDQ_ERROR rfb_event_read(uint8_t *packet_length, uint8_t *event_address);
 extern void enter_critical_section(void);
 extern void leave_critical_section(void);
-extern void rfb_send_cmd(uint8_t *cmd_address, uint8_t cmd_length);
+extern bool rfb_send_cmd(uint8_t *cmd_address, uint8_t cmd_length);
 /**************************************************************************************************
  *    GLOBAL FUNCTIONS
  *************************************************************************************************/
@@ -53,10 +53,13 @@ RFB_EVENT_STATUS  rfb_comm_zigbee_initiate(void)
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sZigbeeInitCmd, RUCI_INITIATE_ZIGBEE);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sZigbeeInitCmd, RUCI_LEN_INITIATE_ZIGBEE);
+    //enter_critical_section();
+    if (rfb_send_cmd((uint8_t *)&sZigbeeInitCmd, RUCI_LEN_INITIATE_ZIGBEE) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
-    leave_critical_section();
+    //leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -87,10 +90,10 @@ RFB_EVENT_STATUS  rfb_comm_15p4_address_filter_set(uint8_t mac_promiscuous_mode,
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sAddressFielterSetCmd, RUCI_SET15P4_ADDRESS_FILTER);
 
-    enter_critical_section();
+    //enter_critical_section();
     rfb_send_cmd((uint8_t *)&sAddressFielterSetCmd, RUCI_LEN_SET15P4_ADDRESS_FILTER);
     event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
-    leave_critical_section();
+    //leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -122,10 +125,13 @@ RFB_EVENT_STATUS rfb_comm_15p4_mac_pib_set(uint32_t a_unit_backoff_period, uint3
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&s15p4Mac, RUCI_SET15P4_SW_MAC);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *)&s15p4Mac, RUCI_LEN_SET15P4_MAC_PIB);
+    //enter_critical_section();
+    if (rfb_send_cmd((uint8_t *)&s15p4Mac, RUCI_LEN_SET15P4_MAC_PIB) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
-    leave_critical_section();
+    //leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -155,10 +161,13 @@ RFB_EVENT_STATUS rfb_comm_15p4_phy_pib_set(uint16_t a_turnaround_time, uint8_t p
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&s15p4Phy, RUCI_SET15P4_PHY_PIB);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *)&s15p4Phy, RUCI_LEN_SET15P4_PHY_PIB);
+    //enter_critical_section();
+    if (rfb_send_cmd((uint8_t *)&s15p4Phy, RUCI_LEN_SET15P4_PHY_PIB) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
-    leave_critical_section();
+    //leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -189,10 +198,13 @@ RFB_EVENT_STATUS rfb_comm_15p4_auto_ack_set(uint8_t auto_ack_enable_flag)
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sAutoAck, RUCI_SET15P4_AUTO_ACK);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sAutoAck, RUCI_LEN_SET15P4_AUTO_ACK);
+    //enter_critical_section();
+    if (rfb_send_cmd((uint8_t *)&sAutoAck, RUCI_LEN_SET15P4_AUTO_ACK) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
-    leave_critical_section();
+    //leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -224,10 +236,13 @@ RFB_EVENT_STATUS rfb_comm_15p4_pending_bit_set(uint8_t frame_pending_bit)
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sFramePending, RUCI_SET15P4_PENDING_BIT);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sFramePending, RUCI_LEN_SET15P4_PENDING_BIT);
+    //enter_critical_section();
+    if (rfb_send_cmd((uint8_t *)&sFramePending, RUCI_LEN_SET15P4_PENDING_BIT) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
-    leave_critical_section();
+    //leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -257,10 +272,13 @@ RFB_EVENT_STATUS rfb_comm_15p4_src_match_ctrl(uint8_t enable)
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sSrcMatEn, RUCI_SET_SRC_MATCH_ENABLE);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sSrcMatEn, RUCI_LEN_SET_SRC_MATCH_ENABLE);
+    //enter_critical_section();
+    if (rfb_send_cmd((uint8_t *)&sSrcMatEn, RUCI_LEN_SET_SRC_MATCH_ENABLE) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
-    leave_critical_section();
+    //leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -290,10 +308,13 @@ RFB_EVENT_STATUS rfb_comm_15p4_src_match_short_entry(uint8_t control_type, uint8
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sSrcMatShortEntry, RUCI_SET_SRC_MATCH_SHORT_ENTRY_CTRL);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sSrcMatShortEntry, RUCI_LEN_SET_SRC_MATCH_SHORT_ENTRY_CTRL);
+    //enter_critical_section();
+    if (rfb_send_cmd((uint8_t *)&sSrcMatShortEntry, RUCI_LEN_SET_SRC_MATCH_SHORT_ENTRY_CTRL) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
-    leave_critical_section();
+    //leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -325,10 +346,13 @@ RFB_EVENT_STATUS rfb_comm_15p4_src_match_extended_entry(uint8_t control_type, ui
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sSrcMatExtendEntry, RUCI_SET_SRC_MATCH_EXTENDED_ENTRY_CTRL);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sSrcMatExtendEntry, RUCI_LEN_SET_SRC_MATCH_EXTENDED_ENTRY_CTRL);
+    //enter_critical_section();
+    if (rfb_send_cmd((uint8_t *)&sSrcMatExtendEntry, RUCI_LEN_SET_SRC_MATCH_EXTENDED_ENTRY_CTRL) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
-    leave_critical_section();
+    //leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -358,10 +382,13 @@ RFB_EVENT_STATUS rfb_comm_15p4_csl_receiver_ctrl(uint8_t csl_receiver_ctrl, uint
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCslReceiverCtrl, RUCI_SET_CSL_RECEIVER_CTRL);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sCslReceiverCtrl, RUCI_LEN_SET_CSL_RECEIVER_CTRL);
+    //enter_critical_section();
+    if (rfb_send_cmd((uint8_t *)&sCslReceiverCtrl, RUCI_LEN_SET_CSL_RECEIVER_CTRL) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
-    leave_critical_section();
+    //leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -394,11 +421,14 @@ RFB_EVENT_STATUS rfb_comm_15p4_csl_accuracy_get(uint8_t *csl_accuracy)
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sGetCslAccuracyCmd, RUCI_GET_CSL_ACCURACY);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sGetCslAccuracyCmd, RUCI_LEN_GET_CSL_ACCURACY);
+    //enter_critical_section();
+    if (rfb_send_cmd((uint8_t *)&sGetCslAccuracyCmd, RUCI_LEN_GET_CSL_ACCURACY) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
     get_rssi_event_status = rfb_event_read(&get_csl_accuracy_event_len, (uint8_t *)&sGetCslAccuracyEvent);
-    leave_critical_section();
+    //leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -442,11 +472,14 @@ RFB_EVENT_STATUS rfb_comm_15p4_csl_uncertainty_get(uint8_t *csl_uncertainty)
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sGetCslUncertaintyCmd, RUCI_GET_CSL_UNCERTAINTY);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sGetCslUncertaintyCmd, RUCI_LEN_GET_CSL_UNCERTAINTY);
+    //enter_critical_section();
+    if (rfb_send_cmd((uint8_t *)&sGetCslUncertaintyCmd, RUCI_LEN_GET_CSL_UNCERTAINTY) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
     get_rssi_event_status = rfb_event_read(&get_csl_uncertainty_event_len, (uint8_t *)&sGetCslUncertaintyEvent);
-    leave_critical_section();
+    //leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
@@ -487,10 +520,13 @@ RFB_EVENT_STATUS rfb_comm_15p4_csl_sample_time_update(uint32_t csl_sample_time)
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCslSampleTimeUpdate, RUCI_UPDATE_CSL_SAMPLE_TIME);
 
-    enter_critical_section();
-    rfb_send_cmd((uint8_t *)&sCslSampleTimeUpdate, RUCI_LEN_UPDATE_CSL_SAMPLE_TIME);
+    //enter_critical_section();
+    if (rfb_send_cmd((uint8_t *)&sCslSampleTimeUpdate, RUCI_LEN_UPDATE_CSL_SAMPLE_TIME) == false)
+    {
+        return RFB_CNF_EVENT_TX_BUSY;
+    }
     event_status = rfb_event_read(&event_len, (uint8_t *)&sCnfEvent);
-    leave_critical_section();
+    //leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *)&sCnfEvent, RUCI_CNF_EVENT);
     if (event_status != RF_MCU_RX_CMDQ_GET_SUCCESS)
