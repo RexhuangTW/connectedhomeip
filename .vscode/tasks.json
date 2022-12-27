@@ -10,7 +10,7 @@
         },
         {
             "label": "launchJLink",
-            "command": "'/mnt/c/Program Files (x86)/SEGGER/JLink/JLinkGDBServerCL.exe' -if swd -device ARMCM3 -nolocalhostonly",
+            "command": "'/mnt/c/Program Files/SEGGER/JLink/JLinkGDBServerCL.exe' -if swd -device ARMCM3 -nolocalhostonly",
             "type": "shell",
             "isBackground": true,
             "problemMatcher": []
@@ -60,6 +60,18 @@
             "label": "Remove output of RT building example",
             "type": "shell",
             "command": "docker exec RT_matter_builder rm -fr /var/chip/out/${input:exampleproject}/RT582",
+            "group": "build"
+        },
+        {
+            "label": "Stop RT container",
+            "type": "shell",
+            "command": "docker stop RT_matter_builder",
+            "group": "build"
+        },
+        {
+            "label": "Start RT container",
+            "type": "shell",
+            "command": "docker start RT_matter_builder",
             "group": "build"
         },
         {
