@@ -66,6 +66,8 @@ rfb_zb_ctrl_t const rfb_zb_ctrl =
     rfb_port_csl_uncertainty_get,
     rfb_port_csl_sample_time_update,
     rfb_port_rtc_time_read,
+    rfb_port_ack_packet_read,
+    rfb_port_rx_rtc_time_get,   
 };
 #endif
 
@@ -95,6 +97,8 @@ rfb_zb_ctrl_t const rfb_multi_ctrl =
     rfb_port_csl_uncertainty_get,
     rfb_port_csl_sample_time_update,
     rfb_port_rtc_time_read,
+    rfb_port_ack_packet_read,
+    rfb_port_rx_rtc_time_get,
 };
 #endif
 

@@ -694,3 +694,63 @@ uint32_t rfb_port_rtc_time_read(void)
     }
     return rtc_time;
 }
+
+uint8_t rfb_port_ack_packet_read(uint8_t * rx_data_address, uint8_t * rx_time_address)
+{
+    uint32_t temp_data;
+    uint16_t temp_addr;
+    uint8_t packet_length;
+    uint8_t ret_len;
+    uint8_t page;
+    uint8_t i;
+    /* get address of local data q */
+    RfMcu_MemoryGet(0x4038, (uint8_t *) &temp_data, 4);
+    page = (uint8_t) ((temp_data >> 8) & 0xff);
+
+    /* Start from 0x4000 + (page*64), the 8th bytes is packet len */
+    temp_addr = 0x4000 + (page * 64) + 4;
+    RfMcu_MemoryGet(temp_addr, (uint8_t *) &temp_data, 4);
+    packet_length = (uint8_t) ((temp_data >> 24) & 0xff);
+    ret_len       = packet_length;
+    temp_addr += 4;
+
+    while (packet_length > 0)
+    {
+        RfMcu_MemoryGet(temp_addr, (uint8_t *) &temp_data, 4);
+        for (i = 0; i < 4; i++)
+        {
+            if (packet_length > 0)
+            {
+                *rx_data_address = (uint8_t) ((temp_data >> (8 * i)) & 0xff);
+                rx_data_address += sizeof(uint8_t);
+                packet_length--;
+            }
+        }
+        temp_addr += 4;
+    }
+
+    /* 2nd page of local data q, the 6th rtc_time q is for ack */
+    page += 1;
+    temp_addr = 0x4000 + (page * 64) + (5 * 4);
+    RfMcu_MemoryGet(temp_addr, (uint8_t *) rx_time_address, 4);
+
+    return ret_len;
+}
+
+uint32_t rfb_port_rx_rtc_time_get(uint8_t rx_cnt)
+{
+    uint32_t rtc_time;
+    uint32_t temp_data;
+    uint8_t page;
+    uint16_t q_addr;
+
+    /* get address of 2nd page in local data q */
+    RfMcu_MemoryGet(0x04038, (uint8_t *) &temp_data, 4);
+    page = (uint8_t) ((temp_data >> 8) & 0xff) + 1;
+
+    /* Start from 0x4000 + (page*64), valid rx_cnt value: 0~4 */
+    q_addr = 0x4000 + (page * 64) + (rx_cnt * 4);
+    RfMcu_MemoryGet(q_addr, (uint8_t *) &rtc_time, 4);
+
+    return rtc_time;
+}

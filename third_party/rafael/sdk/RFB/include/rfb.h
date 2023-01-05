@@ -398,6 +398,27 @@ typedef struct rfb_zb_ctrl_s
     * @image
     */
     uint32_t (*rtc_time_read)(void);
+   /**
+     * @brief Read ack pkt data
+     *
+     * @param rx_data_address
+     * @param rx_time_address
+     * @return The length of ack pkt
+     * @date 18 Dec. 2022
+     * @see
+     * @image
+     */
+    uint8_t (*ack_packet_read)(uint8_t * rx_data_address, uint8_t * rx_time_address);
+    /**
+     * @brief Read RFB RX RTC time
+     *
+     * @param rx_cnt: total_rx_done_cnt%5 (start from 0)
+     * @return The RX RTC time stored in local data q
+     * @date 18 Dec. 2022
+     * @see
+     * @image
+     */
+    uint32_t (*rx_rtc_time_get)(uint8_t rx_cnt);
 } rfb_zb_ctrl_t;
 #endif
 

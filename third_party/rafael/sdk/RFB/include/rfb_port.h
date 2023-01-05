@@ -86,3 +86,6 @@ uint32_t rfb_port_rtc_time_read(void);
 #if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
 void rfb_port_multi_init(rfb_interrupt_event_t *_rfb_interrupt_event);
 #endif
+
+uint8_t rfb_port_ack_packet_read(uint8_t * rx_data_address, uint8_t * rx_time_address);
+uint32_t rfb_port_rx_rtc_time_get(uint8_t rx_cnt);
