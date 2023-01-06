@@ -37,5 +37,6 @@ struct ChipDeviceEvent;
 #define CHIP_SYSTEM_CONFIG_PLATFORM_PROVIDES_TIME 1
 #define CHIP_SYSTEM_CONFIG_EVENT_OBJECT_TYPE const struct ::chip::DeviceLayer::ChipDeviceEvent *
 #define CHIP_SYSTEM_CONFIG_PACKETBUFFER_POOL_SIZE 8
+#define CHIP_SYSTEM_CONFIG_NUM_TIMERS 16
 
 // ========== Platform-specific Configuration Overrides =========

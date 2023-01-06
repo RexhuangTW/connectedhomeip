@@ -93,6 +93,7 @@
 extern "C" {
 #endif
 
+
 /**
  * Domain-parameter identifiers: curve, subgroup, and generator.
  *
@@ -392,6 +393,13 @@ typedef struct
 #define MBEDTLS_ECP_OPS_DBL   8 /*!< basic ops count for ecp_double_jac()    */
 #define MBEDTLS_ECP_OPS_ADD  11 /*!< basic ops count for see ecp_add_mixed() */
 #define MBEDTLS_ECP_OPS_INV 120 /*!< empirical equivalent for mpi_mod_inv()  */
+
+int mbedtls_spake2p_verifier_compute_Z(mbedtls_ecp_group * grp, mbedtls_ecp_point * Z, mbedtls_mpi * y, mbedtls_ecp_point * X,
+                                       mbedtls_mpi * w0, mbedtls_ecp_point * M);  
+
+
+int mbedtls_spake2p_verifier_compute_V(mbedtls_ecp_group * grp, mbedtls_ecp_point * V, mbedtls_mpi * y, mbedtls_ecp_point * L);
+
 
 /**
  * \brief           Internal; for restartable functions in other modules.
@@ -1292,6 +1300,8 @@ int mbedtls_ecp_write_key( mbedtls_ecp_keypair *key,
  */
 int mbedtls_ecp_check_pub_priv( const mbedtls_ecp_keypair *pub,
                                 const mbedtls_ecp_keypair *prv );
+
+                              
 
 #if defined(MBEDTLS_SELF_TEST)
 

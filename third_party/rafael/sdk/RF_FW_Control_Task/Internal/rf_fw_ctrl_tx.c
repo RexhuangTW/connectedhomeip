@@ -33,7 +33,7 @@
 #define TASK_DELAY_MS (2) /* task delay time (ms) */
 
 #define CONFIG_TX_TASK_PRIORITY TASK_PRIORITY_PROTOCOL_HIGH /**< Task priority. */
-#define CONFIG_TX_TASK_STACK_SIZE (256)
+#define CONFIG_TX_TASK_STACK_SIZE (1024)
 
 #define NUM_HW_RX_DATA_Q (4)  /**< Mapping to RX data queue number of HW. */
 #define NUM_HW_RX_EVENT_Q (1) /**< Mapping to RX event queue number of HW. */
@@ -337,7 +337,7 @@ uint8_t check_pci_cmd_queue(void)
             if (RfMcu_CmdQueueSend(p_pci_message->msg_type.pci_array, pci_command_length) != RF_MCU_TX_CMDQ_SET_SUCCESS)
             {
                 rfb_event_msg_t rfb_event_msg;
-                info("[PCI_DEBUG_INFO] tx cmd fail\n");
+                // info("[PCI_DEBUG_INFO] tx cmd fail\n");
 
                 rfb_event_msg.length = 0;
                 if (sys_queue_send_with_timeout(&g_rfb_event_queue_handle, &rfb_event_msg, TASK_DELAY_MS))
@@ -367,6 +367,7 @@ void check_task_common_queue(void)
 
     if (msg_waiting_time != SYS_ARCH_TIMEOUT)
     {
+        // info("tx q %02X\n", rf_fw_comm_msg.msg_tag);
         switch (rf_fw_comm_msg.msg_tag)
         {
         case INTERNAL_MSG_TX_DONE:

@@ -180,6 +180,7 @@ static uint32_t sExtendAddr_1  = 0x05060709;
 static uint16_t sPANID         = 0xFFFF;
 static uint8_t sCoordinator    = 0;
 static uint8_t sCurrentChannel = kMinChannel;
+static uint8_t sCurrentAutoState = false;
 
 static bool sTxWait = false;
 static bool sTxDone = false;
@@ -736,13 +737,17 @@ otError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
         error                  = OT_ERROR_NONE;
         sState                 = OT_RADIO_STATE_RECEIVE;
         //sReceiveFrame.mChannel = aChannel;
-        sCurrentChannel        = aChannel;
-
         /* Enable RX and leave SLEEP */
-        if(otRFBInit)
-        spRFBCtrl->frequency_set(ChannelFrequency);
-        if(otRFBInit)
-        spRFBCtrl->auto_state_set(true);
+        if(sCurrentChannel != aChannel)
+        {
+            sCurrentChannel = aChannel;
+            spRFBCtrl->frequency_set(ChannelFrequency);
+        }
+        if(sCurrentAutoState != true)
+        {
+            sCurrentAutoState = true;
+            spRFBCtrl->auto_state_set(sCurrentAutoState);
+        }
     }
 
     return error;
@@ -1165,7 +1170,7 @@ static void radioSendMessage(otInstance *aInstance)
     tx_ret = spRFBCtrl->data_send(sTransmitMessage.mPsdu, sTransmitMessage.mLength - 2, tx_control, otMacFrameGetSequence(&sTransmitFrame));
     otPlatRadioTxStarted(aInstance, &sTransmitFrame);
 
-    if(tx_ret)
+    if(tx_ret != 0)
     {
         otPlatRadioTxDone(aInstance, &sTransmitFrame, NULL, OT_ERROR_NO_ACK);
         return;
@@ -1233,91 +1238,67 @@ void platformRadioProcess(otInstance *startThread)
         {
             if (sReceiveFrame[i].mPsdu != NULL)
             {                
-                if(_mac_rx_buffer_chk_acl(sReceiveFrame[i].mPsdu))
+                //if(otMacFrameIsVersion2015(&sReceiveFrame[i]))
+                //    otLogWarnPlat("Rx Ver 2015\n");
+                // Unable to simulate SFD, so use the rx done timestamp instead.
+                //sReceiveFrame[i].mInfo.mRxInfo.mTimestamp = sUsCounter;
+                sReceiveFrame[i].mInfo.mRxInfo.mAckedWithFramePending = false;
+                sReceiveFrame[i].mInfo.mRxInfo.mAckedWithSecEnhAck    = false;
+
+                otEXPECT_ACTION(otMacFrameDoesAddrMatch(&sReceiveFrame[i], sPANID, sShortAddress, &sExtAddress),
+                                error = OT_ERROR_ABORT);
+                if (otMacFrameIsAckRequested(&sTransmitFrame) &&
+                        otMacFrameIsAck(&sReceiveFrame[i]) &&
+                        otMacFrameIsVersion2015(&sReceiveFrame[i]))
+                    //otMacFrameGetSequence(&sReceiveFrame[i]) == otMacFrameGetSequence(&sTransmitFrame))
                 {
-                    rf_fw_rx_ctrl_msg_t rf_msg = {0};
-
-                    rf_msg.msg_tag = 0x05;
-                    rf_msg.msg_len = sReceiveFrame[i].mLength;
-                   
-                    rf_msg.p_msg = mem_malloc(sReceiveFrame[i].mLength);
-                    if(rf_msg.p_msg != 0)
-                    {                       
-                        memcpy(rf_msg.p_msg, sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength);
-                        while(sys_queue_send_with_timeout(&g_rx_common_queue_handle, &rf_msg, 20) != 0)
-                        {
-                            err("acl data send failed\n");
-                        }
-
-                    }
+                    //util_log_mem(UTIL_LOG_INFO, "Enh-Ack ", sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength, 0);
+                    memset(&sAckFrame,0x0,sizeof(otRadioFrame));                    
+                    sAckFrame.mInfo.mRxInfo.mLqi = sReceiveFrame[i].mInfo.mRxInfo.mLqi;
+                    sAckFrame.mInfo.mRxInfo.mRssi = sReceiveFrame[i].mInfo.mRxInfo.mRssi;
+                    sAckFrame.mInfo.mRxInfo.mTimestamp = sReceiveFrame[i].mInfo.mRxInfo.mTimestamp;
+                    sAckFrame.mChannel = sReceiveFrame[i].mChannel;
+                    sAckFrame.mLength = sReceiveFrame[i].mLength;
+                    sAckFrame.mRadioType = sReceiveFrame[i].mRadioType;
+                    memcpy(&sAckFrame.mPsdu, &sReceiveFrame[i].mPsdu, sAckFrame.mLength);
+                    Enh_Ack_Index = i;
                     _mac_rx_buffer_free(sReceiveFrame[i].mPsdu);
                     sReceiveFrame[i].mPsdu = NULL;
-                    continue;
-                }
-                else
-                {
-                    //if(otMacFrameIsVersion2015(&sReceiveFrame[i]))
-                    //    otLogWarnPlat("Rx Ver 2015\n");
-                    // Unable to simulate SFD, so use the rx done timestamp instead.
-                    //sReceiveFrame[i].mInfo.mRxInfo.mTimestamp = sUsCounter;
-                    sReceiveFrame[i].mInfo.mRxInfo.mAckedWithFramePending = false;
-                    sReceiveFrame[i].mInfo.mRxInfo.mAckedWithSecEnhAck    = false;
-
-                    otEXPECT_ACTION(otMacFrameDoesAddrMatch(&sReceiveFrame[i], sPANID, sShortAddress, &sExtAddress),
-                                    error = OT_ERROR_ABORT);
-                    if (otMacFrameIsAckRequested(&sTransmitFrame) &&
-                            otMacFrameIsAck(&sReceiveFrame[i]) &&
-                            otMacFrameIsVersion2015(&sReceiveFrame[i]))
-                        //otMacFrameGetSequence(&sReceiveFrame[i]) == otMacFrameGetSequence(&sTransmitFrame))
-                    {
-                        //util_log_mem(UTIL_LOG_INFO, "Enh-Ack ", sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength, 0);
-                        memset(&sAckFrame,0x0,sizeof(otRadioFrame));                    
-                        sAckFrame.mInfo.mRxInfo.mLqi = sReceiveFrame[i].mInfo.mRxInfo.mLqi;
-                        sAckFrame.mInfo.mRxInfo.mRssi = sReceiveFrame[i].mInfo.mRxInfo.mRssi;
-                        sAckFrame.mInfo.mRxInfo.mTimestamp = sReceiveFrame[i].mInfo.mRxInfo.mTimestamp;
-                        sAckFrame.mChannel = sReceiveFrame[i].mChannel;
-                        sAckFrame.mLength = sReceiveFrame[i].mLength;
-                        sAckFrame.mRadioType = sReceiveFrame[i].mRadioType;
-                        memcpy(&sAckFrame.mPsdu, &sReceiveFrame[i].mPsdu, sAckFrame.mLength);
-                        Enh_Ack_Index = i;
-                        _mac_rx_buffer_free(sReceiveFrame[i].mPsdu);
-                        sReceiveFrame[i].mPsdu = NULL;
-                        break;
-                    }
-                    //util_log_mem(UTIL_LOG_INFO, "R", sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength, 0);
-                    if (
-    #if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
-                        // Determine if frame pending should be set
-                        ((otMacFrameIsVersion2015(&sReceiveFrame[i]) && otMacFrameIsCommand(&sReceiveFrame[i])) ||
-                        /*otMacFrameIsData(&sReceiveFrame[i]) || */otMacFrameIsDataRequest(&sReceiveFrame[i]))
-    #else
-                        otMacFrameIsDataRequest(&sReceiveFrame[i])
-    #endif
-                        && hasFramePending(&sReceiveFrame[i]))
-                    {
-                        sReceiveFrame[i].mInfo.mRxInfo.mAckedWithFramePending = true;
-                    }
-    #if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
-                    if (otMacFrameIsVersion2015(&sReceiveFrame[i]) &&
-                        otMacFrameIsSecurityEnabled(&sReceiveFrame[i]) &&
-                        otMacFrameIsAckRequested(&sReceiveFrame[i]))
-                    {
-                        sReceiveFrame[i].mInfo.mRxInfo.mAckedWithSecEnhAck = true;
-                        sReceiveFrame[i].mInfo.mRxInfo.mAckFrameCounter = ++sMacFrameCounter;
-                    }
-    #endif // OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
-    exit:
-                    if (error != OT_ERROR_ABORT)
-                    {
-                        otPlatRadioReceiveDone(maInstance, error == OT_ERROR_NONE ? &sReceiveFrame[i] : NULL, error);
-                        //if(error == OT_ERROR_NONE)
-                        //    otDumpWarnPlat("Rx Packet", sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength);
-                    }
-                    _mac_rx_buffer_free(sReceiveFrame[i].mPsdu);
-                    sReceiveFrame[i].mPsdu = NULL;
-                    //gpio_pin_write(21, 1);
                     break;
                 }
+                //util_log_mem(UTIL_LOG_INFO, "R", sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength, 0);
+                if (
+#if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
+                    // Determine if frame pending should be set
+                    ((otMacFrameIsVersion2015(&sReceiveFrame[i]) && otMacFrameIsCommand(&sReceiveFrame[i])) ||
+                    /*otMacFrameIsData(&sReceiveFrame[i]) || */otMacFrameIsDataRequest(&sReceiveFrame[i]))
+#else
+                    otMacFrameIsDataRequest(&sReceiveFrame[i])
+#endif
+                    && hasFramePending(&sReceiveFrame[i]))
+                {
+                    sReceiveFrame[i].mInfo.mRxInfo.mAckedWithFramePending = true;
+                }
+#if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
+                if (otMacFrameIsVersion2015(&sReceiveFrame[i]) &&
+                    otMacFrameIsSecurityEnabled(&sReceiveFrame[i]) &&
+                    otMacFrameIsAckRequested(&sReceiveFrame[i]))
+                {
+                    sReceiveFrame[i].mInfo.mRxInfo.mAckedWithSecEnhAck = true;
+                    sReceiveFrame[i].mInfo.mRxInfo.mAckFrameCounter = ++sMacFrameCounter;
+                }
+#endif // OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
+exit:
+                if (error != OT_ERROR_ABORT)
+                {
+                    otPlatRadioReceiveDone(maInstance, error == OT_ERROR_NONE ? &sReceiveFrame[i] : NULL, error);
+                    //if(error == OT_ERROR_NONE)
+                    //    otDumpWarnPlat("Rx Packet", sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength);
+                }
+                _mac_rx_buffer_free(sReceiveFrame[i].mPsdu);
+                sReceiveFrame[i].mPsdu = NULL;
+                //gpio_pin_write(21, 1);
+                break;
             }
         }
     }
@@ -1466,33 +1447,22 @@ static void rafael_rx_done(uint16_t packet_length, uint8_t *rx_data_address,
                 p_rx_buffer = _mac_rx_buffer_free_find();
                 if (p_rx_buffer)
                 {
-                    if (rx_data_address[0] != BLE_TRANSPORT_HCI_ACL_DATA)
-                    {
-                        sReceiveFrame[i].mPsdu = p_rx_buffer->data;
+                    sReceiveFrame[i].mPsdu = p_rx_buffer->data;
 #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
-                        sReceiveFrame[i].mLength = packet_length - 9;
+                    sReceiveFrame[i].mLength = packet_length - 9;
 #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-                        sReceiveFrame[i].mLength = packet_length - 10;
+                    sReceiveFrame[i].mLength = packet_length - 10;
 #endif
-                        // sReceiveFrame[i].mInfo.mRxInfo.mTimestamp = otPlatAlarmMicroGetNow()-4000;
-                        sReceiveFrame[i].mInfo.mRxInfo.mRssi = -rssi;
-                        sReceiveFrame[i].mInfo.mRxInfo.mLqi = ((RAFAEL_RECEIVE_SENSITIVITY - rssi) * 0xFF) / RAFAEL_RECEIVE_SENSITIVITY;
-                        sReceiveFrame[i].mChannel = sCurrentChannel;
+                    // sReceiveFrame[i].mInfo.mRxInfo.mTimestamp = otPlatAlarmMicroGetNow()-4000;
+                    sReceiveFrame[i].mInfo.mRxInfo.mRssi = -rssi;
+                    sReceiveFrame[i].mInfo.mRxInfo.mLqi = ((RAFAEL_RECEIVE_SENSITIVITY - rssi) * 0xFF) / RAFAEL_RECEIVE_SENSITIVITY;
+                    sReceiveFrame[i].mChannel = sCurrentChannel;
 #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
-                        memcpy(sReceiveFrame[i].mPsdu, rx_data_address + 8, sReceiveFrame[i].mLength);
+                    memcpy(sReceiveFrame[i].mPsdu, rx_data_address + 8, sReceiveFrame[i].mLength);
 #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-                        memcpy(sReceiveFrame[i].mPsdu, rx_data_address + 9, sReceiveFrame[i].mLength);
+                    memcpy(sReceiveFrame[i].mPsdu, rx_data_address + 9, sReceiveFrame[i].mLength);
 #endif                       
-                        //gpio_pin_write(21, 0);
-                    }
-                    else
-                    {
-                        sReceiveFrame[i].mPsdu = p_rx_buffer->data;
-                        sReceiveFrame[i].mLength = (((rx_data_address[3]) | (rx_data_address[4] << 8)) + 5);
-                        memcpy(sReceiveFrame[i].mPsdu, rx_data_address, sReceiveFrame[i].mLength);
-
-                        p_rx_buffer->acl = 1;
-                    }
+                    //gpio_pin_write(21, 0);
                     p_rx_buffer->free = false;
                 }
                 break;
@@ -1564,7 +1534,7 @@ void rafael_rfb_init(void)
     spRFBCtrl->auto_ack_set(true);
 
     /* Auto State */
-    spRFBCtrl->auto_state_set(false);
+    spRFBCtrl->auto_state_set(sCurrentAutoState);
 
     sTransmitFrame.mPsdu = sTransmitMessage.mPsdu;
 

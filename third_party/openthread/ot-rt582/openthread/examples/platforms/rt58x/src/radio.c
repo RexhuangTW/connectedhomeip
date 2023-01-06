@@ -1161,8 +1161,11 @@ static void radioSendMessage(otInstance *aInstance)
     tx_ret = spRFBCtrl->data_send(temp , (sTransmitMessage.mLength + 4 - 2), tx_control, otMacFrameGetSequence(&sTransmitFrame));
 #endif
     
-    
+    info("Thread exec data_send\n");
     tx_ret = spRFBCtrl->data_send(sTransmitMessage.mPsdu, sTransmitMessage.mLength - 2, tx_control, otMacFrameGetSequence(&sTransmitFrame));
+
+    info("RFBCtrl->data_send ret %d\n", tx_ret);
+
     otPlatRadioTxStarted(aInstance, &sTransmitFrame);
 
     if(tx_ret)
@@ -1324,7 +1327,7 @@ void platformRadioProcess(otInstance *startThread)
 
     if (sTxDone)
     {
-        //otLogWarnPlat("Tx Status %X\n", sTransmitError);
+        info("Tx Status %X\n", sTransmitError);
         do
         {
             if (sTransmitError == 0x10)
