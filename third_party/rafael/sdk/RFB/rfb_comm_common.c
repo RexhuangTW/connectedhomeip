@@ -733,6 +733,7 @@ RFB_EVENT_STATUS rfb_comm_key_set(uint8_t * pKey)
     {
         return RFB_CNF_EVENT_TX_BUSY;
     }
+    event_status = rfb_event_read(&event_len, (uint8_t *) &sCnfEvent);
     // leave_critical_section();
 
     RUCI_ENDIAN_CONVERT((uint8_t *) &sCnfEvent, RUCI_CNF_EVENT);
