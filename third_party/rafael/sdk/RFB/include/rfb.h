@@ -53,9 +53,16 @@ typedef enum
 
 typedef enum
 {
+    RFB_KEYING_FSK               = 1,
+    RFB_KEYING_OQPSK             = 2,
+} rfb_keying_type_t;
+
+typedef enum
+{
     RFB_MODEM_FSK                = 1,
     RFB_MODEM_ZIGBEE             = 2,
     RFB_MODEM_BLE                = 3,
+    RFB_MODEM_OQPSK              = 4,
 } rfb_modem_type_t;
 
 typedef struct rfb_interrupt_event_s
@@ -102,20 +109,29 @@ typedef enum
 
 typedef enum
 {
+    OQPSK_25K            = 3,
+    OQPSK_12P5K          = 4,
+    OQPSK_6P25K          = 5,
+} oqpsk_bw_t;
+
+typedef enum
+{
     MOD_0P5             = 0,
-    MOD_1               = 1
+    MOD_1               = 1,
+    MOD_UNDEF           = 2,
 } fsk_mod_t;
 
 typedef enum
 {
-    FSK_CRC_16              = 0,
-    FSK_CRC_32              = 1
-} fsk_crc_type_t;
+    CRC_16              = 0,
+    CRC_32              = 1
+} crc_type_t;
 
 typedef enum
 {
     FSK              = 0,
     GFSK             = 1,
+    OQPSK            = 2,
 } fsk_filter_type_t;
 
 typedef enum
@@ -139,24 +155,24 @@ typedef struct rfb_zb_ctrl_s
     *
     * @param Rfb interrupt event struct [rx_done, tx_done, rx_timeout]
     *
-    * @return Rfb wakeup time
+    * @return command setting result
     * @date 14 Dec. 2020
     * @see
     * @image
     */
-    void (*init)(rfb_interrupt_event_t *_rfb_interrupt_event);
+    RFB_EVENT_STATUS (*init)(rfb_interrupt_event_t *_rfb_interrupt_event);
 
     /**
     * @brief Set RF frequency.
     *
     * @param RF frequency [2402~2480 (MHz)]
     *
-    * @return None
+    * @return command setting result
     * @date 14 Dec. 2020
     * @see
     * @image
     */
-    void (*frequency_set)(uint32_t rf_frequency);
+    RFB_EVENT_STATUS (*frequency_set)(uint32_t rf_frequency);
 
     /**
     * @brief Check channel is free or not.
@@ -180,12 +196,12 @@ typedef struct rfb_zb_ctrl_s
     *        BIT1: [0: DIRECT_TRANSMISSION, 1:NONBEACON_MODE_CSMACA]
     *        BIT0: [0: ACK request = false, ACK request = true] (auto ack feature must enable)
     * @param Data sequence number (auto ack feature must enable)
-    * @return None
+    * @return Write Tx Queue result
     * @date 20 Jan. 2021
     * @see
     * @image
     */
-    uint32_t (*data_send)(uint8_t *tx_data_address, uint16_t packet_length, uint8_t tx_control, uint8_t dsn);
+    RFB_WRITE_TXQ_STATUS (*data_send)(uint8_t *tx_data_address, uint16_t packet_length, uint8_t tx_control, uint8_t dsn);
 
     /**
     * @brief Set TX continuous wave (for testing, tx timeout is not supported)
@@ -193,12 +209,12 @@ typedef struct rfb_zb_ctrl_s
     * @param RF frequency [2402~2480 (MHz)]
     * @param TX power [0: TX_POWER_20dBm , 1:TX_POWER_14dBm, 2:TX_POWER_0dBm]
     * @param Timeout [N/A]
-    * @return None
+    * @return command setting result
     * @date 14 Dec. 2020
     * @see
     * @image
     */
-    void (*tx_continuous_wave_set)(uint32_t rf_frequency, tx_power_level_t tx_power);
+    RFB_EVENT_STATUS (*tx_continuous_wave_set)(uint32_t rf_frequency, tx_power_level_t tx_power);
 
     /**
     * @brief Read RSSI
@@ -220,12 +236,12 @@ typedef struct rfb_zb_ctrl_s
     *        long address[0] and [1] contain 64 bits extended address
     * @param 16bits PAN ID.
     * @param Whether the device id coordinator or mot [0:false, 1:true]
-    * @return None
+    * @return command setting result
     * @date 17 Dec. 2021
     * @see
     * @image
     */
-    void (*address_filter_set)(uint8_t mac_promiscuous_mode, uint16_t short_source_address, uint32_t long_source_address_0, uint32_t long_source_address_1, uint16_t pan_id, uint8_t isCoordinator);
+    RFB_EVENT_STATUS (*address_filter_set)(uint8_t mac_promiscuous_mode, uint16_t short_source_address, uint32_t long_source_address_0, uint32_t long_source_address_1, uint16_t pan_id, uint8_t isCoordinator);
 
     /**
     * @brief Set 15.4 MAC PIB
@@ -236,13 +252,13 @@ typedef struct rfb_zb_ctrl_s
     * @param The maximum time to wait either for a frame intended as a response to a data request frame, specified in us.
     * @param The maximum number of retries allowed after a transmission failure.
     * @param The minimum value of the backoff exponent (BE) in the CSMA-CA algorithm
-    * @return None
+    * @return command setting result
     * @date 17 Dec. 2021
     * @see
     * @image
     */
-    void (*mac_pib_set)(uint32_t a_unit_backoff_period, uint32_t mac_ack_wait_duration, uint8_t mac_max_BE, uint8_t mac_max_CSMA_backoffs,
-                        uint32_t mac_max_frame_total_wait_time, uint8_t mac_max_frame_retries, uint8_t mac_min_BE);
+    RFB_EVENT_STATUS (*mac_pib_set)(uint32_t a_unit_backoff_period, uint32_t mac_ack_wait_duration, uint8_t mac_max_BE, uint8_t mac_max_CSMA_backoffs,
+                                    uint32_t mac_max_frame_total_wait_time, uint8_t mac_max_frame_retries, uint8_t mac_min_BE);
 
     /**
     * @brief Set 15.4 PHY PIB
@@ -251,45 +267,45 @@ typedef struct rfb_zb_ctrl_s
     *        3: Carrier sense with energy above threshold, where the logical operator is OR.
     * @param The received power threshold of the, energy above threshold, algorithm.
     * @param The duration for CCA, specified in us.
-    * @return None
+    * @return command setting result
     * @date 17 Dec. 2021
     * @see
     * @image
     */
-    void (*phy_pib_set)(uint16_t a_turnaround_time, uint8_t phy_cca_mode, uint8_t phy_cca_threshold, uint16_t phy_cca_duration);
+    RFB_EVENT_STATUS (*phy_pib_set)(uint16_t a_turnaround_time, uint8_t phy_cca_mode, uint8_t phy_cca_threshold, uint16_t phy_cca_duration);
 
     /**
     * @brief Enable auto ACK
     *
     * @param Enable auto ACK flag
-    * @return None
+    * @return command setting result
     * @date 20 Jan. 2021
     * @see
     * @image
     */
-    void (*auto_ack_set)(uint8_t auto_ack);
+    RFB_EVENT_STATUS (*auto_ack_set)(uint8_t auto_ack);
 
     /**
     * @brief Set frame pending bit
     *
     * @param frame pending bit flag [0:false, 1:true]
-    * @return None
+    * @return command setting result
     * @date 20 Jan. 2021
     * @see
     * @image
     */
-    void (*frame_pending_set)(uint8_t frame_pending);
+    RFB_EVENT_STATUS (*frame_pending_set)(uint8_t frame_pending);
 
     /**
     * @brief Set RX on when IDLW
     *
     * @param the flag for transfering to RX state automatically when RFB is idle [0:false, 1:true]; Th
-    * @return None
+    * @return command setting result
     * @date 20 Jan. 2021
     * @see
     * @image
     */
-    void (*auto_state_set)(bool rx_on_when_idle);
+    RFB_EVENT_STATUS (*auto_state_set)(bool rx_on_when_idle);
 
     /**
     * @brief Get RFB firmware version
@@ -306,58 +322,58 @@ typedef struct rfb_zb_ctrl_s
     * @brief Enable/ disable source address match feature
     *
     * @param Enable flag [0:disable, 1:enable]
-    * @return None
+    * @return command setting result
     * @date 17 Aug. 2022
     * @see
     * @image
     */
-    void (*src_addr_match_ctrl)(uint8_t ctrl_type);
+    RFB_EVENT_STATUS (*src_addr_match_ctrl)(uint8_t ctrl_type);
 
     /**
     * @brief Control the short source address table
     *
     * @param Control type [0: clear all, 1: add an address 2: remove an address]
     * @param The pointer for short address
-    * @return None
+    * @return command setting result
     * @date 17 Aug. 2022
     * @see
     * @image
     */
-    void (*short_addr_ctrl)(uint8_t ctrl_type, uint8_t *short_addr);
+    RFB_EVENT_STATUS (*short_addr_ctrl)(uint8_t ctrl_type, uint8_t *short_addr);
 
     /**
     * @brief Control the extended source address table
     *
     * @param Control type [0: clear all, 1: add an address 2: remove an address]
     * @param The pointer for extended address
-    * @return None
+    * @return command setting result
     * @date 17 Aug. 2022
     * @see
     * @image
     */
-    void (*extend_addr_ctrl)(uint8_t ctrl_type, uint8_t *extend_addr);
+    RFB_EVENT_STATUS (*extend_addr_ctrl)(uint8_t ctrl_type, uint8_t *extend_addr);
 
     /**
     * @brief Configure 128bits encryption key
     *
     * @param The pointer for key
-    * @return None
+    * @return command setting result
     * @date 30 Aug. 2022
     * @see
     * @image
     */
-    void (*key_set)(uint8_t *key_addr);
+    RFB_EVENT_STATUS (*key_set)(uint8_t *key_addr);
     /**
     * @brief Enable/ disable the CSL receiver
     *
     * @param Enable flag [0:disable, 1:enable]
     * @param CSL period
-    * @return None
+    * @return command setting result
     * @date 8 Sep. 2022
     * @see
     * @image
     */
-    void (*csl_receiver_ctrl)(uint8_t csl_receiver_ctrl, uint16_t csl_period);
+    RFB_EVENT_STATUS (*csl_receiver_ctrl)(uint8_t csl_receiver_ctrl, uint16_t csl_period);
     /**
     * @brief Get the current accuracy
     *
@@ -382,12 +398,12 @@ typedef struct rfb_zb_ctrl_s
     * @brief Update CSL sample time
     *
     * @param None
-    * @return The current uncertainty
+    * @return command setting result
     * @date 13 Sep. 2022
     * @see
     * @image
     */
-    void (*csl_sample_time_update)(uint32_t csl_sample_time);
+    RFB_EVENT_STATUS (*csl_sample_time_update)(uint32_t csl_sample_time);
     /**
     * @brief Read RFB RTC time
     *
@@ -398,68 +414,69 @@ typedef struct rfb_zb_ctrl_s
     * @image
     */
     uint32_t (*rtc_time_read)(void);
-   /**
-     * @brief Read ack pkt data
-     *
-     * @param rx_data_address
-     * @param rx_time_address
-     * @return The length of ack pkt
-     * @date 18 Dec. 2022
-     * @see
-     * @image
-     */
-    uint8_t (*ack_packet_read)(uint8_t * rx_data_address, uint8_t * rx_time_address);
     /**
-     * @brief Read RFB RX RTC time
-     *
-     * @param rx_cnt: total_rx_done_cnt%5 (start from 0)
-     * @return The RX RTC time stored in local data q
-     * @date 18 Dec. 2022
-     * @see
-     * @image
-     */
+    * @brief Read ack pkt data
+    *
+    * @param rx_data_address
+    * @param rx_time_address
+    * @return The length of ack pkt
+    * @date 18 Dec. 2022
+    * @see
+    * @image
+    */
+    uint8_t (*ack_packet_read)(uint8_t *rx_data_address, uint8_t *rx_time_address);
+    /**
+    * @brief Read RFB RX RTC time
+    *
+    * @param rx_cnt: total_rx_done_cnt%5 (start from 0)
+    * @return The RX RTC time stored in local data q
+    * @date 18 Dec. 2022
+    * @see
+    * @image
+    */
     uint32_t (*rx_rtc_time_get)(uint8_t rx_cnt);
 } rfb_zb_ctrl_t;
 #endif
 
-#if (defined RFB_WISUN_ENABLED && RFB_WISUN_ENABLED == 1)
-typedef struct rfb_wisun_ctrl_s
+#if (defined RFB_SUBG_ENABLED && RFB_SUBG_ENABLED == 1)
+typedef struct rfb_subg_ctrl_s
 {
     /**
     * @brief Initiate RFB, and register interrupt event.
     *
     * @param Rfb interrupt event struct [rx_done, tx_done, rx_timeout]
+    * @param keying_mode [RFB_KEYING_FSK / RFB_KEYING_OQPSK]
     *
-    * @return Rfb wakeup time
-    * @date 14 Dec. 2020
+    * @return Rfb setting result
+    * @date 07 Dec. 2022
     * @see
     * @image
     */
-    void (*init)(rfb_interrupt_event_t *_rfb_interrupt_event);
+    RFB_EVENT_STATUS (*init)(rfb_interrupt_event_t *_rfb_interrupt_event, rfb_keying_type_t keying_mode);
 
     /**
     * @brief Set RFB modem type.
     *
     * @param Modem [RFB_MODEM_FSK]
     *
-    * @return None
+    * @return command setting result
     * @date 17 Dec. 2020
     * @see
     * @image
     */
-    void (*modem_set)(rfb_modem_type_t modem);
+    RFB_EVENT_STATUS (*modem_set)(rfb_modem_type_t modem);
 
     /**
     * @brief Set RF frequency.
     *
     * @param RF frequency [116250~930000 (kHz)]
     *
-    * @return None
+    * @return command setting result
     * @date 14 Dec. 2020
     * @see
     * @image
     */
-    void (*frequency_set)(uint32_t rf_frequency);
+    RFB_EVENT_STATUS (*frequency_set)(uint32_t rf_frequency);
 
     /**
     * @brief Check channel is free or not.
@@ -482,13 +499,13 @@ typedef struct rfb_wisun_ctrl_s
              FSK [1~63]
     * @param 32bits timeout [us]
     * @param Is RX continuous mode [1: continous 0: one time/timeout]
-    * @return None
+    * @return command setting result
     * @date 17 Dec. 2020
     * @see
     * @image
     */
-    void (*rx_config_set)(uint8_t data_rate, uint16_t preamble_len, fsk_mod_t mod_idx, fsk_crc_type_t crc_type,
-                          whiten_enable_t whiten_enable, uint32_t rx_timeout, bool rx_continuous, uint8_t filter_type);
+    RFB_EVENT_STATUS (*rx_config_set)(uint8_t data_rate, uint16_t preamble_len, fsk_mod_t mod_idx, crc_type_t crc_type,
+                                      whiten_enable_t whiten_enable, uint32_t rx_timeout, bool rx_continuous, uint8_t filter_type);
 
     /**
     * @brief Set TX configurations.
@@ -500,61 +517,61 @@ typedef struct rfb_wisun_ctrl_s
                             FSK_50K = 5, FSK_300K = 6, FSK_150K = 7, FSK_75K = 8]
     * @param Preamble length
           FSK [1~63]
-    * @return None
+    * @return command setting result
     * @date 14 Dec. 2020
     * @see
     * @image
     */
-    void (*tx_config_set)(tx_power_level_t tx_power, uint8_t data_rate, uint16_t preamble_len, fsk_mod_t mod_idx,
-                          fsk_crc_type_t crc_type, whiten_enable_t whiten_enable, uint8_t filter_type);
+    RFB_EVENT_STATUS (*tx_config_set)(tx_power_level_t tx_power, uint8_t data_rate, uint16_t preamble_len, fsk_mod_t mod_idx,
+                                      crc_type_t crc_type, whiten_enable_t whiten_enable, uint8_t filter_type);
 
     /**
      * @brief Send data to RFB buffer and RFB will transmit this data automatically
      *
      * @param Data address
      * @param Packet length
-     *         FSK [1~2047]
+     *         FSK [1~2047] / OQPSK [1~127]
      * @param TX control [0](Not apply for 15p4g mode)
      * @param Data sequence number [0] (Not apply for 15.4g mode)
-     * @return None
+     * @return Write Tx queue result
      * @date 20 Jan. 2021
      * @see
      * @image
      */
-    uint32_t (*data_send)(uint8_t *tx_data_address, uint16_t packet_length, uint8_t tx_control, uint8_t dsn);
+    RFB_WRITE_TXQ_STATUS (*data_send)(uint8_t *tx_data_address, uint16_t packet_length, uint8_t tx_control, uint8_t dsn);
 
     /**
      * @brief Set RFB to sleep state
      *
      * @param None
-     * @return None
+     * @return command setting result
      * @date 14 Dec. 2020
      * @see
      * @image
      */
-    void (*sleep_set)(void);
+    RFB_EVENT_STATUS (*sleep_set)(void);
 
     /**
      * @brief Set RFB to idle state
      *
      * @param None
-     * @return None
+     * @return command setting result
      * @date 14 Dec. 2020
      * @see
      * @image
      */
-    void (*idle_set)(void);
+    RFB_EVENT_STATUS (*idle_set)(void);
 
     /**
      * @brief Set RFB to RX state
      *
      * @param None
-     * @return None
+     * @return command setting result
      * @date 14 Dec. 2020
      * @see
      * @image
      */
-    void (*rx_start)(void);
+    RFB_EVENT_STATUS (*rx_start)(void);
 
     /**
      * @brief Set TX continuous wave (for testing, tx timeout is not supported)
@@ -562,12 +579,12 @@ typedef struct rfb_wisun_ctrl_s
      * @param RF frequency [116250~930000 (kHz)]
      * @param TX power [0: TX_POWER_20dBm , 1:TX_POWER_14dBm, 2:TX_POWER_0dBm]
      * @param Timeout [N/A]
-     * @return None
+     * @return command setting result
      * @date 14 Dec. 2020
      * @see
      * @image
      */
-    void (*tx_continuous_wave_set)(uint32_t rf_frequency, tx_power_level_t tx_power);
+    RFB_EVENT_STATUS (*tx_continuous_wave_set)(uint32_t rf_frequency, tx_power_level_t tx_power);
 
     /**
      * @brief Read RSSI
@@ -600,12 +617,12 @@ typedef struct rfb_wisun_ctrl_s
      *        long address[0] and [1] contain 64 bits extended address
      * @param 16bits PAN ID.
      * @param Whether the device id coordinator or mot [0:false, 1:true]
-     * @return None
+     * @return command setting result
      * @date 17 Dec. 2021
      * @see
      * @image
      */
-    void (*address_filter_set)(uint8_t mac_promiscuous_mode, uint16_t short_source_address, uint32_t long_source_address_0, uint32_t long_source_address_1, uint16_t pan_id, uint8_t isCoordinator);
+    RFB_EVENT_STATUS (*address_filter_set)(uint8_t mac_promiscuous_mode, uint16_t short_source_address, uint32_t long_source_address_0, uint32_t long_source_address_1, uint16_t pan_id, uint8_t isCoordinator);
 
     /**
     * @brief Set 15.4 MAC PIB
@@ -616,13 +633,13 @@ typedef struct rfb_wisun_ctrl_s
     * @param The maximum time to wait either for a frame intended as a response to a data request frame, specified in us.
     * @param The maximum number of retries allowed after a transmission failure.
     * @param The minimum value of the backoff exponent (BE) in the CSMA-CA algorithm
-    * @return None
+    * @return command setting result
     * @date 17 Dec. 2021
     * @see
     * @image
     */
-    void (*mac_pib_set)(uint32_t a_unit_backoff_period, uint32_t mac_ack_wait_duration, uint8_t mac_max_BE, uint8_t mac_max_CSMA_backoffs,
-                        uint32_t mac_max_frame_total_wait_time, uint8_t mac_max_frame_retries, uint8_t mac_min_BE);
+    RFB_EVENT_STATUS (*mac_pib_set)(uint32_t a_unit_backoff_period, uint32_t mac_ack_wait_duration, uint8_t mac_max_BE, uint8_t mac_max_CSMA_backoffs,
+                                    uint32_t mac_max_frame_total_wait_time, uint8_t mac_max_frame_retries, uint8_t mac_min_BE);
 
     /**
     * @brief Set 15.4 PHY PIB
@@ -631,46 +648,46 @@ typedef struct rfb_wisun_ctrl_s
     *        3: Carrier sense with energy above threshold, where the logical operator is OR.
     * @param The received power threshold of the, energy above threshold, algorithm.
     * @param The duration for CCA, specified in us.
-    * @return None
+    * @return command setting result
     * @date 17 Dec. 2021
     * @see
     * @image
     */
-    void (*phy_pib_set)(uint16_t a_turnaround_time, uint8_t phy_cca_mode, uint8_t phy_cca_threshold, uint16_t phy_cca_duration);
+    RFB_EVENT_STATUS (*phy_pib_set)(uint16_t a_turnaround_time, uint8_t phy_cca_mode, uint8_t phy_cca_threshold, uint16_t phy_cca_duration);
 
     /**
     * @brief Enable auto ACK
     *
     * @param Enable auto ACK flag
-    * @return None
+    * @return command setting result
     * @date 20 Jan. 2021
     * @see
     * @image
     */
-    void (*auto_ack_set)(uint8_t auto_ack);
+    RFB_EVENT_STATUS (*auto_ack_set)(uint8_t auto_ack);
 
     /**
     * @brief Set frame pending bit
     *
     * @param frame pending bit flag [0:false, 1:true]
-    * @return None
+    * @return command setting result
     * @date 20 Jan. 2021
     * @see
     * @image
     */
-    void (*frame_pending_set)(uint8_t frame_pending);
+    RFB_EVENT_STATUS (*frame_pending_set)(uint8_t frame_pending);
 
     /**
     * @brief Set RX on when IDLW
     *
-    * @param the flag for transfering to RX state automatically when RFB is idle [0:false, 1:true]; Th
-    * @return None
+    * @param the flag for transfering to RX state automatically when RFB is idle [0:false, 1:true];
+    * @return command setting result
     * @date 20 Jan. 2021
     * @see
     * @image
     */
-    void (*auto_state_set)(bool rx_on_when_idle);
-} rfb_wisun_ctrl_t;
+    RFB_EVENT_STATUS (*auto_state_set)(bool rx_on_when_idle);
+} rfb_subg_ctrl_t;
 #endif
 
 #if (defined RFB_BLE_ENABLED && RFB_BLE_ENABLED == 1)
@@ -681,24 +698,24 @@ typedef struct rfb_ble_ctrl_s
     *
     * @param Rfb interrupt event struct [rx_done, tx_done]
     *
-    * @return Rfb wakeup time
+    * @return Command setting result
     * @date 14 Dec. 2020
     * @see
     * @image
     */
-    void (*init)(rfb_interrupt_event_t *_rfb_interrupt_event);
+    RFB_EVENT_STATUS (*init)(rfb_interrupt_event_t *_rfb_interrupt_event);
 
     /**
     * @brief Set RFB modem type.
     *
     * @param Modem [RFB_MODEM_BLE]
     *
-    * @return None
+    * @return Command setting result
     * @date 17 Dec. 2020
     * @see
     * @image
     */
-    void (*modem_set)(rfb_modem_type_t modem);
+    RFB_EVENT_STATUS (*modem_set)(rfb_modem_type_t modem);
 
 
     /**
@@ -706,49 +723,51 @@ typedef struct rfb_ble_ctrl_s
     *
     * @param RF frequency [2400~2480]
     *
-    * @return None
+    * @return Command setting result
     * @date 14 Dec. 2020
     * @see
     * @image
     */
 
-    void (*frequency_set)(uint32_t rf_frequency);
+    RFB_EVENT_STATUS (*frequency_set)(uint32_t rf_frequency);
 
     /**
      * @brief Send data to RFB buffer and RFB will transmit this data automatically
      *
      * @param Data address
      * @param Packet length
-     *         FSK [1~2047]
+     *         FSK [1~2047] / OQPSK [1~127]
      * @param TX control [0](Not apply for 15p4g mode)
      * @param Data sequence number [0] (Not apply for 15.4g mode)
-     * @return None
+     * @return Write Tx queue result
      * @date 20 Jan. 2021
      * @see
      * @image
      */
-    uint32_t (*data_send)(uint8_t *tx_data_address, uint16_t packet_length, uint8_t tx_control, uint8_t dsn);
-    void (*ble_modem_set)(uint8_t data_rate, uint8_t coded_scheme);
-    void (*ble_mac_set)(uint32_t sfd_content, uint8_t whitening_en, uint8_t whitening_init_value, uint32_t crc_init_value);
+    RFB_WRITE_TXQ_STATUS (*data_send)(uint8_t *tx_data_address, uint16_t packet_length, uint8_t tx_control, uint8_t dsn);
+    RFB_EVENT_STATUS (*ble_modem_set)(uint8_t data_rate, uint8_t coded_scheme);
+    RFB_EVENT_STATUS (*ble_mac_set)(uint32_t sfd_content, uint8_t whitening_en, uint8_t whitening_init_value, uint32_t crc_init_value);
 
     /**
      * @brief Set RFB to RX state
      *
      * @param None
-     * @return None
+     * @return command setting result
      * @date 14 Dec. 2020
      * @see
      * @image
      */
-    void (*rx_start)(void);
+    RFB_EVENT_STATUS (*rx_start)(void);
 
 } rfb_ble_ctrl_t;
 #endif
 /**************************************************************************************************
  *    TYPEDEFS
  *************************************************************************************************/
-#if (defined RFB_WISUN_ENABLED && RFB_WISUN_ENABLED == 1)
-#define MAX_RF_LEN 2063 //2047+16
+#if (defined RFB_SUBG_ENABLED && RFB_SUBG_ENABLED == 1)
+#define FSK_MAX_RF_LEN 2063 //2047+16
+#define OQPSK_MAX_RF_LEN 142 //127+15
+#define MAX_RF_LEN FSK_MAX_RF_LEN
 #elif (defined RFB_BLE_ENABLED && RFB_BLE_ENABLED == 1)
 #define MAX_RF_LEN 268 //255+13
 #elif (defined RFB_ZIGBEE_ENABLED && RFB_ZIGBEE_ENABLED == 1)
@@ -762,8 +781,8 @@ typedef struct rfb_ble_ctrl_s
 rfb_zb_ctrl_t *rfb_zb_init(void);
 #endif
 #endif
-#if (defined RFB_WISUN_ENABLED && RFB_WISUN_ENABLED == 1)
-rfb_wisun_ctrl_t *rfb_wisun_init(void);
+#if (defined RFB_SUBG_ENABLED && RFB_SUBG_ENABLED == 1)
+rfb_subg_ctrl_t *rfb_subg_init(void);
 #endif
 #if (defined RFB_BLE_ENABLED && RFB_BLE_ENABLED == 1)
 rfb_ble_ctrl_t *rfb_ble_init(void);

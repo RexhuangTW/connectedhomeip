@@ -19,8 +19,8 @@
 #if ((defined RFB_ZIGBEE_ENABLED && RFB_ZIGBEE_ENABLED == 1) || (defined RFB_15p4_MAC_ENABLED && RFB_15p4_MAC_ENABLED == 1))
 #include "rfb_comm_15p4Mac.h"
 #endif
-#if (defined RFB_WISUN_ENABLED && RFB_WISUN_ENABLED == 1)
-#include "rfb_comm_wisun.h"
+#if (defined RFB_SUBG_ENABLED && RFB_SUBG_ENABLED == 1)
+#include "rfb_comm_subg.h"
 #endif
 #if (defined RFB_BLE_ENABLED && RFB_BLE_ENABLED == 1)
 #include "rfb_comm_ble.h"

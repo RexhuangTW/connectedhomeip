@@ -36,6 +36,7 @@
  *    GLOBAL VARIABLES
  *************************************************************************************************/
 rfb_t g_rfb;
+bool rfb_comm_init_done = 0;
 
 /**************************************************************************************************
  *    LOCAL FUNCTIONS
@@ -72,13 +73,13 @@ void rfb_debug_port_init(void)
 /**************************************************************************************************
  *    GLOBAL FUNCTIONS
  *************************************************************************************************/
-void rfb_port_modem_set(rfb_modem_type_t modem)
+RFB_EVENT_STATUS rfb_port_modem_set(rfb_modem_type_t modem)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
 
     if (g_rfb.modem_type == modem)
     {
-        return;
+        return event_status;
     }
     g_rfb.modem_type = modem;
 
@@ -94,12 +95,19 @@ void rfb_port_modem_set(rfb_modem_type_t modem)
         break;
 #endif
 
-#if (defined RFB_WISUN_ENABLED && RFB_WISUN_ENABLED == 1)
+#if (defined RFB_SUBG_ENABLED && RFB_SUBG_ENABLED == 1)
     case RFB_MODEM_FSK:
         event_status = rfb_comm_fsk_initiate(BAND_SUBG);
         if (event_status != RFB_EVENT_SUCCESS)
         {
-            //printf(("[W] rfb_comm_fsk_initiate fail, status:%d\n", event_status);
+            //printf("[W] rfb_comm_fsk_initiate fail, status:%d\n", event_status);
+        }
+        break;
+    case RFB_MODEM_OQPSK:
+        event_status = rfb_comm_oqpsk_initiate();
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_oqpsk_initiate fail, status:%d\n", event_status);
         }
         break;
 #endif
@@ -113,70 +121,98 @@ void rfb_port_modem_set(rfb_modem_type_t modem)
         }
         break;
 #endif
+
+    default:
+        break;
     }
 
-
+    return event_status;
 }
 
 #if (defined RFB_ZIGBEE_ENABLED && RFB_ZIGBEE_ENABLED == 1)
-void rfb_port_zb_init(rfb_interrupt_event_t *_rfb_interrupt_event)
+RFB_EVENT_STATUS rfb_port_zb_init(rfb_interrupt_event_t *_rfb_interrupt_event)
 {
+    RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
+
     rfb_comm_init(_rfb_interrupt_event);
 
     /*Set the initial modem type*/
-    rfb_port_modem_set(RFB_MODEM_ZIGBEE);
+    event_status = rfb_port_modem_set(RFB_MODEM_ZIGBEE);
 
 #if (RFB_DEBUG_PORT_EN)
     rfb_debug_port_init();
 #endif
+    return event_status;
 }
 #endif
 
 #if (defined RFB_MULTI_ENABLED && RFB_MULTI_ENABLED == 1)
-void rfb_port_multi_init(rfb_interrupt_event_t *_rfb_interrupt_event)
+RFB_EVENT_STATUS rfb_port_multi_init(rfb_interrupt_event_t *_rfb_interrupt_event)
 {
+    RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     rfb_comm_multi_init(_rfb_interrupt_event);
 
     /*Set the initial modem type*/
-    rfb_port_modem_set(RFB_MODEM_ZIGBEE);
+    event_status = rfb_port_modem_set(RFB_MODEM_ZIGBEE);
 
 #if (RFB_DEBUG_PORT_EN)
     rfb_debug_port_init();
 #endif
+    return event_status;
 }
 #endif
 
-#if (defined RFB_WISUN_ENABLED && RFB_WISUN_ENABLED == 1)
-void rfb_port_wisun_init(rfb_interrupt_event_t *_rfb_interrupt_event)
+#if (defined RFB_SUBG_ENABLED && RFB_SUBG_ENABLED == 1)
+RFB_EVENT_STATUS rfb_port_subg_init(rfb_interrupt_event_t *_rfb_interrupt_event, rfb_keying_type_t keying_mode)
 {
-    rfb_comm_init(_rfb_interrupt_event);
+    RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
+
+    if (!rfb_comm_init_done)
+    {
+        rfb_comm_init(_rfb_interrupt_event);
+        rfb_comm_init_done = 1;
+    }
 
     /*Set the initial modem type*/
-    rfb_port_modem_set(RFB_MODEM_FSK);
-    g_rfb.modem_type = RFB_MODEM_FSK;
+    if (keying_mode == RFB_KEYING_FSK)
+    {
+        event_status = rfb_port_modem_set(RFB_MODEM_FSK);
+        g_rfb.modem_type = RFB_MODEM_FSK;
+    }
+    else if (keying_mode == RFB_KEYING_OQPSK)
+    {
+        event_status = rfb_port_modem_set(RFB_MODEM_OQPSK);
+        g_rfb.modem_type = RFB_MODEM_OQPSK;
+    }
 
 #if (RFB_DEBUG_PORT_EN)
     rfb_debug_port_init();
 #endif
+
+    return event_status;
 }
 #endif
 
 #if (defined RFB_BLE_ENABLED && RFB_BLE_ENABLED == 1)
-void rfb_port_ble_init(rfb_interrupt_event_t *_rfb_interrupt_event)
+RFB_EVENT_STATUS rfb_port_ble_init(rfb_interrupt_event_t *_rfb_interrupt_event)
 {
+    RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
+
     rfb_comm_init(_rfb_interrupt_event);
 
     /*Set the initial modem type*/
-    rfb_port_modem_set(RFB_MODEM_BLE);
+    event_status = rfb_port_modem_set(RFB_MODEM_BLE);
     g_rfb.modem_type = RFB_MODEM_BLE;
 
 #if (RFB_DEBUG_PORT_EN)
     rfb_debug_port_init();
 #endif
+
+    return event_status;
 }
 #endif
 
-void rfb_port_frequency_set(uint32_t rf_frequency)
+RFB_EVENT_STATUS rfb_port_frequency_set(uint32_t rf_frequency)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_frequency_set(rf_frequency);
@@ -184,6 +220,8 @@ void rfb_port_frequency_set(uint32_t rf_frequency)
     {
         //printf(("[W] rfb_comm_frequency_set fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
 #if (defined RFB_ZIGBEE_ENABLED && RFB_ZIGBEE_ENABLED == 1)
@@ -220,8 +258,8 @@ bool rfb_port_zb_is_channel_free(uint32_t rf_frequency, uint8_t rssi_threshold)
 }
 #endif
 
-#if (defined RFB_WISUN_ENABLED && RFB_WISUN_ENABLED == 1)
-bool rfb_port_wisun_is_channel_free(uint32_t rf_frequency, uint8_t rssi_threshold)
+#if (defined RFB_SUBG_ENABLED && RFB_SUBG_ENABLED == 1)
+bool rfb_port_subg_is_channel_free(uint32_t rf_frequency, uint8_t rssi_threshold)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     uint8_t rssi = 0;
@@ -272,19 +310,19 @@ bool rfb_port_wisun_is_channel_free(uint32_t rf_frequency, uint8_t rssi_threshol
 }
 #endif
 
-uint32_t rfb_port_data_send(uint8_t *tx_data_address, uint16_t packet_length, uint8_t InitialCwAckRequest, uint8_t Dsn)
+RFB_WRITE_TXQ_STATUS rfb_port_data_send(uint8_t *tx_data_address, uint16_t packet_length, uint8_t InitialCwAckRequest, uint8_t Dsn)
 {
     RFB_WRITE_TXQ_STATUS rfb_write_tx_queue_status;
     rfb_write_tx_queue_status = rfb_comm_tx_data_send(packet_length, tx_data_address, InitialCwAckRequest, Dsn);
     if (rfb_write_tx_queue_status != RFB_WRITE_TXQ_SUCCESS)
     {
         //printf(("[W] Send TX fail\n");
-        return 1;
     }
-    return 0;
+
+    return rfb_write_tx_queue_status;
 }
 
-void rfb_port_tx_continuous_wave_set(uint32_t rf_frequency, tx_power_level_t tx_power)
+RFB_EVENT_STATUS rfb_port_tx_continuous_wave_set(uint32_t rf_frequency, tx_power_level_t tx_power)
 {
     static uint8_t dummy_tx_data[10];
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
@@ -294,6 +332,7 @@ void rfb_port_tx_continuous_wave_set(uint32_t rf_frequency, tx_power_level_t tx_
     if (event_status != RFB_EVENT_SUCCESS)
     {
         //printf(("[W] rfb_comm_rf_idle_set fail, status:%d\n", event_status);
+        return event_status;
     }
 
     /*
@@ -305,19 +344,23 @@ void rfb_port_tx_continuous_wave_set(uint32_t rf_frequency, tx_power_level_t tx_
     if (event_status != RFB_EVENT_SUCCESS)
     {
         //printf(("[W] rfb_comm_frequency_set fail, status:%d\n", event_status);
+        return event_status;
     }
 
     event_status = rfb_comm_single_tone_mode_set(2);
     if (event_status != RFB_EVENT_SUCCESS)
     {
         //printf(("[W] rfb_comm_single_tone_mode_set fail, status:%d\n", event_status);
+        return event_status;
     }
 
     rfb_write_tx_queue_status = rfb_comm_tx_data_send(10, &dummy_tx_data[0], 0, 0);
     if (rfb_write_tx_queue_status != RFB_WRITE_TXQ_SUCCESS)
     {
         //printf(("[W] rfb_comm_tx_data_send fail, status:%d\n", rfb_write_tx_queue_status);
+        return event_status;
     }
+    return event_status;
 }
 
 uint8_t rfb_port_rssi_read(rfb_modem_type_t modem)
@@ -336,7 +379,7 @@ uint8_t rfb_port_rssi_read(rfb_modem_type_t modem)
 
 //#if (defined RFB_ZIGBEE_ENABLED && RFB_ZIGBEE_ENABLED == 1)
 #if ((defined RFB_ZIGBEE_ENABLED && RFB_ZIGBEE_ENABLED == 1) || (defined RFB_15p4_MAC_ENABLED && RFB_15p4_MAC_ENABLED == 1))
-void rfb_port_15p4_address_filter_set(uint8_t mac_promiscuous_mode, uint16_t short_source_address, uint32_t long_source_address_0, uint32_t long_source_address_1, uint16_t pan_id, uint8_t isCoordinator)
+RFB_EVENT_STATUS rfb_port_15p4_address_filter_set(uint8_t mac_promiscuous_mode, uint16_t short_source_address, uint32_t long_source_address_0, uint32_t long_source_address_1, uint16_t pan_id, uint8_t isCoordinator)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_15p4_address_filter_set(mac_promiscuous_mode, short_source_address, long_source_address_0, long_source_address_1, pan_id, isCoordinator);
@@ -344,10 +387,12 @@ void rfb_port_15p4_address_filter_set(uint8_t mac_promiscuous_mode, uint16_t sho
     {
         //printf(("[W] rfb_comm_15p4_address_filter_set fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
-void rfb_port_15p4_mac_pib_set(uint32_t a_unit_backoff_period, uint32_t mac_ack_wait_duration, uint8_t mac_max_BE, uint8_t mac_max_CSMA_backoffs,
-                               uint32_t mac_max_frame_total_wait_time, uint8_t mac_max_frame_retries, uint8_t mac_min_BE)
+RFB_EVENT_STATUS rfb_port_15p4_mac_pib_set(uint32_t a_unit_backoff_period, uint32_t mac_ack_wait_duration, uint8_t mac_max_BE, uint8_t mac_max_CSMA_backoffs,
+        uint32_t mac_max_frame_total_wait_time, uint8_t mac_max_frame_retries, uint8_t mac_min_BE)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_15p4_mac_pib_set(a_unit_backoff_period, mac_ack_wait_duration, mac_max_BE, mac_max_CSMA_backoffs, mac_max_frame_total_wait_time,
@@ -356,9 +401,11 @@ void rfb_port_15p4_mac_pib_set(uint32_t a_unit_backoff_period, uint32_t mac_ack_
     {
         //printf(("[W] rfb_comm_15p4_mac_pib_set fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
-void rfb_port_15p4_phy_pib_set(uint16_t a_turnaround_time, uint8_t phy_cca_mode, uint8_t phy_cca_threshold, uint16_t phy_cca_duration)
+RFB_EVENT_STATUS rfb_port_15p4_phy_pib_set(uint16_t a_turnaround_time, uint8_t phy_cca_mode, uint8_t phy_cca_threshold, uint16_t phy_cca_duration)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_15p4_phy_pib_set(a_turnaround_time, phy_cca_mode, phy_cca_threshold, phy_cca_duration);
@@ -366,9 +413,11 @@ void rfb_port_15p4_phy_pib_set(uint16_t a_turnaround_time, uint8_t phy_cca_mode,
     {
         //printf(("[W] rfb_comm_15p4_phy_pib_set fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
-void rfb_port_15p4_auto_ack_set(uint8_t auto_ack_enable)
+RFB_EVENT_STATUS rfb_port_15p4_auto_ack_set(uint8_t auto_ack_enable)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_15p4_auto_ack_set(auto_ack_enable);
@@ -376,9 +425,11 @@ void rfb_port_15p4_auto_ack_set(uint8_t auto_ack_enable)
     {
         //printf(("[W] rfb_comm_15p4_auto_ack_set fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
-void rfb_port_15p4_pending_bit_set(uint8_t pending_bit_enable)
+RFB_EVENT_STATUS rfb_port_15p4_pending_bit_set(uint8_t pending_bit_enable)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_15p4_pending_bit_set(pending_bit_enable);
@@ -386,10 +437,12 @@ void rfb_port_15p4_pending_bit_set(uint8_t pending_bit_enable)
     {
         //printf(("[W] rfb_comm_15p4_pending_bit_set fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 #endif
 
-void rfb_port_auto_state_set(bool rxOnWhenIdle)
+RFB_EVENT_STATUS rfb_port_auto_state_set(bool rxOnWhenIdle)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_auto_state_set(rxOnWhenIdle);
@@ -397,6 +450,8 @@ void rfb_port_auto_state_set(bool rxOnWhenIdle)
     {
         //printf(("[W] rfb_port_auto_state_set fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
 uint32_t rfb_port_version_get(void)
@@ -411,10 +466,10 @@ uint32_t rfb_port_version_get(void)
     return fwVer;
 }
 
-#if (defined RFB_WISUN_ENABLED && RFB_WISUN_ENABLED == 1)
-void rfb_port_wisun_rx_config_set(uint8_t data_rate, uint16_t preamble_len, fsk_mod_t mod_idx, fsk_crc_type_t crc_type,
-                                  whiten_enable_t whiten_enable, uint32_t rx_timeout, bool rx_continuous,
-                                  uint8_t filter_type)
+#if (defined RFB_SUBG_ENABLED && RFB_SUBG_ENABLED == 1)
+RFB_EVENT_STATUS rfb_port_subg_rx_config_set(uint8_t data_rate, uint16_t preamble_len, fsk_mod_t mod_idx, crc_type_t crc_type,
+        whiten_enable_t whiten_enable, uint32_t rx_timeout, bool rx_continuous,
+        uint8_t filter_type)
 
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
@@ -425,84 +480,170 @@ void rfb_port_wisun_rx_config_set(uint8_t data_rate, uint16_t preamble_len, fsk_
         g_rfb.rx_timeout = rx_timeout;
     }
 
-    /*Set Gfsk data rate and modulation index*/
-    event_status = rfb_comm_fsk_modem_set(data_rate, mod_idx);
-    if (event_status != RFB_EVENT_SUCCESS)
+    if (g_rfb.modem_type == RFB_MODEM_FSK)
     {
-        //printf(("[W] rfb_comm_fsk_modem_set fail, status:%d\n", event_status);
+        /*Set Gfsk data rate and modulation index*/
+        event_status = rfb_comm_fsk_modem_set(data_rate, mod_idx);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_fsk_modem_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+
+        /*Set fsk crc type and whitening*/
+        event_status = rfb_comm_fsk_mac_set(crc_type, whiten_enable);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_fsk_mac_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+
+        /* For subg, the preamble length is 8 bytes and preamble type is 10101010*/
+        event_status = rfb_comm_fsk_preamble_set(preamble_len);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_fsk_preamble_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+
+        /* For subg, the sfd length is 2 bytes and sfd content is 0x00007209*/
+        event_status = rfb_comm_fsk_sfd_set(0x00007209);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_fsk_sfd_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+
+        event_status = rfb_comm_fsk_type_set(filter_type);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_fsk_type_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+    }
+    else if (g_rfb.modem_type == RFB_MODEM_OQPSK)
+    {
+        /*Set Oqpsk data rate and modulation index*/
+        event_status = rfb_comm_oqpsk_modem_set(data_rate);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_oqpsk_modem_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+
+        /*Set oqpsk crc type and whitening*/
+        event_status = rfb_comm_oqpsk_mac_set(crc_type, whiten_enable);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_oqpsk_mac_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+
+        /* For subg, the preamble length is 8 bytes and preamble type is 10101010*/
+        /*
+        event_status = rfb_comm_oqpsk_preamble_set(preamble_len);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_oqpsk_preamble_set fail, status:%d\n", event_status);
+        }
+        */
     }
 
-    /*Set fsk crc type and whitening*/
-    event_status = rfb_comm_fsk_mac_set(crc_type, whiten_enable);
-    if (event_status != RFB_EVENT_SUCCESS)
-    {
-        //printf(("[W] rfb_comm_fsk_mac_set fail, status:%d\n", event_status);
-    }
-
-    /* For Wisun, the preamble length is 8 bytes and preamble type is 10101010*/
-    event_status = rfb_comm_fsk_preamble_set(preamble_len);
-    if (event_status != RFB_EVENT_SUCCESS)
-    {
-        //printf(("[W] rfb_comm_fsk_preamble_set fail, status:%d\n", event_status);
-    }
-
-    /* For Wisun, the sfd length is 2 bytes and sfd content is 0x00007209*/
-    event_status = rfb_comm_fsk_sfd_set(0x00007209);
-    if (event_status != RFB_EVENT_SUCCESS)
-    {
-        //printf(("[W] rfb_comm_fsk_sfd_set fail, status:%d\n", event_status);
-    }
-
-    event_status = rfb_comm_fsk_type_set(filter_type);
-    if (event_status != RFB_EVENT_SUCCESS)
-    {
-        //printf(("[W] rfb_comm_fsk_type_set fail, status:%d\n", event_status);
-    }
-
-
+    return event_status;
 }
 
-void rfb_port_wisun_tx_config_set(tx_power_level_t tx_power, uint8_t data_rate, uint16_t preamble_len, fsk_mod_t mod_idx,
-                                  fsk_crc_type_t crc_type, whiten_enable_t whiten_enable, uint8_t filter_type)
+RFB_EVENT_STATUS rfb_port_subg_tx_config_set(tx_power_level_t tx_power, uint8_t data_rate, uint16_t preamble_len, fsk_mod_t mod_idx,
+        crc_type_t crc_type, whiten_enable_t whiten_enable, uint8_t filter_type)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
 
-    /*Set Gfsk data rate and modulation index*/
-    event_status = rfb_comm_fsk_modem_set(data_rate, mod_idx);
-    if (event_status != RFB_EVENT_SUCCESS)
+    if (g_rfb.modem_type == RFB_MODEM_FSK)
     {
-        //printf(("[W] rfb_comm_fsk_modem_set fail, status:%d\n", event_status);
+        /*Set Gfsk data rate and modulation index*/
+        event_status = rfb_comm_fsk_modem_set(data_rate, mod_idx);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_fsk_modem_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+
+        /*Set fsk crc type and whitening*/
+        event_status = rfb_comm_fsk_mac_set(crc_type, whiten_enable);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_fsk_mac_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+
+        /* For subg, the preamble length is 8 bytes and preamble type is 10101010*/
+        event_status = rfb_comm_fsk_preamble_set(preamble_len);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_fsk_preamble_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+
+        /* For subg, the sfd length is 2 bytes and sfd content is 0x00007209*/
+        event_status = rfb_comm_fsk_sfd_set(0x00007209);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_fsk_sfd_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+
+        event_status = rfb_comm_fsk_type_set(filter_type);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_fsk_type_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+    }
+    else if (g_rfb.modem_type == RFB_MODEM_OQPSK)
+    {
+        /*Set Oqpsk data rate and modulation index*/
+        event_status = rfb_comm_oqpsk_modem_set(data_rate);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_oqpsk_modem_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+
+        /*Set oqpsk crc type and whitening*/
+        event_status = rfb_comm_oqpsk_mac_set(crc_type, whiten_enable);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            //printf("[W] rfb_comm_oqpsk_mac_set fail, status:%d\n", event_status);
+
+            return event_status;
+        }
+
+        /* For subg, the preamble length is 8 bytes and preamble type is 10101010*/
+        /*
+        event_status = rfb_comm_oqpsk_preamble_set(preamble_len);
+        if (event_status != RFB_EVENT_SUCCESS)
+        {
+            printf("[W] rfb_comm_oqpsk_preamble_set fail, status:%d\n", event_status);
+        }
+        */
     }
 
-    /*Set fsk crc type and whitening*/
-    event_status = rfb_comm_fsk_mac_set(crc_type, whiten_enable);
-    if (event_status != RFB_EVENT_SUCCESS)
-    {
-        //printf(("[W] rfb_comm_fsk_mac_set fail, status:%d\n", event_status);
-    }
-
-    /* For Wisun, the preamble length is 8 bytes and preamble type is 10101010*/
-    event_status = rfb_comm_fsk_preamble_set(preamble_len);
-    if (event_status != RFB_EVENT_SUCCESS)
-    {
-        //printf(("[W] rfb_comm_fsk_preamble_set fail, status:%d\n", event_status);
-    }
-
-    /* For Wisun, the sfd length is 2 bytes and sfd content is 0x00007209*/
-    event_status = rfb_comm_fsk_sfd_set(0x00007209);
-    if (event_status != RFB_EVENT_SUCCESS)
-    {
-        //printf(("[W] rfb_comm_fsk_sfd_set fail, status:%d\n", event_status);
-    }
-
-    event_status = rfb_comm_fsk_type_set(filter_type);
-    if (event_status != RFB_EVENT_SUCCESS)
-    {
-        //printf(("[W] rfb_comm_fsk_type_set fail, status:%d\n", event_status);
-    }
+    return event_status;
 }
 
-void rfb_port_sleep_set(void)
+RFB_EVENT_STATUS rfb_port_sleep_set(void)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_rf_sleep_set(true);
@@ -510,9 +651,11 @@ void rfb_port_sleep_set(void)
     {
         //printf(("[W] rfb_comm_rf_sleep_set fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
-void rfb_port_idle_set(void)
+RFB_EVENT_STATUS rfb_port_idle_set(void)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
 
@@ -520,16 +663,22 @@ void rfb_port_idle_set(void)
     if (event_status != RFB_EVENT_SUCCESS)
     {
         //printf(("[W] rfb_comm_rf_sleep_set fail, status:%d\n", event_status);
+
+        return event_status;
     }
 
     event_status = rfb_comm_rf_idle_set();
     if (event_status != RFB_EVENT_SUCCESS)
     {
         //printf(("[W] rfb_comm_rf_idle_set fail, status:%d\n", event_status);
+
+        return event_status;
     }
+
+    return event_status;
 }
 
-void rfb_port_rx_start(void)
+RFB_EVENT_STATUS rfb_port_rx_start(void)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
 
@@ -537,19 +686,25 @@ void rfb_port_rx_start(void)
     if (event_status != RFB_EVENT_SUCCESS)
     {
         //printf(("[W] rfb_comm_rf_sleep_set fail, status:%d\n", event_status);
+
+        return event_status;
     }
 
     event_status = rfb_comm_rx_enable_set(g_rfb.rx_continuous, g_rfb.rx_timeout);
     if (event_status != RFB_EVENT_SUCCESS)
     {
         //printf(("[W] rfb_comm_rx_enable_set fail, status:%d\n", event_status);
+
+        return event_status;
     }
+
+    return event_status;
 }
 #endif
 
 #if (defined RFB_BLE_ENABLED && RFB_BLE_ENABLED == 1)
 
-void rfb_port_ble_modem_set(uint8_t data_rate, uint8_t coded_scheme)
+RFB_EVENT_STATUS rfb_port_ble_modem_set(uint8_t data_rate, uint8_t coded_scheme)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_ble_modem_set(data_rate, coded_scheme);
@@ -557,9 +712,11 @@ void rfb_port_ble_modem_set(uint8_t data_rate, uint8_t coded_scheme)
     {
         //printf(("[W] rfb_comm_ble_modem_set fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
-void rfb_port_ble_mac_set(uint32_t sfd_content, uint8_t whitening_en, uint8_t whitening_init_value, uint32_t crc_init_value)
+RFB_EVENT_STATUS rfb_port_ble_mac_set(uint32_t sfd_content, uint8_t whitening_en, uint8_t whitening_init_value, uint32_t crc_init_value)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_ble_mac_set(sfd_content, whitening_en, whitening_init_value, crc_init_value);
@@ -567,9 +724,11 @@ void rfb_port_ble_mac_set(uint32_t sfd_content, uint8_t whitening_en, uint8_t wh
     {
         //printf(("[W] rfb_comm_ble_mac_set fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
-void rfb_port_rx_start(void)
+RFB_EVENT_STATUS rfb_port_rx_start(void)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
 
@@ -577,17 +736,23 @@ void rfb_port_rx_start(void)
     if (event_status != RFB_EVENT_SUCCESS)
     {
         //printf(("[W] rfb_comm_rf_sleep_set fail, status:%d\n", event_status);
+
+        return event_status;
     }
 
     event_status = rfb_comm_rx_enable_set(true, 0xFFFFFFFF);
     if (event_status != RFB_EVENT_SUCCESS)
     {
         //printf(("[W] rfb_comm_rx_enable_set fail, status:%d\n", event_status);
+
+        return event_status;
     }
+
+    return event_status;
 }
 #endif
 
-void rfb_port_tx_power_set(uint8_t band_type, uint8_t power_index)
+RFB_EVENT_STATUS rfb_port_tx_power_set(uint8_t band_type, uint8_t power_index)
 {
     /* Band type 0: 2.4GHz, 1: Sub-1GHz band 0, 2: Sub-1GHz band 1, 3: Sub-1GHz band 2 */
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
@@ -596,9 +761,11 @@ void rfb_port_tx_power_set(uint8_t band_type, uint8_t power_index)
     {
         //printf(("[W] rfb_port_tx_power_set fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
-void rfb_port_15p4_src_addr_match_ctrl(uint8_t ctrl_type)
+RFB_EVENT_STATUS rfb_port_15p4_src_addr_match_ctrl(uint8_t ctrl_type)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_15p4_src_match_ctrl(ctrl_type);
@@ -606,9 +773,11 @@ void rfb_port_15p4_src_addr_match_ctrl(uint8_t ctrl_type)
     {
         //printf(("[W] rfb_port_15p4_src_addr_match_ctrl fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
-void rfb_port_15p4_short_addr_ctrl(uint8_t ctrl_type, uint8_t *short_addr)
+RFB_EVENT_STATUS rfb_port_15p4_short_addr_ctrl(uint8_t ctrl_type, uint8_t *short_addr)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_15p4_src_match_short_entry(ctrl_type, short_addr);
@@ -616,9 +785,11 @@ void rfb_port_15p4_short_addr_ctrl(uint8_t ctrl_type, uint8_t *short_addr)
     {
         //printf(("[W] rfb_port_15p4_short_addr_ctrl fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
-void rfb_port_15p4_extend_addr_ctrl(uint8_t ctrl_type, uint8_t *extend_addr)
+RFB_EVENT_STATUS rfb_port_15p4_extend_addr_ctrl(uint8_t ctrl_type, uint8_t *extend_addr)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_15p4_src_match_extended_entry(ctrl_type, extend_addr);
@@ -626,9 +797,11 @@ void rfb_port_15p4_extend_addr_ctrl(uint8_t ctrl_type, uint8_t *extend_addr)
     {
         //printf(("[W] rfb_port_15p4_short_addr_ctrl fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
-void rfb_port_key_set(uint8_t *key_addr)
+RFB_EVENT_STATUS rfb_port_key_set(uint8_t *key_addr)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_key_set(key_addr);
@@ -636,9 +809,11 @@ void rfb_port_key_set(uint8_t *key_addr)
     {
         //printf(("[W] rfb_port_key_set fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
-void rfb_port_csl_receiver_ctrl(uint8_t csl_receiver_ctrl, uint16_t csl_period)
+RFB_EVENT_STATUS rfb_port_csl_receiver_ctrl(uint8_t csl_receiver_ctrl, uint16_t csl_period)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_15p4_csl_receiver_ctrl(csl_receiver_ctrl, csl_period);
@@ -646,6 +821,8 @@ void rfb_port_csl_receiver_ctrl(uint8_t csl_receiver_ctrl, uint16_t csl_period)
     {
         //printf(("[W] rfb_port_csl_receiver_ctrl fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
 uint8_t rfb_port_csl_accuracy_get(void)
@@ -672,7 +849,7 @@ uint8_t rfb_port_csl_uncertainty_get(void)
     return csl_uncertainty;
 }
 
-void rfb_port_csl_sample_time_update(uint32_t csl_sample_time)
+RFB_EVENT_STATUS rfb_port_csl_sample_time_update(uint32_t csl_sample_time)
 {
     RFB_EVENT_STATUS event_status = RFB_EVENT_SUCCESS;
     event_status = rfb_comm_15p4_csl_sample_time_update(csl_sample_time);
@@ -680,6 +857,8 @@ void rfb_port_csl_sample_time_update(uint32_t csl_sample_time)
     {
         //printf(("[W] rfb_port_csl_sample_time_update fail, status:%d\n", event_status);
     }
+
+    return event_status;
 }
 
 uint32_t rfb_port_rtc_time_read(void)
@@ -695,7 +874,7 @@ uint32_t rfb_port_rtc_time_read(void)
     return rtc_time;
 }
 
-uint8_t rfb_port_ack_packet_read(uint8_t * rx_data_address, uint8_t * rx_time_address)
+uint8_t rfb_port_ack_packet_read(uint8_t *rx_data_address, uint8_t *rx_time_address)
 {
     uint32_t temp_data;
     uint16_t temp_addr;
@@ -704,24 +883,24 @@ uint8_t rfb_port_ack_packet_read(uint8_t * rx_data_address, uint8_t * rx_time_ad
     uint8_t page;
     uint8_t i;
     /* get address of local data q */
-    RfMcu_MemoryGet(0x4038, (uint8_t *) &temp_data, 4);
-    page = (uint8_t) ((temp_data >> 8) & 0xff);
+    RfMcu_MemoryGet(0x4038, (uint8_t *)&temp_data, 4);
+    page = (uint8_t)((temp_data >> 8) & 0xff);
 
     /* Start from 0x4000 + (page*64), the 8th bytes is packet len */
     temp_addr = 0x4000 + (page * 64) + 4;
-    RfMcu_MemoryGet(temp_addr, (uint8_t *) &temp_data, 4);
-    packet_length = (uint8_t) ((temp_data >> 24) & 0xff);
-    ret_len       = packet_length;
+    RfMcu_MemoryGet(temp_addr, (uint8_t *)&temp_data, 4);
+    packet_length = (uint8_t)((temp_data >> 24) & 0xff);
+    ret_len = packet_length;
     temp_addr += 4;
 
     while (packet_length > 0)
     {
-        RfMcu_MemoryGet(temp_addr, (uint8_t *) &temp_data, 4);
+        RfMcu_MemoryGet(temp_addr, (uint8_t *)&temp_data, 4);
         for (i = 0; i < 4; i++)
         {
             if (packet_length > 0)
             {
-                *rx_data_address = (uint8_t) ((temp_data >> (8 * i)) & 0xff);
+                *rx_data_address = (uint8_t)((temp_data >> (8 * i)) & 0xff);
                 rx_data_address += sizeof(uint8_t);
                 packet_length--;
             }
@@ -732,7 +911,7 @@ uint8_t rfb_port_ack_packet_read(uint8_t * rx_data_address, uint8_t * rx_time_ad
     /* 2nd page of local data q, the 6th rtc_time q is for ack */
     page += 1;
     temp_addr = 0x4000 + (page * 64) + (5 * 4);
-    RfMcu_MemoryGet(temp_addr, (uint8_t *) rx_time_address, 4);
+    RfMcu_MemoryGet(temp_addr, (uint8_t *)rx_time_address, 4);
 
     return ret_len;
 }
@@ -745,12 +924,12 @@ uint32_t rfb_port_rx_rtc_time_get(uint8_t rx_cnt)
     uint16_t q_addr;
 
     /* get address of 2nd page in local data q */
-    RfMcu_MemoryGet(0x04038, (uint8_t *) &temp_data, 4);
-    page = (uint8_t) ((temp_data >> 8) & 0xff) + 1;
+    RfMcu_MemoryGet(0x04038, (uint8_t *)&temp_data, 4);
+    page = (uint8_t)((temp_data >> 8) & 0xff) + 1;
 
     /* Start from 0x4000 + (page*64), valid rx_cnt value: 0~4 */
     q_addr = 0x4000 + (page * 64) + (rx_cnt * 4);
-    RfMcu_MemoryGet(q_addr, (uint8_t *) &rtc_time, 4);
+    RfMcu_MemoryGet(q_addr, (uint8_t *)&rtc_time, 4);
 
     return rtc_time;
 }

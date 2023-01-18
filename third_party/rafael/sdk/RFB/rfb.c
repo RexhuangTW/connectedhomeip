@@ -102,16 +102,16 @@ rfb_zb_ctrl_t const rfb_multi_ctrl =
 };
 #endif
 
-#if (defined RFB_WISUN_ENABLED && RFB_WISUN_ENABLED == 1)
+#if (defined RFB_SUBG_ENABLED && RFB_SUBG_ENABLED == 1)
 /* Register Rfb control Apis*/
-rfb_wisun_ctrl_t const rfb_ctrl =
+rfb_subg_ctrl_t const rfb_ctrl =
 {
-    rfb_port_wisun_init,
+    rfb_port_subg_init,
     rfb_port_modem_set,
     rfb_port_frequency_set,
-    rfb_port_wisun_is_channel_free,
-    rfb_port_wisun_rx_config_set,
-    rfb_port_wisun_tx_config_set,
+    rfb_port_subg_is_channel_free,
+    rfb_port_subg_rx_config_set,
+    rfb_port_subg_tx_config_set,
     rfb_port_data_send,
     rfb_port_sleep_set,
     rfb_port_idle_set,
@@ -156,10 +156,10 @@ rfb_zb_ctrl_t *rfb_zb_init(void)
 }
 #endif
 
-#if (defined RFB_WISUN_ENABLED && RFB_WISUN_ENABLED == 1)
-rfb_wisun_ctrl_t *rfb_wisun_init(void)
+#if (defined RFB_SUBG_ENABLED && RFB_SUBG_ENABLED == 1)
+rfb_subg_ctrl_t *rfb_subg_init(void)
 {
-    return (rfb_wisun_ctrl_t *)&rfb_ctrl;
+    return (rfb_subg_ctrl_t *)&rfb_ctrl;
 }
 #endif
 
