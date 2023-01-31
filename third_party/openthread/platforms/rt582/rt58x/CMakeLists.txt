@@ -62,6 +62,7 @@ add_library(openthread-rt58x
     src/Portable/Utility/util_log.c
     src/Portable/Utility/util_printf.c
     src/Portable/Utility/util_string.c
+    src/Portable/Utility/util_queue.c
 )
 
 set_target_properties(

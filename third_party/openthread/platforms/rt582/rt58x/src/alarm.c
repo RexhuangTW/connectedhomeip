@@ -27,33 +27,41 @@
 
 #include "util_log.h"
 
-#define SYST_CSR (*((volatile uint32_t *)0xe000e010))
-#define SYST_RVR (*((volatile uint32_t *)0xe000e014))
-#define SYST_CVR (*((volatile uint32_t *)0xe000e018))
-#define SYST_CALIB (*((volatile uint32_t *)0xe000e01c))
+#define SYST_CSR                        ( * ( ( volatile uint32_t * ) 0xe000e010 ) )
+#define SYST_RVR                        ( * ( ( volatile uint32_t * ) 0xe000e014 ) )
+#define SYST_CVR                        ( * ( ( volatile uint32_t * ) 0xe000e018 ) )
+#define SYST_CALIB                      ( * ( ( volatile uint32_t * ) 0xe000e01c ) )
 
-#define SYST_CSR_ENABLE_BIT (1UL << 0UL)
-#define SYST_CSR_TICKINT_BIT (1UL << 1UL)
-#define SYST_CSR_CLKSOURCE_BIT (1UL << 2UL)
-#define SYST_CSR_COUNTFLAG_BIT (1UL << 16UL)
+#define SYST_CSR_ENABLE_BIT                 ( 1UL << 0UL )
+#define SYST_CSR_TICKINT_BIT                ( 1UL << 1UL )
+#define SYST_CSR_CLKSOURCE_BIT              ( 1UL << 2UL )
+#define SYST_CSR_COUNTFLAG_BIT              ( 1UL << 16UL )
 
-static uint32_t sMsAlarm = 0;
-static bool sIsRunning = false;
-static uint32_t sMsCounter = 0;
 
-static uint32_t sUsCounter = 0;
-static bool sUsIsRunning = false;
-static uint32_t sUsAlarm = 0;
+static uint32_t sMsAlarm    = 0;
+static bool     sIsRunning = false;
+
+static uint32_t sUsCounter   = 0;
+static uint32_t sMiCounter = 0;
+static bool     sUsIsRunning = false;
+static uint32_t sUsAlarm    = 0;
+static uint32_t sSleep_count = 0;
+
+static bool sMsisPending = false;
+static bool sUsisPending = false;
 
 static inline void _timer_isr_handler(uint32_t timer_id)
 {
     otSysEventSignalPending();
+    sUsisPending = true;    
 }
 
 static inline void _timer_milli_handler(uint32_t timer_id)
-{
+{    
     otSysEventSignalPending();
+    sMsisPending = true;    
 }
+
 
 void rt58x_alarm_process(otInstance *aInstance)
 {
@@ -65,49 +73,46 @@ void rt58x_alarm_process(otInstance *aInstance)
 
     if (sIsRunning)
     {
-        sMsCounter = sys_now();
-        remaining = (int32_t)(sMsAlarm - sMsCounter);
-        // sUsCounter = rfb_port_rtc_time_read();
-        // remaining = (int32_t)(sMsAlarm - (sUsCounter / 1000));
-        if (remaining <= 0)
+        sMiCounter = sys_now();
+        remaining = (int32_t)(sMsAlarm - sMiCounter);
+        if(remaining <= 0)
         {
             Timer_Stop(4);
             alarmMilliFired = true;
         }
     }
 
-    if (alarmMilliFired)
+    if(alarmMilliFired || sMsisPending)
     {
         sIsRunning = false;
+        sMsisPending = false;
         otPlatAlarmMilliFired(aInstance);
     }
 #if (OPENTHREAD_CONFIG_PLATFORM_USEC_TIMER_ENABLE == 1)
-    if (sUsIsRunning)
+    if(sUsIsRunning)
     {
-        sUsCounter = rfb_port_rtc_time_read();
+        sUsCounter = otPlatAlarmMicroGetNow();
         remaining = (int32_t)(sUsAlarm - sUsCounter);
 
-        if (remaining <= 0)
+        if(remaining <= 0)
         {
-            sUsIsRunning = false;
-            {
-                otPlatAlarmMicroFired(aInstance);
-            }
-            Timer_Stop(0);
+            Timer_Stop(3);
             alarmMicroFired = true;
         }
     }
 
-    if (alarmMicroFired)
+    if(alarmMicroFired || sUsisPending)
     {
         sUsIsRunning = false;
+        sUsisPending = false;
         otPlatAlarmMicroFired(aInstance);
     }
 #endif
+
 }
 void SysTick_Handler(void)
 {
-    sUsCounter++;
+    //++sMiCounter;
 }
 void rt58x_alarm_init()
 {
@@ -115,11 +120,10 @@ void rt58x_alarm_init()
 
     cfg.int_en = ENABLE;
     cfg.mode = TIMER_PERIODIC_MODE;
-    cfg.prescale = TIMER_PRESCALE_32;
+    cfg.prescale = TIMER_PRESCALE_1;
 
-    Timer_Open(0, cfg, _timer_isr_handler);
-
-    Timer_Int_Priority(0, 6);
+    Timer_Open(3, cfg, _timer_isr_handler);
+    Timer_Int_Priority(3, 6);
 
     cfg.int_en = ENABLE;
     cfg.mode = TIMER_PERIODIC_MODE;
@@ -127,7 +131,16 @@ void rt58x_alarm_init()
 
     Timer_Open(4, cfg, _timer_milli_handler);
     Timer_Int_Priority(4, 6);
+
+    // /* Stop and clear the SysTick. */
+    // SYST_CSR = 0UL;
+    // SYST_CVR = 0UL;
+    // SYST_RVR = 0UL;
+
+    // SYST_RVR = ( SystemCoreClock / 1000 ) - 1UL;
+    // SYST_CSR = ( SYST_CSR_ENABLE_BIT | SYST_CSR_CLKSOURCE_BIT | SYST_CSR_TICKINT_BIT);
 }
+
 
 uint32_t otPlatTimeGetXtalAccuracy(void)
 {
@@ -144,21 +157,22 @@ inline uint32_t otPlatAlarmMicroGetNow(void)
 void otPlatAlarmMicroStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
 {
     OT_UNUSED_VARIABLE(aInstance);
-    int32_t remain = 0;
-    Timer_Stop(0);
-    sUsCounter = rfb_port_rtc_time_read();
+    int32_t remain = 0, start_time;
+    Timer_Stop(3);
+    sUsCounter = otPlatAlarmMicroGetNow();//rfb_port_rtc_time_read();
 
     sUsAlarm = aT0 + aDt;
     remain = (int32_t)(sUsAlarm - sUsCounter);
     sUsIsRunning = true;
-
-    if (remain <= 0)
+    
+    if(remain <= 0)
     {
         otSysEventSignalPending();
     }
     else
     {
-        Timer_Start(0, (remain - 1));
+        start_time = remain%25 > 13 ? (remain/25)+1 : (remain/25);
+        Timer_Start(3, start_time);
     }
 }
 
@@ -166,7 +180,7 @@ void otPlatAlarmMicroStop(otInstance *aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
     sUsIsRunning = false;
-    Timer_Stop(0);
+    Timer_Stop(3);
 }
 
 #endif
@@ -175,18 +189,21 @@ void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
     OT_UNUSED_VARIABLE(aInstance);
     int32_t remain = 0;
     Timer_Stop(4);
-    sMsCounter = sys_now();
+    sMiCounter = sys_now();
     sMsAlarm = aT0 + aDt;
-    remain = (int32_t)(sMsAlarm - sMsCounter);
-    sIsRunning = true;
+    remain = (int32_t)(sMsAlarm - sMiCounter);
+    
 
-    if (remain <= 0)
+    sIsRunning = true;    
+
+    if(remain <= 0)
     {
         otSysEventSignalPending();
     }
     else
-    {
-        Timer_Start(4, (remain * 40) - 1);
+    {        
+        Timer_Start(4, (remain * 40) -1);
+        //sSleep_count = remain;        
     }
 }
 void otPlatAlarmMilliStop(otInstance *aInstance)
@@ -198,6 +215,6 @@ void otPlatAlarmMilliStop(otInstance *aInstance)
 
 inline uint32_t otPlatAlarmMilliGetNow(void)
 {
-    sMsCounter = sys_now();
-    return sMsCounter;
+    sMiCounter = sys_now();
+    return sMiCounter;
 }

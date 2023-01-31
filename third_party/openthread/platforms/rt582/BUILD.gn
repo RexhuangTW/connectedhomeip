@@ -16,12 +16,13 @@ import("//build_overrides/chip.gni")
 import("//build_overrides/openthread.gni")
 import("//build_overrides/rt582_sdk.gni")
 
-import("${rt582_sdk_build_root}/rt582_sdk.gni")
 import("${chip_root}/src/platform/device.gni")
+import("${rt582_sdk_build_root}/rt582_sdk.gni")
 
 openthread_rt582_root = "${chip_root}/third_party/openthread/ot-rt582"
-if(!use_static_sdk_lib) {
-  openthread_platform_root = "${chip_root}/third_party/openthread/platforms/rt582"
+if (!use_static_sdk_lib) {
+  openthread_platform_root =
+      "${chip_root}/third_party/openthread/platforms/rt582"
 }
 
 config("openthread_rt582_config") {
@@ -30,17 +31,16 @@ config("openthread_rt582_config") {
 
 source_set("openthread_core_config_rt582") {
   sources = [
-    "${openthread_rt582_root}/openthread/src/cli/cli_config.h",
     "${chip_root}/examples/platform/rt582/project_include/OpenThreadConfig.h",
+    "${openthread_rt582_root}/openthread/src/cli/cli_config.h",
   ]
   public_deps = [ "${rt582_sdk_build_root}:rt582_sdk" ]
 
   public_configs = [ ":openthread_rt582_config" ]
-  
 }
 
 source_set("libopenthread-rt582") {
-  deps =[
+  deps = [
     ":openthread-rt582-platform",
     ":openthread-rt582-root",
   ]
@@ -53,20 +53,19 @@ static_library("openthread-rt582-platform") {
     "..:libopenthread-platform",
     "..:libopenthread-platform-utils",
   ]
-  include_dirs = [ 
-    "${chip_root}/examples/platform/rt582/project_include/",
-   ]
+  include_dirs = [ "${chip_root}/examples/platform/rt582/project_include/" ]
 
   if (chip_openthread_ftd) {
-    public_configs = [ "${openthread_rt582_root}/openthread:openthread_ftd_config" ]
+    public_configs =
+        [ "${openthread_rt582_root}/openthread:openthread_ftd_config" ]
   } else {
-    public_configs = [ "${openthread_rt582_root}/openthread:openthread_mtd_config" ]
+    public_configs =
+        [ "${openthread_rt582_root}/openthread:openthread_mtd_config" ]
   }
-  
-  if(use_static_sdk_lib) {
-    libs=["${chip_root}/third_party/rafael/rt58x_sdk/libotrt582platform.a"] 
-  }
-  else {
+
+  if (use_static_sdk_lib) {
+    libs = [ "${chip_root}/third_party/rafael/rt58x_sdk/libotrt582platform.a" ]
+  } else {
     output_name = "libotrt582platform"
     output_dir = "${root_out_dir}/lib"
 
@@ -92,23 +91,22 @@ static_library("openthread-rt582-root") {
     "..:libopenthread-platform",
     "..:libopenthread-platform-utils",
   ]
-  include_dirs = [ 
-    "${chip_root}/examples/platform/rt582/project_include/",
-   ]
+  include_dirs = [ "${chip_root}/examples/platform/rt582/project_include/" ]
 
   if (chip_openthread_ftd) {
-    public_configs = [ "${openthread_rt582_root}/openthread:openthread_ftd_config" ]
+    public_configs =
+        [ "${openthread_rt582_root}/openthread:openthread_ftd_config" ]
   } else {
-    public_configs = [ "${openthread_rt582_root}/openthread:openthread_mtd_config" ]
+    public_configs =
+        [ "${openthread_rt582_root}/openthread:openthread_mtd_config" ]
   }
 
-  if(use_static_sdk_lib) {
-    libs=["${chip_root}/third_party/rafael/rt58x_sdk/libotrt582.a"] 
-  }
-  else {
+  if (use_static_sdk_lib) {
+    libs = [ "${chip_root}/third_party/rafael/rt58x_sdk/libotrt582.a" ]
+  } else {
     output_name = "libotrt582"
     output_dir = "${root_out_dir}/lib"
-    
+
     sources = [
       "${openthread_rt582_root}/openthread/examples/apps/cli/cli_uart.cpp",
       "${openthread_rt582_root}/openthread/src/cli/cli.cpp",

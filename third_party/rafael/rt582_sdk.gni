@@ -209,6 +209,7 @@ template("rt582_sdk") {
         "${rt582_sdk_root}/Portable/Utility/util_log.c",
         "${rt582_sdk_root}/Portable/Utility/util_printf.c",
         "${rt582_sdk_root}/Portable/Utility/util_string.c",
+        "${rt582_sdk_root}/Portable/Utility/util_queue.c",
         "${rt582_sdk_root}/Portable/bsp/bsp.c",
         "${rt582_sdk_root}/Portable/bsp/bsp_button.c",
         "${rt582_sdk_root}/Portable/bsp/bsp_led.c",

@@ -37,19 +37,23 @@
 
 #include "mac_frame_gen.h"
 
-#include "task_hci.h"
 #include "util_list.h"
 #include "util_log.h"
-
-#include "sys_arch.h"
+#include "util_queue.h"
 
 #include "mem_mgmt.h"
+#include "sys_arch.h"
+#include "task_hci.h"
 
 //=============================================================================
 //                Private Definitions of const value
 //=============================================================================
 #define CCA_THRESHOLD_UNINIT (127)
-#define CCA_THRESHOLD_DEFAULT (75) //(75) // dBm  - default for 2.4GHz 802.15.4
+#if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
+#define CCA_THRESHOLD_DEFAULT (75) // dBm  - default for 2.4GHz 802.15.4
+#elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
+#define CCA_THRESHOLD_DEFAULT (50)
+#endif
 #define RAFAEL_RECEIVE_SENSITIVITY (100)
 
 #define RX_CONTROL_FIELD_LENGTH (7)
@@ -74,38 +78,45 @@
 #define MAC_PIB_MAC_MAX_CSMACA_BACKOFFS 10
 #define MAC_PIB_MAC_MIN_BE 2
 #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-#define PHY_PIB_TURNAROUND_TIMER (692 / 4)  // 192
-#define PHY_PIB_CCA_DETECTED_TIME (692 / 4) // 128 // 8 symbols
+#define PHY_PIB_TURNAROUND_TIMER (159 * 1)  //(692/4) //192
+#define PHY_PIB_CCA_DETECTED_TIME (106 * 1) //(692/4) //128 // 8 symbols
 #define PHY_PIB_CCA_DETECT_MODE ENERGY_DETECTION
 #define PHY_PIB_CCA_THRESHOLD CCA_THRESHOLD_DEFAULT
-#define MAC_PIB_UNIT_BACKOFF_PERIOD (320 / 4)
-#define MAC_PIB_MAC_ACK_WAIT_DURATION (2000 / 4) // 544 // non-beacon mode; 864 for beacon mode
-#define MAC_PIB_MAC_MAX_BE 3
+#define MAC_PIB_UNIT_BACKOFF_PERIOD (266 * 1)   //(320/4)
+#define MAC_PIB_MAC_ACK_WAIT_DURATION (451 * 1) //(2000/4)//544 // non-beacon mode; 864 for beacon mode
+#define MAC_PIB_MAC_MAX_BE 5
 #define MAC_PIB_MAC_MAX_FRAME_TOTAL_WAIT_TIME 16416
 #define MAC_PIB_MAC_MAX_FRAME_RETRIES 4
-#define MAC_PIB_MAC_MAX_CSMACA_BACKOFFS 3
-#define MAC_PIB_MAC_MIN_BE 1
+#define MAC_PIB_MAC_MAX_CSMACA_BACKOFFS 10
+#define MAC_PIB_MAC_MIN_BE 2
 #endif
 
-#define MAC_RX_BUFFERS 20
+#define MAC_RX_BUFFERS 8
 #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
 #define FREQ (2405)
 #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-#define FREQ (915000)
+#define FREQ (902000)
 #endif
 
+extern uint8_t rfb_port_ack_packet_read(uint8_t * rx_data_address);
 static void radioSendMessage(otInstance * aInstance);
-static void _mac_rx_buffer_free(uint8_t * pbuf);
-static bool _mac_rx_buffer_chk_acl(uint8_t * pbuf);
 static bool hasFramePending(const otRadioFrame * aFrame);
 //=============================================================================
 //                Private ENUM
 //=============================================================================
+#if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
 enum
 {
     kMinChannel = 11,
     kMaxChannel = 26,
 };
+#elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
+enum
+{
+    kMinChannel = 1,
+    kMaxChannel = 10,
+};
+#endif
 
 enum
 {
@@ -129,20 +140,6 @@ typedef struct RadioMessage
     uint8_t mDsn;
 } rf_tx_msg_t;
 
-typedef struct
-{
-    uint8_t data[268];
-    bool free;
-    bool acl;
-} rf_rx_buffer_t;
-
-typedef struct
-{
-    uint16_t msg_tag; /**< message tag. */
-    uint16_t msg_len; /**< message length. */
-    uint8_t * p_msg;  /**< message payload. */
-} rf_fw_rx_ctrl_msg_t;
-
 //=============================================================================
 //                Private Global Variables
 //=============================================================================
@@ -150,7 +147,7 @@ static rfb_interrupt_event_t sRFBInterruptEvt;
 #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
 static rfb_zb_ctrl_t * spRFBCtrl;
 #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-static rfb_wisun_ctrl_t * spRFBCtrl;
+static rfb_subg_ctrl_t * spRFBCtrl;
 #endif
 
 static bool sIsSrcMatchEnabled = false;
@@ -180,7 +177,6 @@ static uint32_t sExtendAddr_1  = 0x05060709;
 static uint16_t sPANID         = 0xFFFF;
 static uint8_t sCoordinator    = 0;
 static uint8_t sCurrentChannel = kMinChannel;
-static uint8_t sCurrentAutoState = false;
 
 static bool sTxWait = false;
 static bool sTxDone = false;
@@ -194,7 +190,7 @@ static otRadioFrame sTransmitFrame;
 static otRadioFrame sAckFrame;
 static struct RadioMessage sAckMessage;
 
-static rf_rx_buffer_t sMacRxBuffer[MAC_RX_BUFFERS];
+static queue_t rf_rx_queue;
 static otRadioFrame sReceiveFrame[MAC_RX_BUFFERS];
 static uint32_t sMacFrameCounter;
 #if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
@@ -211,10 +207,8 @@ static uint32_t sCslSampleTime;
 static uint32_t sCslPeriod;
 #endif
 
-static uint32_t otRFBInit = 0;
-extern sys_queue_t g_rx_common_queue_handle;
+static bool sAuto_State_Set = false;
 
-static otInstance * maInstance;
 //=============================================================================
 //                Functions
 //=============================================================================
@@ -259,10 +253,10 @@ otRadioCaps otPlatRadioGetCaps(otInstance * aInstance)
 
     /* clang-format off */
     otRadioCaps capabilities = (OT_RADIO_CAPS_ACK_TIMEOUT |
-                               OT_RADIO_CAPS_TRANSMIT_RETRIES |
-//#if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
-//                                OT_RADIO_CAPS_TRANSMIT_SEC      |
-//#endif
+                                //OT_RADIO_CAPS_TRANSMIT_RETRIES |
+#if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
+                                OT_RADIO_CAPS_TRANSMIT_SEC      |
+#endif
                                 OT_RADIO_CAPS_CSMA_BACKOFF
                                );
 
@@ -338,10 +332,30 @@ void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64)
 uint64_t otPlatRadioGetNow(otInstance *aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
+#if (OPENTHREAD_CONFIG_PLATFORM_USEC_TIMER_ENABLE == 1)
+    return otPlatAlarmMicroGetNow(); 
+#else 
+    return otPlatAlarmMilliGetNow();
+#endif
+}
 
-    //return  otPlatAlarmMicroGetNow();
-    //return  rfb_port_rtc_time_read();
-    return 0;
+/**
+ * Get current state of the radio.
+ *
+ * This function is not required by OpenThread. It may be used for debugging and/or application-specific purposes.
+ *
+ * @note This function may be not implemented. It does not affect OpenThread.
+ *
+ * @param[in] aInstance  The OpenThread instance structure.
+ *
+ * @return  Current state of the radio.
+ *
+ */
+otRadioState otPlatRadioGetState(otInstance *aInstance)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+
+    return sState;
 }
 
 /**
@@ -408,17 +422,15 @@ exit:
  */
 otError otPlatRadioSetCcaEnergyDetectThreshold(otInstance *aInstance, int8_t aThreshold)
 {
-    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     return OT_ERROR_NOT_IMPLEMENTED;
     sCCAThreshold = aThreshold;
 
-    if(otRFBInit)
     spRFBCtrl->phy_pib_set(sTurnaroundTime,
-                        sCCAMode,
-                        sCCAThreshold,
-                        sCCADuration);
+                           sCCAMode,
+                           sCCAThreshold,
+                           sCCADuration);
 
     return OT_ERROR_NONE;
 }
@@ -432,7 +444,6 @@ otError otPlatRadioSetCcaEnergyDetectThreshold(otInstance *aInstance, int8_t aTh
  */
 void otPlatRadioSetExtendedAddress(otInstance *aInstance, const otExtAddress *aAddress)
 {
-    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     ReverseExtAddress(&sExtAddress, aAddress);
@@ -441,13 +452,13 @@ void otPlatRadioSetExtendedAddress(otInstance *aInstance, const otExtAddress *aA
     sExtendAddr_0 = (aAddress->m8[0] | (aAddress->m8[1] << 8) | (aAddress->m8[2] << 16) | (aAddress->m8[3] << 24));
     sExtendAddr_1 = (aAddress->m8[4] | (aAddress->m8[5] << 8) | (aAddress->m8[6] << 16) | (aAddress->m8[7] << 24));
 
-    if(otRFBInit)
+
     spRFBCtrl->address_filter_set(sPromiscuous,
                                   sShortAddress,
                                   sExtendAddr_0,
                                   sExtendAddr_1,
                                   sPANID,
-                                  sCoordinator);                                
+                                  sCoordinator);
 }
 
 /**
@@ -477,13 +488,12 @@ otError otPlatRadioSetFemLnaGain(otInstance *aInstance, int8_t aGain)
  */
 void otPlatRadioSetPanId(otInstance *aInstance, uint16_t aPanId)
 {
-    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     sPANID = aPanId;
 
     utilsSoftSrcMatchSetPanId(aPanId);
-    if(otRFBInit)
+
     spRFBCtrl->address_filter_set(sPromiscuous,
                                   sShortAddress,
                                   sExtendAddr_0,
@@ -500,11 +510,9 @@ void otPlatRadioSetPanId(otInstance *aInstance, uint16_t aPanId)
  */
 void otPlatRadioSetPromiscuous(otInstance *aInstance, bool aEnable)
 {
-    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     sPromiscuous = aEnable;
-    if(otRFBInit)
     spRFBCtrl->address_filter_set(sPromiscuous,
                                   sShortAddress,
                                   sExtendAddr_0,
@@ -522,11 +530,9 @@ void otPlatRadioSetPromiscuous(otInstance *aInstance, bool aEnable)
  */
 void otPlatRadioSetShortAddress(otInstance *aInstance, uint16_t aAddress)
 {
-    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     sShortAddress = aAddress;
-    if(otRFBInit)
     spRFBCtrl->address_filter_set(sPromiscuous,
                                   sShortAddress,
                                   sExtendAddr_0,
@@ -618,11 +624,9 @@ otError otPlatRadioEnable(otInstance *aInstance)
  */
 void otPlatRadioEnableSrcMatch(otInstance *aInstance, bool aEnable)
 {
-    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
     // set Frame Pending bit for all outgoing ACKs if aEnable is false
     sIsSrcMatchEnabled = aEnable;
-    if(otRFBInit)
     spRFBCtrl->src_addr_match_ctrl(sIsSrcMatchEnabled);
 }
 
@@ -638,24 +642,26 @@ void otPlatRadioEnableSrcMatch(otInstance *aInstance, bool aEnable)
  */
 otError otPlatRadioEnergyScan(otInstance *aInstance, uint8_t aScanChannel, uint16_t aScanDuration)
 {
-    //info("OT %s\n", __func__);
-    //OT_UNUSED_VARIABLE(aInstance);
-    maInstance = aInstance;
+    OT_UNUSED_VARIABLE(aInstance);
+
     return OT_ERROR_NOT_IMPLEMENTED;
 #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
     uint32_t ChannelFrequency = FREQ + 5 * (aScanChannel - 11);
 #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-    uint32_t ChannelFrequency = FREQ + 200 * (aScanChannel - 1);
+    uint32_t ChannelFrequency = FREQ + 2000 * (aScanChannel);
 #endif
     int8_t rssi_value;
-
-    spRFBCtrl->frequency_set(ChannelFrequency);
+    if(aScanChannel != sCurrentChannel)
+    {
+        spRFBCtrl->frequency_set(ChannelFrequency);
+        sCurrentChannel        = aScanChannel;
+    }
 
     rssi_value = spRFBCtrl->rssi_read(RFB_MODEM_ZIGBEE);
-    if(otRFBInit)
+
     otPlatRadioEnergyScanDone(aInstance, -rssi_value);
 
-    sCurrentChannel        = aScanChannel;
+    
 
     return OT_ERROR_NONE;
 }
@@ -668,12 +674,11 @@ otError otPlatRadioEnergyScan(otInstance *aInstance, uint8_t aScanChannel, uint1
  */
 int8_t otPlatRadioGetRssi(otInstance *aInstance)
 {
-    //info("OT %s\n", __func__);
     otError  error;
     int8_t   rssi = OT_RADIO_RSSI_INVALID;
 
     OT_UNUSED_VARIABLE(aInstance);
-    if(otRFBInit)
+
     rssi = spRFBCtrl->rssi_read(RFB_MODEM_ZIGBEE);
 
     return -rssi;
@@ -720,7 +725,6 @@ bool otPlatRadioIsEnabled(otInstance *aInstance)
  */
 otError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
 {
-    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
 
     assert(aInstance != NULL);
@@ -729,24 +733,25 @@ otError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
 #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
     uint32_t ChannelFrequency = FREQ + 5 * (aChannel - 11);
 #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-    uint32_t ChannelFrequency = FREQ + 200 * (aChannel - 1) ;
+    uint32_t ChannelFrequency = FREQ + 2000 * (aChannel) ;
 #endif
 
     if (sState != OT_RADIO_STATE_DISABLED)
     {
         error                  = OT_ERROR_NONE;
         sState                 = OT_RADIO_STATE_RECEIVE;
-        //sReceiveFrame.mChannel = aChannel;
+        
         /* Enable RX and leave SLEEP */
-        if(sCurrentChannel != aChannel)
+        if(aChannel != sCurrentChannel)
         {
-            sCurrentChannel = aChannel;
+            sCurrentChannel        = aChannel;
             spRFBCtrl->frequency_set(ChannelFrequency);
         }
-        if(sCurrentAutoState != true)
+
+        if(sAuto_State_Set != true)
         {
-            sCurrentAutoState = true;
-            spRFBCtrl->auto_state_set(sCurrentAutoState);
+            spRFBCtrl->auto_state_set(true);
+            sAuto_State_Set = true;
         }
     }
 
@@ -768,7 +773,11 @@ otError otPlatRadioSleep(otInstance *aInstance)
     otError error = OT_ERROR_NONE;
 
     /* Disable RX, and enter sleep*/
-    //spRFBCtrl->auto_state_set(false);
+    if(sAuto_State_Set != false)
+    {
+        spRFBCtrl->auto_state_set(false);
+        sAuto_State_Set = false;
+    }
     sState = OT_RADIO_STATE_SLEEP;
 exit:
     return error;
@@ -796,29 +805,28 @@ exit:
  */
 otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
 {
-    //info("OT %s\n", __func__);
     OT_UNUSED_VARIABLE(aInstance);
     OT_UNUSED_VARIABLE(aFrame);
 
     assert(aInstance != NULL);
     assert(aFrame != NULL);
-    
+
     otError error = OT_ERROR_INVALID_STATE;
-    if(otRFBInit==0)
-        return error;
+
 #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
     uint32_t ChannelFrequency = FREQ + 5 * (sCurrentChannel - 11);
 #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-    uint32_t ChannelFrequency = FREQ + 200 * (sCurrentChannel - 1) ;
+    uint32_t ChannelFrequency = FREQ + 2000 * (sCurrentChannel) ;
 #endif
     //if (sState == OT_RADIO_STATE_RECEIVE)
     {
         //while (!platformRadioIsTransmitPending());
         if (platformRadioIsTransmitPending())
         {
-            //gpio_pin_write(20, 0);
+            gpio_pin_write(20, 0);
             error           = OT_ERROR_NONE;
             sState          = OT_RADIO_STATE_TRANSMIT;
+            
             if(sCurrentChannel != aFrame->mChannel)
             {
                 sCurrentChannel = aFrame->mChannel;
@@ -865,15 +873,13 @@ uint8_t otPlatRadioGetCslAccuracy(otInstance *aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
 
-    //return spRFBCtrl->csl_accuracy_get();
-    return 0;
+    return spRFBCtrl->csl_accuracy_get();
 }
 
 uint8_t otPlatRadioGetCslUncertainty(otInstance *aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
-    //return spRFBCtrl->csl_uncertainty_get();
-    return 0;
+    return spRFBCtrl->csl_uncertainty_get();
 }
 #if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
 void otPlatRadioSetMacKey(otInstance             *aInstance,
@@ -894,7 +900,13 @@ void otPlatRadioSetMacKey(otInstance             *aInstance,
     memcpy(&sPrevKey, aPrevKey, sizeof(otMacKeyMaterial));
     memcpy(&sCurrKey, aCurrKey, sizeof(otMacKeyMaterial));
     memcpy(&sNextKey, aNextKey, sizeof(otMacKeyMaterial));
-    //spRFBCtrl->key_set(sCurrKey.mKeyMaterial.mKey.m8);
+    printf("set key : ");
+    for(uint8_t i = 0 ; i < 8 ; i++)
+    {
+        printf("%02x",sCurrKey.mKeyMaterial.mKey.m8[i]);
+    }
+    printf("\n");
+    spRFBCtrl->key_set(sCurrKey.mKeyMaterial.mKey.m8);
 exit:
     return;
 }
@@ -931,7 +943,6 @@ otError otPlatRadioGetCca(otInstance *aInstance, int8_t *aThreshold, uint16_t *t
  */
 otError otPlatRadioSetCca(otInstance *aInstance, int8_t aThreshold, uint16_t turnaroundtime, uint16_t duration)
 {
-    //info("OT %s\n", __func__);
     if (aThreshold <= 0)
     {
         return OT_ERROR_INVALID_ARGS;
@@ -947,7 +958,6 @@ otError otPlatRadioSetCca(otInstance *aInstance, int8_t aThreshold, uint16_t tur
     sCCAThreshold = aThreshold;
     sTurnaroundTime = turnaroundtime;
     sCCADuration = duration;
-
     spRFBCtrl->phy_pib_set(sTurnaroundTime,
                            sCCAMode,
                            sCCAThreshold,
@@ -973,7 +983,6 @@ otError otPlatRadioGetMacConfig(otInstance *aInstance, uint16_t *ack_wait_time, 
  */
 otError otPlatRadioSetMacConfig(otInstance *aInstance, uint16_t ack_wait_time, uint8_t mac_try)
 {
-    //info("OT %s\n", __func__);
     if (ack_wait_time <= 0)
     {
         return OT_ERROR_INVALID_ARGS;
@@ -1025,7 +1034,6 @@ otError otPlatRadioGetPhyConfig(otInstance *aInstance, uint8_t *tx_power, uint8_
  */
 otError otPlatRadioSetPhyConfig(otInstance *aInstance, uint8_t tx_power, uint8_t modulation, uint8_t data_rate)
 {
-    //info("OT %s\n", __func__);
     if (tx_power < TX_POWER_20dBm || tx_power > TX_POWER_0dBm)
     {
         return OT_ERROR_INVALID_ARGS;
@@ -1045,10 +1053,10 @@ otError otPlatRadioSetPhyConfig(otInstance *aInstance, uint8_t tx_power, uint8_t
     /*Set RF State to Idle*/
     spRFBCtrl->idle_set();
     /*tx init*/
-    spRFBCtrl->tx_config_set(sPhyTxPower, sPhyDataRate, 8, sPhyModulation, FSK_CRC_16, WHITEN_DISABLE, GFSK);
+    spRFBCtrl->tx_config_set(sPhyTxPower, sPhyDataRate, 8, sPhyModulation, CRC_16, WHITEN_DISABLE, GFSK);
 
     /*rx init*/
-    spRFBCtrl->rx_config_set(sPhyDataRate, 8, sPhyModulation, FSK_CRC_16, WHITEN_DISABLE, 0, true, GFSK);
+    spRFBCtrl->rx_config_set(sPhyDataRate, 8, sPhyModulation, CRC_16, WHITEN_DISABLE, 0, true, GFSK);
 #endif
 
     return OT_ERROR_NONE;
@@ -1057,8 +1065,7 @@ otError otPlatRadioSetPhyConfig(otInstance *aInstance, uint8_t tx_power, uint8_t
 static otError radioProcessTransmitSecurity(otRadioFrame *aFrame)
 {
     otError error = OT_ERROR_NONE;
-    #if 0
-//#if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
+#if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
     otMacKeyMaterial *key = NULL;
     uint8_t           keyId;
 
@@ -1117,7 +1124,7 @@ exit:
 #if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
 static uint16_t getCslPhase(void)
 {
-    uint32_t curTime       = rfb_port_rtc_time_read();
+    uint32_t curTime       = otPlatAlarmMicroGetNow();//rfb_port_rtc_time_read();
     uint32_t cslPeriodInUs = sCslPeriod * OT_US_PER_TEN_SYMBOLS;
     uint32_t diff = ((sCslSampleTime % cslPeriodInUs) - (curTime % cslPeriodInUs) + cslPeriodInUs) % cslPeriodInUs;
 
@@ -1127,10 +1134,9 @@ static uint16_t getCslPhase(void)
 
 static void radioSendMessage(otInstance *aInstance)
 {
-    //info("ot %s \n", __func__);
     uint8_t tx_control;
-    //uint8_t temp[OT_RADIO_FRAME_MAX_SIZE + 4];
     uint32_t tx_ret = 0;
+    uint8_t temp[OT_RADIO_FRAME_MAX_SIZE + 4];
 
 #if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
     if (sCslPeriod > 0 && !sTransmitFrame.mInfo.mTxInfo.mIsHeaderUpdated)
@@ -1152,7 +1158,7 @@ static void radioSendMessage(otInstance *aInstance)
     {
         tx_control = 0x02;
     }
-#if 0
+#if 1
     tx_control |= (1 << 2 );
     temp[0] = ((sMacFrameCounter >> 0) & 0xFF);
     temp[1] = ((sMacFrameCounter >> 8) & 0xFF);
@@ -1163,11 +1169,12 @@ static void radioSendMessage(otInstance *aInstance)
 
     if(sTransmitFrame.mInfo.mTxInfo.mTxDelay != 0)
         tx_control ^= (1 << 1);
-    tx_ret = spRFBCtrl->data_send(temp , (sTransmitMessage.mLength + 4 - 2), tx_control, otMacFrameGetSequence(&sTransmitFrame));
-#endif
-    
-    
+
+
+    tx_ret = spRFBCtrl->data_send(temp, (sTransmitMessage.mLength + 4 - 2), tx_control, otMacFrameGetSequence(&sTransmitFrame));  
+#else
     tx_ret = spRFBCtrl->data_send(sTransmitMessage.mPsdu, sTransmitMessage.mLength - 2, tx_control, otMacFrameGetSequence(&sTransmitFrame));
+#endif
     otPlatRadioTxStarted(aInstance, &sTransmitFrame);
 
     if(tx_ret != 0)
@@ -1178,7 +1185,7 @@ static void radioSendMessage(otInstance *aInstance)
     // Wait for echo radio in virtual time mode.
     sTxWait = true;
     //otLogWarnPlat("Tx Control %X\n", tx_control);
-    //otDumpWarnPlat("Tx Packet", sTransmitMessage.mPsdu, sTransmitMessage.mLength);
+    //otDumpWarnPlat("Tx Packet", temp, sTransmitMessage.mLength);
 exit:
     return;
 }
@@ -1224,88 +1231,60 @@ static bool hasFramePending(const otRadioFrame *aFrame)
 exit:
     return rval;
 }
-void platformRadioProcess(otInstance *startThread)
+void platformRadioProcess(otInstance *aInstance)
 {
     otError      error = OT_ERROR_NONE;
     otRadioFrame *pAckFrame = NULL;
     uint32_t Enh_Ack_Index = MAC_RX_BUFFERS;
-    uint8_t id = MAC_RX_BUFFERS;
-
-    maInstance = startThread;
-    //if (sState == OT_RADIO_STATE_RECEIVE)
+    queue_elem_t *rx_queue = NULL, *peek_queue = NULL;
+    otRadioFrame *ReceiveFrame =NULL;
+    peek_queue = queue_peek(&rf_rx_queue);
+    if(peek_queue != NULL)
     {
-        for (uint32_t i = 0; i < MAC_RX_BUFFERS; i++)
-        {
-            if (sReceiveFrame[i].mPsdu != NULL)
-            {                
-                //if(otMacFrameIsVersion2015(&sReceiveFrame[i]))
-                //    otLogWarnPlat("Rx Ver 2015\n");
-                // Unable to simulate SFD, so use the rx done timestamp instead.
-                //sReceiveFrame[i].mInfo.mRxInfo.mTimestamp = sUsCounter;
-                sReceiveFrame[i].mInfo.mRxInfo.mAckedWithFramePending = false;
-                sReceiveFrame[i].mInfo.mRxInfo.mAckedWithSecEnhAck    = false;
+        rx_queue = queue_pop(&rf_rx_queue);
+        ReceiveFrame = (otRadioFrame*)rx_queue->p_data;
 
-                otEXPECT_ACTION(otMacFrameDoesAddrMatch(&sReceiveFrame[i], sPANID, sShortAddress, &sExtAddress),
-                                error = OT_ERROR_ABORT);
-                if (otMacFrameIsAckRequested(&sTransmitFrame) &&
-                        otMacFrameIsAck(&sReceiveFrame[i]) &&
-                        otMacFrameIsVersion2015(&sReceiveFrame[i]))
-                    //otMacFrameGetSequence(&sReceiveFrame[i]) == otMacFrameGetSequence(&sTransmitFrame))
-                {
-                    //util_log_mem(UTIL_LOG_INFO, "Enh-Ack ", sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength, 0);
-                    memset(&sAckFrame,0x0,sizeof(otRadioFrame));                    
-                    sAckFrame.mInfo.mRxInfo.mLqi = sReceiveFrame[i].mInfo.mRxInfo.mLqi;
-                    sAckFrame.mInfo.mRxInfo.mRssi = sReceiveFrame[i].mInfo.mRxInfo.mRssi;
-                    sAckFrame.mInfo.mRxInfo.mTimestamp = sReceiveFrame[i].mInfo.mRxInfo.mTimestamp;
-                    sAckFrame.mChannel = sReceiveFrame[i].mChannel;
-                    sAckFrame.mLength = sReceiveFrame[i].mLength;
-                    sAckFrame.mRadioType = sReceiveFrame[i].mRadioType;
-                    memcpy(&sAckFrame.mPsdu, &sReceiveFrame[i].mPsdu, sAckFrame.mLength);
-                    Enh_Ack_Index = i;
-                    _mac_rx_buffer_free(sReceiveFrame[i].mPsdu);
-                    sReceiveFrame[i].mPsdu = NULL;
-                    break;
-                }
-                //util_log_mem(UTIL_LOG_INFO, "R", sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength, 0);
-                if (
+        ReceiveFrame->mInfo.mRxInfo.mAckedWithFramePending = false;
+        ReceiveFrame->mInfo.mRxInfo.mAckedWithSecEnhAck    = false;
+
+        otEXPECT_ACTION(otMacFrameDoesAddrMatch(ReceiveFrame, sPANID, sShortAddress, &sExtAddress),
+                        error = OT_ERROR_ABORT);
+        //util_log_mem(UTIL_LOG_INFO, "R", ReceiveFrame->mPsdu, ReceiveFrame->mLength, 0);
+        if (
 #if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
-                    // Determine if frame pending should be set
-                    ((otMacFrameIsVersion2015(&sReceiveFrame[i]) && otMacFrameIsCommand(&sReceiveFrame[i])) ||
-                    /*otMacFrameIsData(&sReceiveFrame[i]) || */otMacFrameIsDataRequest(&sReceiveFrame[i]))
+            // Determine if frame pending should be set
+            ((otMacFrameIsVersion2015(ReceiveFrame) && otMacFrameIsCommand(ReceiveFrame)) ||
+                /*otMacFrameIsData(ReceiveFrame) || */otMacFrameIsDataRequest(ReceiveFrame))
 #else
-                    otMacFrameIsDataRequest(&sReceiveFrame[i])
+            otMacFrameIsDataRequest(ReceiveFrame)
 #endif
-                    && hasFramePending(&sReceiveFrame[i]))
-                {
-                    sReceiveFrame[i].mInfo.mRxInfo.mAckedWithFramePending = true;
-                }
+            && hasFramePending(ReceiveFrame))
+        {
+            ReceiveFrame->mInfo.mRxInfo.mAckedWithFramePending = true;
+        }
 #if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
-                if (otMacFrameIsVersion2015(&sReceiveFrame[i]) &&
-                    otMacFrameIsSecurityEnabled(&sReceiveFrame[i]) &&
-                    otMacFrameIsAckRequested(&sReceiveFrame[i]))
-                {
-                    sReceiveFrame[i].mInfo.mRxInfo.mAckedWithSecEnhAck = true;
-                    sReceiveFrame[i].mInfo.mRxInfo.mAckFrameCounter = ++sMacFrameCounter;
-                }
+        if (otMacFrameIsVersion2015(ReceiveFrame) &&
+            otMacFrameIsSecurityEnabled(ReceiveFrame) &&
+            otMacFrameIsAckRequested(ReceiveFrame))
+        {
+            ReceiveFrame->mInfo.mRxInfo.mAckedWithSecEnhAck = true;
+            ReceiveFrame->mInfo.mRxInfo.mAckFrameCounter = ++sMacFrameCounter;
+        }
 #endif // OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
 exit:
-                if (error != OT_ERROR_ABORT)
-                {
-                    otPlatRadioReceiveDone(maInstance, error == OT_ERROR_NONE ? &sReceiveFrame[i] : NULL, error);
-                    //if(error == OT_ERROR_NONE)
-                    //    otDumpWarnPlat("Rx Packet", sReceiveFrame[i].mPsdu, sReceiveFrame[i].mLength);
-                }
-                _mac_rx_buffer_free(sReceiveFrame[i].mPsdu);
-                sReceiveFrame[i].mPsdu = NULL;
-                //gpio_pin_write(21, 1);
-                break;
-            }
+        if (error != OT_ERROR_ABORT)
+        {
+            otPlatRadioReceiveDone(aInstance, error == OT_ERROR_NONE ? ReceiveFrame: NULL, error);
         }
-    }
 
+        free(ReceiveFrame->mPsdu);
+        free(rx_queue);
+        ReceiveFrame->mPsdu = NULL;        
+        gpio_pin_write(21, 1);     
+                  
+    }
     if (sTxDone)
     {
-        //otLogWarnPlat("Tx Status %X\n", sTransmitError);
         do
         {
             if (sTransmitError == 0x10)
@@ -1329,29 +1308,15 @@ exit:
 
             if (otMacFrameIsAckRequested(&sTransmitFrame))
             {
-                if (otMacFrameIsVersion2015(&sTransmitFrame))
-                {
-                    //otLogWarnPlat("Tx Ver 2015\n");
-                    if (Enh_Ack_Index != MAC_RX_BUFFERS)
-                    {
-                        sTxWait = false;
-                        pAckFrame = &sAckFrame;
-                        sTransmitError = OT_ERROR_NONE;
-                    }
-                }
-                else
-                {
-                    otMacFrameGenerateImmAck(&sTransmitFrame, (sTransmitError == 0x40) ? 1 : 0, &sAckFrame);
-                    pAckFrame = &sAckFrame;
-                    sTxWait = false;
-                    sTransmitError = OT_ERROR_NONE;
-                }
+                sTxWait = false;
+                pAckFrame = &sAckFrame;
+                sTransmitError = OT_ERROR_NONE;    
             }
         } while (0);
 
         if (sTxWait == false)
         {
-            otPlatRadioTxDone(maInstance, &sTransmitFrame,
+            otPlatRadioTxDone(aInstance, &sTransmitFrame,
                               pAckFrame,
                               sTransmitError);
 
@@ -1359,50 +1324,22 @@ exit:
 
             sState = OT_RADIO_STATE_RECEIVE;
         }
-    }
-
+    }    
+    
 }
 /* Rafael RFB functions */
-
-static rf_rx_buffer_t *_mac_rx_buffer_free_find(void)
+static otRadioFrame *_radio_rx_frame_buffer_find(void)
 {
-    for (uint32_t i = 0; i < MAC_RX_BUFFERS; i++)
+    uint32_t i =0;
+    for (i = 0; i < MAC_RX_BUFFERS; i++)
     {
-        if (sMacRxBuffer[i].free)
+        if (sReceiveFrame[i].mPsdu == NULL)
         {
-            return &sMacRxBuffer[i];
+            return &sReceiveFrame[i];
         }
     }
     return NULL;
 }
-static void _mac_rx_buffer_free(uint8_t *pbuf)
-{
-    for (uint32_t i = 0; i < MAC_RX_BUFFERS; i++)
-    {
-        if (sMacRxBuffer[i].data == pbuf)
-        {
-            enter_critical_section();
-            sMacRxBuffer[i].free = true;
-            sMacRxBuffer[i].acl = false;
-            leave_critical_section();
-            break;
-        }
-    }
-}
-
-static bool _mac_rx_buffer_chk_acl(uint8_t *pbuf)
-{
-    for (uint32_t i = 0; i < MAC_RX_BUFFERS; i++)
-    {
-        if (sMacRxBuffer[i].data == pbuf)
-        {
-            if(sMacRxBuffer[i].acl == 1)
-                return true;
-        }
-    }
-    return false;
-}
-
 
 /**
  * @brief
@@ -1411,12 +1348,14 @@ static bool _mac_rx_buffer_chk_acl(uint8_t *pbuf)
  */
 static void rafael_tx_done(uint8_t u8_tx_status)
 {
-    
     sTransmitError = u8_tx_status;
-    //sTxWait = false;
     sTxDone = true;
-    //gpio_pin_write(20, 1);
-
+    if(sTransmitError == 0x40 || sTransmitError == 0x80)
+    {
+        sAckFrame.mLength = spRFBCtrl->ack_packet_read(sAckFrame.mPsdu,(uint8_t *)&sAckFrame.mInfo.mRxInfo.mTimestamp); 
+        sAckFrame.mInfo.mRxInfo.mTimestamp = (uint32_t)(sAckFrame.mInfo.mRxInfo.mTimestamp-7000) ; //ack packet delay 110
+    }
+    gpio_pin_write(20, 1);    
     otSysEventSignalPending();
 }
 
@@ -1433,86 +1372,97 @@ static void rafael_rx_done(uint16_t packet_length, uint8_t *rx_data_address,
                            uint8_t crc_status, uint8_t rssi, uint8_t snr)
 {
     uint32_t i;
-    rf_rx_buffer_t *p_rx_buffer;
-
+    static uint8_t rx_done_cnt = 0;
+    queue_elem_t *rx_queue =NULL;
+    otRadioFrame *ReceiveFrame = NULL;
+    
     if (crc_status == 0)
     {
-        //util_log_mem(UTIL_LOG_INFO, "Rx ", rx_data_address, packet_length, 0);
-        for (i = 0; i < MAC_RX_BUFFERS; i++)
+        ReceiveFrame = _radio_rx_frame_buffer_find();
+        if(NULL != ReceiveFrame) 
         {
-            if (sReceiveFrame[i].mPsdu == NULL)
+            ReceiveFrame->mPsdu = malloc(sizeof(uint8_t)*OT_RADIO_FRAME_MAX_SIZE);
+            if(NULL == ReceiveFrame->mPsdu)
             {
-                memset(&sReceiveFrame[i], 0, sizeof(otRadioFrame));
-
-                p_rx_buffer = _mac_rx_buffer_free_find();
-                if (p_rx_buffer)
-                {
-                    sReceiveFrame[i].mPsdu = p_rx_buffer->data;
-#if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
-                    sReceiveFrame[i].mLength = packet_length - 9;
-#elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-                    sReceiveFrame[i].mLength = packet_length - 10;
-#endif
-                    // sReceiveFrame[i].mInfo.mRxInfo.mTimestamp = otPlatAlarmMicroGetNow()-4000;
-                    sReceiveFrame[i].mInfo.mRxInfo.mRssi = -rssi;
-                    sReceiveFrame[i].mInfo.mRxInfo.mLqi = ((RAFAEL_RECEIVE_SENSITIVITY - rssi) * 0xFF) / RAFAEL_RECEIVE_SENSITIVITY;
-                    sReceiveFrame[i].mChannel = sCurrentChannel;
-#if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
-                    memcpy(sReceiveFrame[i].mPsdu, rx_data_address + 8, sReceiveFrame[i].mLength);
-#elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-                    memcpy(sReceiveFrame[i].mPsdu, rx_data_address + 9, sReceiveFrame[i].mLength);
-#endif                       
-                    //gpio_pin_write(21, 0);
-                    p_rx_buffer->free = false;
-                }
-                break;
+                otLogNotePlat("ReceiveFrame mspu malloc fail \n");
+                return;
             }
+            memset(ReceiveFrame->mPsdu,0x0,sizeof(uint8_t)*OT_RADIO_FRAME_MAX_SIZE);
+    #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
+            ReceiveFrame->mLength = packet_length - 9;
+    #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
+            ReceiveFrame->mLength = packet_length - 10;
+    #endif
+            ReceiveFrame->mInfo.mRxInfo.mTimestamp = (uint32_t)(spRFBCtrl->rx_rtc_time_get(rx_done_cnt)-7000); //rx packet delay 120
+            ReceiveFrame->mInfo.mRxInfo.mRssi = -rssi;
+            ReceiveFrame->mInfo.mRxInfo.mLqi = ((RAFAEL_RECEIVE_SENSITIVITY - rssi) * 0xFF) / RAFAEL_RECEIVE_SENSITIVITY;
+            ReceiveFrame->mChannel = sCurrentChannel;
+    #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
+            memcpy(ReceiveFrame->mPsdu, rx_data_address + 8, ReceiveFrame->mLength);
+    #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
+            memcpy(ReceiveFrame->mPsdu, rx_data_address + 9, ReceiveFrame->mLength);
+    #endif              
+            rx_queue = malloc(sizeof(queue_elem_t));            
+            if(NULL == rx_queue)
+            {
+                free(ReceiveFrame->mPsdu);
+                otLogNotePlat("rx_queue malloc fail \n");
+                return;
+            }
+            memset(rx_queue,0x0,sizeof(queue_elem_t));
+            rx_queue->p_data = ReceiveFrame;
+            queue_push(&rf_rx_queue,rx_queue);
+            gpio_pin_write(21, 0);
         }
+        else
+        {
+            otLogNotePlat("sReceiveFrame buffer full \n");
+        }
+        
     }
+    ++rx_done_cnt > 4 ? rx_done_cnt = 0 : rx_done_cnt;
     otSysEventSignalPending();
-
 }
 void rafael_radio_short_addr_ctrl(uint8_t ctrl_type, uint8_t *short_addr)
 {
-    //spRFBCtrl->short_addr_ctrl(ctrl_type, short_addr);
+    spRFBCtrl->short_addr_ctrl(ctrl_type, short_addr);
 }
 
 void rafael_radio_extend_addr_ctrl(uint8_t ctrl_type, uint8_t *extend_addr)
 {
-    //spRFBCtrl->extend_addr_ctrl(ctrl_type, extend_addr);
+    spRFBCtrl->extend_addr_ctrl(ctrl_type, extend_addr);
 }
 
 void rafael_rfb_init(void)
 {
-    //info("OT %s\n", __func__);
     /* Init MAC rx buffer */
     for (uint32_t i = 0; i < MAC_RX_BUFFERS; i++)
     {
-        sMacRxBuffer[i].free = true;
         sReceiveFrame[i].mPsdu = NULL;
     }
     sAckFrame.mPsdu      = sAckMessage.mPsdu;
+    queue_init(&rf_rx_queue);
 
     /* Register rfb interrupt event */
     sRFBInterruptEvt.tx_done = rafael_tx_done;
     sRFBInterruptEvt.rx_done = rafael_rx_done;
 
     /* Initial RFB */
-
 #if (MODULE_ENABLE(SUPPORT_MATTER_CONCURRENT))
     spRFBCtrl = rfb_multi_init();
+    spRFBCtrl->init(&sRFBInterruptEvt);
 #else
-
 #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
     spRFBCtrl = rfb_zb_init();
-#elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-    spRFBCtrl = rfb_wisun_init();
-#endif
-#endif
-
     spRFBCtrl->init(&sRFBInterruptEvt);
+#elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
+    spRFBCtrl = rfb_subg_init();
+    spRFBCtrl->init(&sRFBInterruptEvt, RFB_KEYING_FSK);
+#endif
+#endif
 
     /* PHY PIB */
+    
     spRFBCtrl->phy_pib_set(sTurnaroundTime,
                            sCCAMode,
                            sCCAThreshold,
@@ -1534,7 +1484,12 @@ void rafael_rfb_init(void)
     spRFBCtrl->auto_ack_set(true);
 
     /* Auto State */
-    spRFBCtrl->auto_state_set(sCurrentAutoState);
+    if(sAuto_State_Set != true)
+    {
+        spRFBCtrl->auto_state_set(true);
+        sAuto_State_Set = true;
+    }
+    
 
     sTransmitFrame.mPsdu = sTransmitMessage.mPsdu;
 
@@ -1542,14 +1497,14 @@ void rafael_rfb_init(void)
     /*Set RF State to Idle*/
     spRFBCtrl->idle_set();
     /*tx init*/
-    spRFBCtrl->tx_config_set(sPhyTxPower, sPhyDataRate, 8, sPhyModulation, FSK_CRC_16, WHITEN_DISABLE, GFSK);
+    spRFBCtrl->tx_config_set(sPhyTxPower, sPhyDataRate, 8, sPhyModulation, CRC_16, WHITEN_DISABLE, GFSK);
 
     /*rx init*/
-    spRFBCtrl->rx_config_set(sPhyDataRate, 8, sPhyModulation, FSK_CRC_16, WHITEN_DISABLE, 0, true, GFSK);
+    spRFBCtrl->rx_config_set(sPhyDataRate, 8, sPhyModulation, CRC_16, WHITEN_DISABLE, 0, true, GFSK);
 #endif
 
 
-#if 1
+#if 0
     /*
     * Set channel frequency :
     * For band is subg, units is kHz
@@ -1558,7 +1513,8 @@ void rafael_rfb_init(void)
 #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
     uint32_t ChannelFrequency = FREQ + 5 * (sCurrentChannel - 11);
 #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
-    uint32_t ChannelFrequency = FREQ + 200 * (sCurrentChannel - 1) ;
+    uint32_t ChannelFrequency = FREQ + 2000 * (sCurrentChannel) ;
+    //uint32_t ChannelFrequency = 915000 ;
 #endif
     spRFBCtrl->frequency_set(ChannelFrequency);
 #endif
@@ -1568,5 +1524,4 @@ void rafael_rfb_init(void)
                                   sExtendAddr_1,
                                   sPANID,
                                   sCoordinator);
-    otRFBInit = 1;
 }
