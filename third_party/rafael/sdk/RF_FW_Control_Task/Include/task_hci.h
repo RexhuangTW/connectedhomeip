@@ -104,14 +104,16 @@ ble_hci_rx_acl_data_hdr_t;
 
 typedef struct __attribute__((packed))
 {
-    uint8_t transport_id; /**< Transport id. */
-    uint8_t sequence;     /**< Sequence number. */
-    uint16_t handle : 12; /**< Connection id. */
-    uint16_t pb_flag : 2; /**< Packet boundary flag. */
-    uint16_t bc_flag : 2; /**< Broadcast flag. */
-    uint16_t length;      /**< Data total length. */
-    void * p_data;        /**< ACL data. */
-} ble_hci_tx_acl_data_hdr_t;
+    uint8_t transport_id;   /**< Transport id. */
+    uint16_t sequence;       /**< Sequence number. */
+    uint16_t handle: 12;    /**< Connection id. */
+    uint16_t pb_flag: 2;    /**< Packet boundary flag. */
+    uint16_t bc_flag: 2;    /**< Broadcast flag. */
+    uint16_t length;        /**< Data total length. */
+    void    *p_data;           /**< ACL data. */
+}
+ble_hci_tx_acl_data_hdr_t;
+
 
 /**
  * @brief The parameter definition of HCI task ACL data clear by conn handle.
