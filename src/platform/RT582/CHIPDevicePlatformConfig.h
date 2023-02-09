@@ -41,6 +41,14 @@
 #define CHIP_DEVICE_CONFIG_ENABLE_CHIP_TIME_SERVICE_TIME_SYNC 0
 
 
+#ifndef CHIP_DEVICE_CONFIG_SED_IDLE_INTERVAL
+#define CHIP_DEVICE_CONFIG_SED_IDLE_INTERVAL chip::System::Clock::Milliseconds32(500)
+#endif // CHIP_DEVICE_CONFIG_SED_IDLE_INTERVAL
+
+#ifndef CHIP_DEVICE_CONFIG_SED_ACTIVE_INTERVAL
+#define CHIP_DEVICE_CONFIG_SED_ACTIVE_INTERVAL chip::System::Clock::Milliseconds32(500)
+#endif // CHIP_DEVICE_CONFIG_SED_ACTIVE_INTERVAL
+
 // ========== Platform-specific Configuration =========
 
 // These are configuration options that are unique to the EFR32 platform.

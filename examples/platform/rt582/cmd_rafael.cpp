@@ -91,7 +91,7 @@ CHIP_ERROR cmd_rd(int argc, char ** argv)
 
     return CHIP_NO_ERROR;
 }
-
+#if 0
 CHIP_ERROR cmd_test_ecdh(int argc, char ** argv)
 {
     tst_ecdh();
@@ -119,6 +119,11 @@ static shell_command_t cmds_rafael[] = {
     { &cmd_test_sha256, "tsha256", "Test SHA256"},
     { &cmd_test_ecdsa, "tecdsa", "Test ECDSA"},
 };
+#else
+static shell_command_t cmds_rafael[] = {
+    { &cmd_rd, "rd", "Read memory" },
+};
+#endif
 
 void cmd_rafael_init()
 {

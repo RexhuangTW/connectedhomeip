@@ -172,10 +172,35 @@ template("rt582_sdk") {
       sources += invoker.sources
     }
     public_configs = [ ":${sdk_target_name}_config" ]
-
+    sources += [
+      "${rt582_sdk_root}/Driver/Device/GCC/gcc_startup_cm3_mcu.S",
+      "${rt582_sdk_root}/Driver/Device/system_cm3_mcu.c",      
+      "${rt582_sdk_root}/Driver/Peripheral/dma.c",
+      "${rt582_sdk_root}/Driver/Peripheral/flashctl.c",
+      "${rt582_sdk_root}/Driver/Peripheral/flashds.c",
+      "${rt582_sdk_root}/Driver/Peripheral/Include/flashctl.h",
+      "${rt582_sdk_root}/Driver/Peripheral/gpio.c",
+      "${rt582_sdk_root}/Driver/Peripheral/mp_sector.c",
+      "${rt582_sdk_root}/Driver/Peripheral/sysctrl.c",
+      "${rt582_sdk_root}/Driver/Peripheral/sysfun.c",
+      "${rt582_sdk_root}/Driver/Peripheral/timer.c",
+      "${rt582_sdk_root}/Driver/Peripheral/uart_retarget.c",
+      "${rt582_sdk_root}/Driver/Peripheral/wdt.c",
+      "${rt582_sdk_root}/Driver/Peripheral/lpm.c",
+      "${rt582_sdk_root}/Driver/Peripheral/pwm.c",
+      "${rt582_sdk_root}/Portable/Utility/util.c",
+      "${rt582_sdk_root}/Portable/Utility/util_log.c",
+      "${rt582_sdk_root}/Portable/Utility/util_printf.c",
+      "${rt582_sdk_root}/Portable/Utility/util_string.c",
+      "${rt582_sdk_root}/Portable/Utility/util_queue.c",
+      "${rt582_sdk_root}/Portable/bsp/bsp.c",
+      "${rt582_sdk_root}/Portable/bsp/bsp_button.c",
+      "${rt582_sdk_root}/Portable/bsp/bsp_led.c",
+      "${rt582_sdk_root}/Portable/bsp/bsp_uart_drv.c",
+    ]
     if(use_static_sdk_lib)
     { 
-      libs=["${chip_root}/third_party/rafael/rt58x_sdk/librt582sdk.a"] 
+      libs=["${chip_root}/third_party/rafael/rt58x_sdk/librt582sdk.a"]
     }
     else
     {
@@ -183,37 +208,13 @@ template("rt582_sdk") {
       output_dir = "${root_out_dir}/lib"
 
       sources += [
-        "${rt582_sdk_root}/Driver/Device/GCC/gcc_startup_cm3_mcu.S",
-        "${rt582_sdk_root}/Driver/Device/system_cm3_mcu.c",
-
         "${rt582_sdk_root}/Driver/PHY/comm_subsystem_drv.c",
         "${rt582_sdk_root}/Driver/PHY/rf_common_init.c",
         "${rt582_sdk_root}/Driver/PHY/rf_mcu.c",
         "${rt582_sdk_root}/Driver/PHY/rf_mcu_ahb.c",
         "${rt582_sdk_root}/Driver/PHY/rt569mp/rt569mp_fw.c",
         "${rt582_sdk_root}/Driver/PHY/rt569mp/rt569mp_init.c",
-        "${rt582_sdk_root}/Driver/Peripheral/dma.c",
-        "${rt582_sdk_root}/Driver/Peripheral/flashctl.c",
-        "${rt582_sdk_root}/Driver/Peripheral/flashds.c",
-        "${rt582_sdk_root}/Driver/Peripheral/Include/flashctl.h",
-        "${rt582_sdk_root}/Driver/Peripheral/gpio.c",
-        "${rt582_sdk_root}/Driver/Peripheral/mp_sector.c",
-        "${rt582_sdk_root}/Driver/Peripheral/sysctrl.c",
-        "${rt582_sdk_root}/Driver/Peripheral/sysfun.c",
-        "${rt582_sdk_root}/Driver/Peripheral/timer.c",
-        "${rt582_sdk_root}/Driver/Peripheral/uart_retarget.c",
-        "${rt582_sdk_root}/Driver/Peripheral/wdt.c",
-        "${rt582_sdk_root}/Driver/Peripheral/lpm.c",
-        "${rt582_sdk_root}/Driver/Peripheral/pwm.c",
-        "${rt582_sdk_root}/Portable/Utility/util.c",
-        "${rt582_sdk_root}/Portable/Utility/util_log.c",
-        "${rt582_sdk_root}/Portable/Utility/util_printf.c",
-        "${rt582_sdk_root}/Portable/Utility/util_string.c",
-        "${rt582_sdk_root}/Portable/Utility/util_queue.c",
-        "${rt582_sdk_root}/Portable/bsp/bsp.c",
-        "${rt582_sdk_root}/Portable/bsp/bsp_button.c",
-        "${rt582_sdk_root}/Portable/bsp/bsp_led.c",
-        "${rt582_sdk_root}/Portable/bsp/bsp_uart_drv.c",
+
         "${rt582_sdk_root}/RFB/rfb.c",
         "${rt582_sdk_root}/RFB/rfb_comm_15p4Mac.c",
         "${rt582_sdk_root}/RFB/rfb_comm_common.c",
@@ -284,9 +285,9 @@ template("rt582_sdk") {
         "${rt582_sdk_root}/Crypto/hw_ecdh.c",
         "${rt582_sdk_root}/Crypto/hw_ecdsa.c",
         "${rt582_sdk_root}/Crypto/hw_ecp.c",
-        "${rt582_sdk_root}/Crypto/test/tst_ecdh.c",
-        "${rt582_sdk_root}/Crypto/test/tst_sha256.c",
-        "${rt582_sdk_root}/Crypto/test/tst_ecdsa.c",
+#        "${rt582_sdk_root}/Crypto/test/tst_ecdh.c",
+#        "${rt582_sdk_root}/Crypto/test/tst_sha256.c",
+#        "${rt582_sdk_root}/Crypto/test/tst_ecdsa.c",
       ]
     }
   }

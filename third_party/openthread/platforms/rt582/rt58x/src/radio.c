@@ -823,7 +823,7 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
         //while (!platformRadioIsTransmitPending());
         if (platformRadioIsTransmitPending())
         {
-            gpio_pin_write(20, 0);
+            //gpio_pin_write(20, 0);
             error           = OT_ERROR_NONE;
             sState          = OT_RADIO_STATE_TRANSMIT;
             
@@ -1280,7 +1280,7 @@ exit:
         free(ReceiveFrame->mPsdu);
         free(rx_queue);
         ReceiveFrame->mPsdu = NULL;        
-        gpio_pin_write(21, 1);     
+        //gpio_pin_write(21, 1);     
                   
     }
     if (sTxDone)
@@ -1355,7 +1355,7 @@ static void rafael_tx_done(uint8_t u8_tx_status)
         sAckFrame.mLength = spRFBCtrl->ack_packet_read(sAckFrame.mPsdu,(uint8_t *)&sAckFrame.mInfo.mRxInfo.mTimestamp); 
         sAckFrame.mInfo.mRxInfo.mTimestamp = (uint32_t)(sAckFrame.mInfo.mRxInfo.mTimestamp-7000) ; //ack packet delay 110
     }
-    gpio_pin_write(20, 1);    
+    //gpio_pin_write(20, 1);    
     otSysEventSignalPending();
 }
 
@@ -1412,7 +1412,7 @@ static void rafael_rx_done(uint16_t packet_length, uint8_t *rx_data_address,
             memset(rx_queue,0x0,sizeof(queue_elem_t));
             rx_queue->p_data = ReceiveFrame;
             queue_push(&rf_rx_queue,rx_queue);
-            gpio_pin_write(21, 0);
+            //gpio_pin_write(21, 0);
         }
         else
         {
@@ -1484,12 +1484,8 @@ void rafael_rfb_init(void)
     spRFBCtrl->auto_ack_set(true);
 
     /* Auto State */
-    if(sAuto_State_Set != true)
-    {
-        spRFBCtrl->auto_state_set(true);
-        sAuto_State_Set = true;
-    }
-    
+    spRFBCtrl->auto_state_set(sAuto_State_Set);
+
 
     sTransmitFrame.mPsdu = sTransmitMessage.mPsdu;
 
@@ -1504,7 +1500,7 @@ void rafael_rfb_init(void)
 #endif
 
 
-#if 0
+#if 1
     /*
     * Set channel frequency :
     * For band is subg, units is kHz
