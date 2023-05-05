@@ -34,7 +34,6 @@ if (chip_crypto == "") {
 }
 
 chip_device_platform = "rt582"
-
 #Net work configuration OpenThread
 lwip_platform = "rt582"
 chip_mdns = "platform"

@@ -833,12 +833,17 @@ static_library("libopenthread-ftd") {
   sources = openthread_core_sources
   public_deps = [ ":libopenthread_platform" ]
   public_configs = [ "../..:openthread_ftd_config" ]
+
+  output_name = "libopenthread-ftd"
+  output_dir = "${root_out_dir}/lib"  
 }
 
 static_library("libopenthread-mtd") {
   sources = openthread_core_sources
   public_deps = [ ":libopenthread_platform" ]
   public_configs = [ "../..:openthread_mtd_config" ]
+  output_name = "libopenthread-mtd"
+  output_dir = "${root_out_dir}/lib"    
 }
 
 static_library("libopenthread-radio") {

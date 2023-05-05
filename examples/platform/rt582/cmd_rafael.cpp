@@ -34,6 +34,9 @@
 #include "util_string.h"
 #include "util_log.h"
 
+#include "mib_counters.h"
+#include "sys_arch.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,6 +55,18 @@ extern int tst_ecdsa(void);
 using namespace chip;
 using namespace chip::Shell;
 using namespace chip::Logging;
+
+CHIP_ERROR cmd_mib(int argc, char ** argv)
+{
+    mib_counter_printf();
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR cmd_mem(int argc, char ** argv)
+{
+    sys_malloc_info_printf();
+    return CHIP_NO_ERROR;
+}
 
 CHIP_ERROR cmd_rd(int argc, char ** argv)
 {
@@ -122,6 +137,8 @@ static shell_command_t cmds_rafael[] = {
 #else
 static shell_command_t cmds_rafael[] = {
     { &cmd_rd, "rd", "Read memory" },
+    { &cmd_mib, "mib", "Read mib" },
+    { &cmd_mem, "mem", "Show mempry" },
 };
 #endif
 

@@ -27,7 +27,7 @@ ble_err_t ble_cmd_privacy_enable(ble_set_privacy_cfg_t *p_param)
     ble_set_privacy_cfg_t *p_privacy_cfg;
 
     status = BLE_ERR_OK;
-    p_ble_tlv = pvPortMalloc(sizeof(ble_tlv_t) + sizeof(ble_set_privacy_cfg_t));
+    p_ble_tlv = sys_malloc(sizeof(ble_tlv_t) + sizeof(ble_set_privacy_cfg_t));
 
     if (p_ble_tlv != NULL)
     {
@@ -42,7 +42,7 @@ ble_err_t ble_cmd_privacy_enable(ble_set_privacy_cfg_t *p_param)
         {
             BLE_PRINTF(BLE_DEBUG_CMD_INFO, "<PRIVACY_ENABLE> Send to BLE stack fail\n");
         }
-        vPortFree(p_ble_tlv);
+        sys_free(p_ble_tlv);
     }
     else
     {
@@ -62,7 +62,7 @@ ble_err_t ble_cmd_privacy_disable(void)
     ble_tlv_t *p_ble_tlv;
 
     status = BLE_ERR_OK;
-    p_ble_tlv = pvPortMalloc(sizeof(ble_tlv_t));
+    p_ble_tlv = sys_malloc(sizeof(ble_tlv_t));
 
     if (p_ble_tlv != NULL)
     {
@@ -74,7 +74,7 @@ ble_err_t ble_cmd_privacy_disable(void)
         {
             BLE_PRINTF(BLE_DEBUG_CMD_INFO, "<PRIVACY_DISABLE> Send to BLE stack fail\n");
         }
-        vPortFree(p_ble_tlv);
+        sys_free(p_ble_tlv);
     }
     else
     {

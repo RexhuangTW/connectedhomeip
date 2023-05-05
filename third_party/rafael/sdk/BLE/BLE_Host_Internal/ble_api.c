@@ -1,33 +1,31 @@
 /**************************************************************************************************
  *    INCLUDES
  *************************************************************************************************/
-#include <stdio.h>
 #include "ble_api.h"
-#include "sys_arch.h"
-#include "mem_mgmt.h"
-#include "task_host.h"
-#include "task_hci.h"
-#include "task_ble_app.h"
 #include "ble_printf.h"
-
+#include "sys_arch.h"
+#include "task_ble_app.h"
+#include "task_hci.h"
+#include "task_host.h"
+#include <stdio.h>
 
 /**************************************************************************************************
  *    MACROS
  *************************************************************************************************/
-#define APP_ALIGN_4_BYTES(a)    (((uint32_t)(a) + 0x3) & ~0x3)
+#define APP_ALIGN_4_BYTES(a) (((uint32_t) (a) + 0x3) & ~0x3)
 
 /**************************************************************************************************
  *    LOCAL VARIABLES
  *************************************************************************************************/
-static sys_tlv_t          *g_app_ptlv = NULL;
-static sys_sem_t          g_app_sem;
-static pf_evt_indication  *pf_app_indication;
+static sys_tlv_t * g_app_ptlv = NULL;
+static sys_sem_t g_app_sem;
+static pf_evt_indication * pf_app_indication;
 
 /**************************************************************************************************
  *    PUBLIC FUNCTIONS
  *************************************************************************************************/
 
-int ble_app_notify(sys_tlv_t *pt_tlv)
+int ble_app_notify(sys_tlv_t * pt_tlv)
 {
     int sys_rtn = BLE_ERR_OK;
 
@@ -39,7 +37,7 @@ int ble_app_notify(sys_tlv_t *pt_tlv)
         while (1)
         {
             uint32_t u32_timeout = 0;
-            g_app_ptlv = pt_tlv;
+            g_app_ptlv           = pt_tlv;
 
             if (!pf_app_indication)
             {
@@ -72,10 +70,10 @@ int ble_app_notify(sys_tlv_t *pt_tlv)
     return sys_rtn;
 }
 
-int ble_event_msg_sendto(ble_tlv_t *pt_tlv)
+int ble_event_msg_sendto(ble_tlv_t * pt_tlv)
 {
-    sys_tlv_t *pt_new_tlv = NULL;
-    sys_tlv_t *pt_cfm_tlv = NULL;
+    sys_tlv_t * pt_new_tlv = NULL;
+    sys_tlv_t * pt_cfm_tlv = NULL;
     uint32_t u32_new_size;
     int sys_rtn = BLE_ERR_OK;
 
@@ -95,7 +93,7 @@ int ble_event_msg_sendto(ble_tlv_t *pt_tlv)
         /*-----------------------------------*/
         u32_new_size = APP_ALIGN_4_BYTES(pt_tlv->length) + sizeof(sys_tlv_t);
 
-        pt_new_tlv = (sys_tlv_t *)mem_malloc(u32_new_size);
+        pt_new_tlv = (sys_tlv_t *) mem_malloc(u32_new_size);
         if (pt_new_tlv == NULL)
         {
             sys_rtn = BLE_ERR_DATA_MALLOC_FAIL;
@@ -111,8 +109,8 @@ int ble_event_msg_sendto(ble_tlv_t *pt_tlv)
             BLE_PRINTF(BLE_DEBUG_CMD_INFO, "Wait cfm");
             if (ble_wait_cfm(&pt_cfm_tlv, 0) != SYS_ARCH_TIMEOUT)
             {
-                sys_rtn = (int) * pt_cfm_tlv->value;
-                BLE_PRINTF(BLE_DEBUG_CMD_INFO, "\nRecv cfm status %d\n", (ble_err_t)sys_rtn);
+                sys_rtn = (int) *pt_cfm_tlv->value;
+                BLE_PRINTF(BLE_DEBUG_CMD_INFO, "\nRecv cfm status %d\n", (ble_err_t) sys_rtn);
                 mem_free(pt_cfm_tlv);
             }
             else
@@ -130,8 +128,7 @@ int ble_event_msg_sendto(ble_tlv_t *pt_tlv)
     return sys_rtn;
 }
 
-
-int ble_event_msg_recvfrom(uint8_t *pu8_buf, uint32_t *pu32_buf_len)
+int ble_event_msg_recvfrom(uint8_t * pu8_buf, uint32_t * pu32_buf_len)
 {
     uint32_t u32_tlv_length;
     do
@@ -194,7 +191,7 @@ int ble_host_stack_deinit(void)
     return i32_ret;
 }
 
-int ble_host_stack_init(ble_cfg_t *pt_cfg)
+int ble_host_stack_init(ble_cfg_t * pt_cfg)
 {
     int i32_ret = 0;
 
@@ -226,4 +223,3 @@ int ble_host_stack_init(ble_cfg_t *pt_cfg)
     /*-----------------------------------*/
     return i32_ret;
 }
-

@@ -21,57 +21,56 @@ extern "C" {
 /**************************************************************************************************
  *    INCLUDES
  *************************************************************************************************/
-#include <stdint.h>
 #include "ble_hci_error.h"
-
+#include "sys_arch.h"
+#include <stdint.h>
 /**************************************************************************************************
  *    TYPEDEFS
  *************************************************************************************************/
 /** @brief BLE event indication callback definition.
  * @ingroup ble_api
-*/
-typedef void (pf_evt_indication)(uint32_t data_len);
-
+ */
+typedef void(pf_evt_indication)(uint32_t data_len);
 
 /** @brief BLE api retrun parameter definition.
  * @ingroup ble_api
-*/
+ */
 typedef enum
 {
-    BLE_ERR_SEQUENTIAL_PROTOCOL_VIOLATION = -24,  /** @brief Detecting a sequential protocol violation. Usually happens in there is an another GATT request already in progress please wait and retry.*/
-    BLE_ERR_DB_PARSING_IN_PROGRESS        = -23,  /** @brief Host peripheral database parsing is still in progress. */
-    BLE_ERR_INVALID_HANDLE                = -22,  /** @brief Invalid BLE handle. */
-    BLE_ERR_INVALID_HOST_ID               = -21,  /** @brief Invalid Host ID */
-    BLE_ERR_CMD_NOT_SUPPORTED             = -20,  /** @brief Command not supported */
-    BLE_ERR_INVALID_PARAMETER             = -19,  /** @brief Invalid parameter. */
-    BLE_ERR_INVALID_STATE                 = -18,  /** @brief Invalid state. */
-    BLE_ERR_TIMER_OP                      = -17,  /** @brief TIMER OP. */
-    BLE_ERR_ALLOC_MEMORY_FAIL             = -16,  /** @brief RECVFROM memory fail. */
-    BLE_ERR_RECVFROM_LEN_NOT_ENOUGH       = -15,  /** @brief RECVFROM length error. */
-    BLE_ERR_RECVFROM_FAIL                 = -14,  /** @brief RECVFROM fail. */
-    BLE_ERR_RECVFROM_NO_DATA              = -13,  /** @brief RECVFROM no data. */
-    BLE_ERR_RECVFROM_POINTER_NULL         = -12,  /** @brief RECVFROM Pointer NULL. */
-    BLE_ERR_SENDTO_FAIL                   = -11,  /** @brief SENDTO fail. */
-    BLE_ERR_SENDTO_POINTER_NULL           = -10,  /** @brief SENDTO Pointer NULL. */
-    BLE_BUSY                              = -9,   /** @brief Busy. */
-    BLE_ERR_WRONG_CONFIG                  = -8,   /** @brief Wrong configuration. */
-    BLE_ERR_SEMAPHORE_MALLOC_FAIL         = -7,   /** @brief Semaphore malloc fail. */
-    BLE_ERR_THREAD_MALLOC_FAIL            = -6,   /** @brief Thread malloc fail. */
-    BLE_ERR_QUEUE_MALLOC_FAIL             = -5,   /** @brief Queue malloc fail. */
-    BLE_ERR_DATA_MALLOC_FAIL              = -4,   /** @brief Data malloc fail. */
-    BLE_ERR_DUPLICATE_INIT                = -3,   /** @brief Duplicate init. */
-    BLE_ERR_NOT_INIT                      = -2,   /** @brief Not initial. */
-    BLE_ERR_UNKNOW_TYPE                   = -1,   /** @brief Unknown type. */
-    BLE_ERR_OK                            = 0,    /** @brief Success. */
+    BLE_ERR_SEQUENTIAL_PROTOCOL_VIOLATION = -24, /** @brief Detecting a sequential protocol violation. Usually happens in there is
+                                                    an another GATT request already in progress please wait and retry.*/
+    BLE_ERR_DB_PARSING_IN_PROGRESS  = -23,       /** @brief Host peripheral database parsing is still in progress. */
+    BLE_ERR_INVALID_HANDLE          = -22,       /** @brief Invalid BLE handle. */
+    BLE_ERR_INVALID_HOST_ID         = -21,       /** @brief Invalid Host ID */
+    BLE_ERR_CMD_NOT_SUPPORTED       = -20,       /** @brief Command not supported */
+    BLE_ERR_INVALID_PARAMETER       = -19,       /** @brief Invalid parameter. */
+    BLE_ERR_INVALID_STATE           = -18,       /** @brief Invalid state. */
+    BLE_ERR_TIMER_OP                = -17,       /** @brief TIMER OP. */
+    BLE_ERR_ALLOC_MEMORY_FAIL       = -16,       /** @brief RECVFROM memory fail. */
+    BLE_ERR_RECVFROM_LEN_NOT_ENOUGH = -15,       /** @brief RECVFROM length error. */
+    BLE_ERR_RECVFROM_FAIL           = -14,       /** @brief RECVFROM fail. */
+    BLE_ERR_RECVFROM_NO_DATA        = -13,       /** @brief RECVFROM no data. */
+    BLE_ERR_RECVFROM_POINTER_NULL   = -12,       /** @brief RECVFROM Pointer NULL. */
+    BLE_ERR_SENDTO_FAIL             = -11,       /** @brief SENDTO fail. */
+    BLE_ERR_SENDTO_POINTER_NULL     = -10,       /** @brief SENDTO Pointer NULL. */
+    BLE_BUSY                        = -9,        /** @brief Busy. */
+    BLE_ERR_WRONG_CONFIG            = -8,        /** @brief Wrong configuration. */
+    BLE_ERR_SEMAPHORE_MALLOC_FAIL   = -7,        /** @brief Semaphore malloc fail. */
+    BLE_ERR_THREAD_MALLOC_FAIL      = -6,        /** @brief Thread malloc fail. */
+    BLE_ERR_QUEUE_MALLOC_FAIL       = -5,        /** @brief Queue malloc fail. */
+    BLE_ERR_DATA_MALLOC_FAIL        = -4,        /** @brief Data malloc fail. */
+    BLE_ERR_DUPLICATE_INIT          = -3,        /** @brief Duplicate init. */
+    BLE_ERR_NOT_INIT                = -2,        /** @brief Not initial. */
+    BLE_ERR_UNKNOW_TYPE             = -1,        /** @brief Unknown type. */
+    BLE_ERR_OK                      = 0,         /** @brief Success. */
 } ble_err_t;
-
 
 typedef enum
 {
     //====================================================================
     //     BLE COMMON API
     //====================================================================
-    TYPE_BLE_COMMON_API_START                   = 0,
+    TYPE_BLE_COMMON_API_START = 0,
 
     /** @brief BLE common controller setting initial function (BLE stack initialization).
      *  @par   BLE_COMMON_EVT_SET_CONTROLLER_INFO
@@ -87,7 +86,7 @@ typedef enum
      *         - Read buffer size
      *  @param @ref ble_common_controller_info_t
      */
-    TYPE_BLE_COMMON_CONTROLLER_INIT             = TYPE_BLE_COMMON_API_START,
+    TYPE_BLE_COMMON_CONTROLLER_INIT = TYPE_BLE_COMMON_API_START,
 
     /** @brief BLE Read Filter accept list size command.
      *  @par   BLE_COMMON_EVT_READ_FILTER_ACCEPT_LIST_SIZE
@@ -124,11 +123,10 @@ typedef enum
      */
     TYPE_BLE_COMMON_ANTENNA_INFO_READ,
 
-
     //====================================================================
     //     BLE GAP API
     //====================================================================
-    TYPE_BLE_GAP_API_START, //1
+    TYPE_BLE_GAP_API_START, // 1
 
     /** @brief Get BLE device address and device address type.
      *  @par   BLE_GAP_EVT_GET_DEVICE_ADDR
@@ -137,7 +135,7 @@ typedef enum
      *         If Device BLE Address is set to "01:02:03:04:05:06", addrParam->addr[0] = 0x06
      *  @param @ref none
      */
-    TYPE_BLE_GAP_DEVICE_ADDR_GET                = TYPE_BLE_GAP_API_START,
+    TYPE_BLE_GAP_DEVICE_ADDR_GET = TYPE_BLE_GAP_API_START,
 
     /** @brief Set BLE device address and device address type.
      *  @par   BLE_GAP_EVT_SET_RANDOM_ADDR with parameter @ref ble_evt_gap_get_addr_t
@@ -228,7 +226,7 @@ typedef enum
     //====================================================================
     //     BLE ADV API
     //====================================================================
-    TYPE_BLE_ADV_API_START,  //12
+    TYPE_BLE_ADV_API_START, // 12
 
     /** @brief Set BLE advertising parameter.
      *  @par   BLE_ADV_EVT_SET_PARAM
@@ -237,7 +235,7 @@ typedef enum
      *         Advertising interval Min. shall be less than or equal to advertising interval Max.
      *  @param @ref ble_adv_param_t
      */
-    TYPE_BLE_ADV_PARAMETER_SET                  = TYPE_BLE_ADV_API_START,
+    TYPE_BLE_ADV_PARAMETER_SET = TYPE_BLE_ADV_API_START,
 
     /** @brief Set BLE advertising data.
      *
@@ -307,7 +305,7 @@ typedef enum
     //====================================================================
     //     BLE SCAN API
     //====================================================================
-    TYPE_BLE_SCAN_API_START,  //17
+    TYPE_BLE_SCAN_API_START, // 17
 
     /** @brief Set BLE scan parameter.
      *  @par   BLE_SCAN_EVT_SET_PARAM
@@ -315,7 +313,7 @@ typedef enum
      *  @note Scan window can only be less than or equal to the scan interval.
      *  @param @ref ble_scan_param_t
      */
-    TYPE_BLE_SCAN_PARAMETER_SET                 = TYPE_BLE_SCAN_API_START,
+    TYPE_BLE_SCAN_PARAMETER_SET = TYPE_BLE_SCAN_API_START,
 
     /** @brief Set BLE start Scanning.
      *  @par   BLE_SCAN_EVT_SET_ENABLE
@@ -334,14 +332,14 @@ typedef enum
     //====================================================================
     //     BLE GATT API
     //====================================================================
-    TYPE_BLE_GATT_API_START,  //20
+    TYPE_BLE_GATT_API_START, // 20
 
     /** @brief Set suggested default data length.
      *  @par   BLE_ATT_GATT_EVT_WRITE_SUGGESTED_DEFAULT_DATA_LENGTH
      *
      *  @param @ref ble_gatt_suggested_data_len_param_t
      */
-    TYPE_BLE_GATT_PREFERRED_DATA_LENGTH_SET     = TYPE_BLE_GATT_API_START,
+    TYPE_BLE_GATT_PREFERRED_DATA_LENGTH_SET = TYPE_BLE_GATT_API_START,
 
     /** @brief Set preferred MTU size.
      *  @par   none
@@ -384,7 +382,8 @@ typedef enum
      *  @par   none
      *
      *  @attention Only supported if GATT role is @ref BLE_GATT_ROLE_SERVER.
-     *  @note The read response is sent in reply to a received Read Request and contains the value of the attribute that has been read.
+     *  @note The read response is sent in reply to a received Read Request and contains the value of the attribute that has been
+     * read.
      *  @param @ref ble_gatt_data_param_t
      */
     TYPE_BLE_GATT_READ_RSP,
@@ -393,7 +392,8 @@ typedef enum
      *  @par   none
      *
      *  @attention Only supported if GATT role is @ref BLE_GATT_ROLE_SERVER.
-     *  @note The read by type response is sent in reply to a received Read By Type Request and contains the handle number and value of the attribute that has been read.
+     *  @note The read by type response is sent in reply to a received Read By Type Request and contains the handle number and value
+     * of the attribute that has been read.
      *  @param @ref ble_gatt_data_param_t
      */
     TYPE_BLE_GATT_READ_BY_TYPE_RSP,
@@ -402,7 +402,8 @@ typedef enum
      *  @par   none
      *
      *  @attention Only supported if GATT role is @ref BLE_GATT_ROLE_SERVER.
-     *  @note The read blob response is sent in reply to a received Read Blob Request and contains the value of the attribute that has been read.
+     *  @note The read blob response is sent in reply to a received Read Blob Request and contains the value of the attribute that
+     * has been read.
      *  @param @ref ble_gatt_data_param_t
      */
     TYPE_BLE_GATT_READ_BLOB_RSP,
@@ -420,7 +421,8 @@ typedef enum
      *  @par   none
      *
      *  @attention Only supported if GATT role is @ref BLE_GATT_ROLE_SERVER.
-     *  @note When a server is configured to notify a Characteristic Value to a client without the acknowledgment that the notification was successfully received.
+     *  @note When a server is configured to notify a Characteristic Value to a client without the acknowledgment that the
+     * notification was successfully received.
      *  @param @ref ble_gatt_data_param_t
      */
     TYPE_BLE_GATT_NOTIFICATION,
@@ -429,7 +431,8 @@ typedef enum
      *  @par   none
      *
      *  @attention Only supported if GATT role is @ref BLE_GATT_ROLE_SERVER.
-     *  @note When a server is configured to indicate a Characteristic Value to a client and expects the indication was successfully received.
+     *  @note When a server is configured to indicate a Characteristic Value to a client and expects the indication was successfully
+     * received.
      *  @param @ref ble_gatt_data_param_t
      */
     TYPE_BLE_GATT_INDICATION,
@@ -438,8 +441,9 @@ typedef enum
      *  @par   none
      *
      *  @attention Only supported if GATT role is @ref BLE_GATT_ROLE_CLIENT.
-     *  @note The Write Request is used to request the server to write the value of an attribute and acknowledge that this has been achieved in a Write Response. \n
-     *        A Write Response shall be sent by the server if the write of the Characteristic Value succeeded.
+     *  @note The Write Request is used to request the server to write the value of an attribute and acknowledge that this has been
+     * achieved in a Write Response. \n A Write Response shall be sent by the server if the write of the Characteristic Value
+     * succeeded.
      *  @param @ref ble_gatt_data_param_t
      */
     TYPE_BLE_GATT_WRITE_REQ,
@@ -468,7 +472,8 @@ typedef enum
      *  @par   none
      *
      *  @attention Only supported if GATT role is @ref BLE_GATT_ROLE_CLIENT.
-     *  @note Read part of the value of an attribute at a given offset from a server when the client knows the Characteristic Value Handle.
+     *  @note Read part of the value of an attribute at a given offset from a server when the client knows the Characteristic Value
+     * Handle.
      *
      *  @param @ref ble_gatt_read_blob_req_param_t
      */
@@ -484,7 +489,7 @@ typedef enum
      *
      *  @param @ref ble_evt_sm_bonding_flag_t
      */
-    TYPE_BLE_SM_BONDING_FLAG_SET                = TYPE_BLE_SM_API_START,
+    TYPE_BLE_SM_BONDING_FLAG_SET = TYPE_BLE_SM_API_START,
 
     /** @brief Restore BLE bonding CCCD.
      *  @par   none
@@ -555,7 +560,6 @@ typedef enum
      */
     TYPE_BLE_PRIVACY_DISABLE,
 
-
     //====================================================================
     //     BLE CONN CTE API
     //====================================================================
@@ -594,28 +598,24 @@ typedef enum
 
 } ble_api_type_t;
 
-
 typedef enum
 {
-    BLE_APP_RETURN_PARAMETER_EVENT,   /**< Queue type: BLE command request. */
-    BLE_APP_GENERAL_EVENT,            /**< Queue type: BLE event. */
-    BLE_APP_SERVICE_EVENT,            /**< Queue type: BLE service data. */
+    BLE_APP_RETURN_PARAMETER_EVENT, /**< Queue type: BLE command request. */
+    BLE_APP_GENERAL_EVENT,          /**< Queue type: BLE event. */
+    BLE_APP_SERVICE_EVENT,          /**< Queue type: BLE service data. */
 } ble_event_t;
 
-
 typedef struct
 {
-    pf_evt_indication   *pf_evt_indication;    /**< a pointer to the evt indication callback function. */
+    pf_evt_indication * pf_evt_indication; /**< a pointer to the evt indication callback function. */
 } ble_cfg_t;
 
-
 typedef struct
 {
-    uint16_t    type;       /**< Payload Identifier : defined by each module */
-    uint16_t    length;     /**< Payload Length : the length of the payload data */
-    uint8_t     value[];    /**< Payload Data */
+    uint16_t type;   /**< Payload Identifier : defined by each module */
+    uint16_t length; /**< Payload Length : the length of the payload data */
+    uint8_t value[]; /**< Payload Data */
 } ble_tlv_t;
-
 
 /**************************************************************************************************
  *    GLOBAL PROTOTYPES
@@ -629,8 +629,7 @@ typedef struct
  *
  * @return @ref BLE_ERR_OK is success or an @ref ble_err_t "error".
  */
-int ble_host_stack_init(ble_cfg_t *pt_cfg);
-
+int ble_host_stack_init(ble_cfg_t * pt_cfg);
 
 /** @brief Set to BLE host stack delete.
  *
@@ -639,7 +638,6 @@ int ble_host_stack_init(ble_cfg_t *pt_cfg);
  * @return @ref BLE_ERR_OK is success or an @ref ble_err_t "error".
  */
 int ble_host_stack_deinit(void);
-
 
 /** @brief BLE event message receive function.
  *
@@ -650,8 +648,7 @@ int ble_host_stack_deinit(void);
  *
  * @return @ref BLE_ERR_OK is success or an @ref ble_err_t "error".
  */
-int ble_event_msg_recvfrom(uint8_t *pu8_buf, uint32_t *pu32_buf_len);
-
+int ble_event_msg_recvfrom(uint8_t * pu8_buf, uint32_t * pu32_buf_len);
 
 /** @brief BLE cmd send to function.
  *
@@ -661,8 +658,7 @@ int ble_event_msg_recvfrom(uint8_t *pu8_buf, uint32_t *pu32_buf_len);
  *
  * @return @ref BLE_ERR_OK is success or an @ref ble_err_t "error".
  */
-int ble_event_msg_sendto(ble_tlv_t *pt_tlv);
-
+int ble_event_msg_sendto(ble_tlv_t * pt_tlv);
 
 #ifdef __cplusplus
 };

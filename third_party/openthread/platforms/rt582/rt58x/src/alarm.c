@@ -21,195 +21,77 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "utils/code_utils.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "timers.h"
 
 #include "cm3_mcu.h"
-
 #include "util_log.h"
-
-#define SYST_CSR (*((volatile uint32_t *) 0xe000e010))
-#define SYST_RVR (*((volatile uint32_t *) 0xe000e014))
-#define SYST_CVR (*((volatile uint32_t *) 0xe000e018))
-#define SYST_CALIB (*((volatile uint32_t *) 0xe000e01c))
-
-#define SYST_CSR_ENABLE_BIT (1UL << 0UL)
-#define SYST_CSR_TICKINT_BIT (1UL << 1UL)
-#define SYST_CSR_CLKSOURCE_BIT (1UL << 2UL)
-#define SYST_CSR_COUNTFLAG_BIT (1UL << 16UL)
+#include "utils/code_utils.h"
 
 static uint32_t sMsAlarm = 0;
 static bool sIsRunning   = false;
-
-static uint32_t sUsCounter   = 0;
-static uint32_t sMiCounter   = 0;
-static bool sUsIsRunning     = false;
-static uint32_t sUsAlarm     = 0;
-static uint32_t sSleep_count = 0;
-
 static bool sMsisPending = false;
-static bool sUsisPending = false;
 
-static inline void _timer_isr_handler(uint32_t timer_id)
+static TimerHandle_t sAlarmTimer;
+static otInstance * sInstance;
+
+static void alarm_timer_handler(TimerHandle_t xTimer)
 {
-    otSysEventSignalPending();
-    sUsisPending = true;
+    otTaskletsSignalPending();
+    otPlatAlarmMilliFired(sInstance);
 }
 
-static inline void _timer_milli_handler(uint32_t timer_id)
-{
-    otSysEventSignalPending();
-    sMsisPending = true;
-}
-
-void rt58x_alarm_process(otInstance * aInstance)
-{
-    int32_t remaining;
-    bool alarmMilliFired = false;
-#if (OPENTHREAD_CONFIG_PLATFORM_USEC_TIMER_ENABLE == 1)
-    bool alarmMicroFired = false;
-#endif
-
-    if (sIsRunning)
-    {
-        sMiCounter = sys_now();
-        remaining  = (int32_t) (sMsAlarm - sMiCounter);
-        if (remaining <= 0)
-        {
-            Timer_Stop(4);
-            alarmMilliFired = true;
-        }
-    }
-
-    if (alarmMilliFired || sMsisPending)
-    {
-        sIsRunning   = false;
-        sMsisPending = false;
-        otPlatAlarmMilliFired(aInstance);
-    }
-#if (OPENTHREAD_CONFIG_PLATFORM_USEC_TIMER_ENABLE == 1)
-    if (sUsIsRunning)
-    {
-        sUsCounter = otPlatAlarmMicroGetNow();
-        remaining  = (int32_t) (sUsAlarm - sUsCounter);
-
-        if (remaining <= 0)
-        {
-            Timer_Stop(3);
-            alarmMicroFired = true;
-        }
-    }
-
-    if (alarmMicroFired || sUsisPending)
-    {
-        sUsIsRunning = false;
-        sUsisPending = false;
-        otPlatAlarmMicroFired(aInstance);
-    }
-#endif
-}
-void SysTick_Handler(void)
-{
-    //++sMiCounter;
-}
 void rt58x_alarm_init()
 {
-    timer_config_mode_t cfg;
-
-    cfg.int_en   = ENABLE;
-    cfg.mode     = TIMER_PERIODIC_MODE;
-    cfg.prescale = TIMER_PRESCALE_1;
-
-    Timer_Open(3, cfg, _timer_isr_handler);
-    Timer_Int_Priority(3, 6);
-
-    cfg.int_en   = ENABLE;
-    cfg.mode     = TIMER_PERIODIC_MODE;
-    cfg.prescale = TIMER_PRESCALE_1;
-
-    Timer_Open(4, cfg, _timer_milli_handler);
-    Timer_Int_Priority(4, 6);
-
-    // /* Stop and clear the SysTick. */
-    // SYST_CSR = 0UL;
-    // SYST_CVR = 0UL;
-    // SYST_RVR = 0UL;
-
-    // SYST_RVR = ( SystemCoreClock / 1000 ) - 1UL;
-    // SYST_CSR = ( SYST_CSR_ENABLE_BIT | SYST_CSR_CLKSOURCE_BIT | SYST_CSR_TICKINT_BIT);
+    sAlarmTimer = xTimerCreate("ThAlarm_T", 1, false, NULL, alarm_timer_handler);
 }
+
+void rt58x_alarm_process(otInstance * aInstance) {}
 
 uint32_t otPlatTimeGetXtalAccuracy(void)
 {
     return SystemCoreClock;
 }
 
-#if (OPENTHREAD_CONFIG_PLATFORM_USEC_TIMER_ENABLE == 1)
-inline uint32_t otPlatAlarmMicroGetNow(void)
-{
-    sUsCounter = rfb_port_rtc_time_read();
-    return sUsCounter;
-}
-
-void otPlatAlarmMicroStartAt(otInstance * aInstance, uint32_t aT0, uint32_t aDt)
-{
-    OT_UNUSED_VARIABLE(aInstance);
-    int32_t remain = 0, start_time;
-    Timer_Stop(3);
-    sUsCounter = otPlatAlarmMicroGetNow(); // rfb_port_rtc_time_read();
-
-    sUsAlarm     = aT0 + aDt;
-    remain       = (int32_t) (sUsAlarm - sUsCounter);
-    sUsIsRunning = true;
-
-    if (remain <= 0)
-    {
-        otTaskletsSignalPending();
-    }
-    else
-    {
-        start_time = remain % 25 > 13 ? (remain / 25) + 1 : (remain / 25);
-        Timer_Start(3, start_time);
-    }
-}
-
-void otPlatAlarmMicroStop(otInstance * aInstance)
-{
-    OT_UNUSED_VARIABLE(aInstance);
-    sUsIsRunning = false;
-    Timer_Stop(3);
-}
-
-#endif
 void otPlatAlarmMilliStartAt(otInstance * aInstance, uint32_t aT0, uint32_t aDt)
 {
     OT_UNUSED_VARIABLE(aInstance);
-    int32_t remain = 0;
-    Timer_Stop(4);
-    sMiCounter = sys_now();
-    sMsAlarm   = aT0 + aDt;
-    remain     = (int32_t) (sMsAlarm - sMiCounter);
 
-    sIsRunning = true;
+    int32_t remain       = 0;
+    uint32_t now_counter = 0;
+
+    now_counter = sys_now();
+    sMsAlarm    = aT0 + aDt;
+    remain      = (int32_t) (sMsAlarm - now_counter);
+
+    sInstance = aInstance;
+
+    if (xTimerIsTimerActive(sAlarmTimer))
+    {
+        xTimerStop(sAlarmTimer, 0);
+    }
 
     if (remain <= 0)
     {
         otTaskletsSignalPending();
+        otPlatAlarmMilliFired(aInstance);
     }
     else
     {
-        Timer_Start(4, (remain * 40) - 1);
-        // sSleep_count = remain;
+        xTimerChangePeriod(sAlarmTimer, remain / portTICK_PERIOD_MS, 0);
     }
 }
 void otPlatAlarmMilliStop(otInstance * aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
-    sIsRunning = false;
-    Timer_Stop(4);
+    if (xTimerIsTimerActive(sAlarmTimer))
+    {
+        xTimerStop(sAlarmTimer, 0);
+    }
 }
 
 inline uint32_t otPlatAlarmMilliGetNow(void)
 {
-    sMiCounter = sys_now();
-    return sMiCounter;
+    return sys_now();
 }

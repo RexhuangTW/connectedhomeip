@@ -28,7 +28,7 @@ ble_err_t ble_cmd_connection_cte_receive_parameters_set(ble_connection_cte_rx_pa
     uint8_t i;
 
     status = BLE_ERR_OK;
-    p_ble_tlv = pvPortMalloc(sizeof(ble_tlv_t) + sizeof(ble_connection_cte_rx_param_t) + p_param->sw_pattern_length);
+    p_ble_tlv = sys_malloc(sizeof(ble_tlv_t) + sizeof(ble_connection_cte_rx_param_t) + p_param->sw_pattern_length);
 
     if (p_ble_tlv != NULL)
     {
@@ -49,7 +49,7 @@ ble_err_t ble_cmd_connection_cte_receive_parameters_set(ble_connection_cte_rx_pa
         {
             BLE_PRINTF(BLE_DEBUG_CMD_INFO, "<CONNECTION_CTE_RX_PARAMETERS_SET> Send to BLE stack fail\n");
         }
-        vPortFree(p_ble_tlv);
+        sys_free(p_ble_tlv);
     }
     else
     {
@@ -71,7 +71,7 @@ ble_err_t ble_cmd_connection_cte_transmit_parameters_set(ble_connection_cte_tx_p
     uint8_t i;
 
     status = BLE_ERR_OK;
-    p_ble_tlv = pvPortMalloc(sizeof(ble_tlv_t) + sizeof(ble_connection_cte_tx_param_t) + p_param->sw_pattern_length);
+    p_ble_tlv = sys_malloc(sizeof(ble_tlv_t) + sizeof(ble_connection_cte_tx_param_t) + p_param->sw_pattern_length);
 
     if (p_ble_tlv != NULL)
     {
@@ -91,7 +91,7 @@ ble_err_t ble_cmd_connection_cte_transmit_parameters_set(ble_connection_cte_tx_p
         {
             BLE_PRINTF(BLE_DEBUG_CMD_INFO, "<CONNECTION_CTE_TX_PARAMETERS_SET> Send to BLE stack fail\n");
         }
-        vPortFree(p_ble_tlv);
+        sys_free(p_ble_tlv);
     }
     else
     {
@@ -112,7 +112,7 @@ ble_err_t ble_cmd_connection_cte_request_enable(ble_connection_cte_req_enable_t 
     ble_connection_cte_req_enable_t *p_cte_req_param;
 
     status = BLE_ERR_OK;
-    p_ble_tlv = pvPortMalloc(sizeof(ble_tlv_t) + sizeof(ble_connection_cte_req_enable_t));
+    p_ble_tlv = sys_malloc(sizeof(ble_tlv_t) + sizeof(ble_connection_cte_req_enable_t));
 
     if (p_ble_tlv != NULL)
     {
@@ -126,7 +126,7 @@ ble_err_t ble_cmd_connection_cte_request_enable(ble_connection_cte_req_enable_t 
         {
             BLE_PRINTF(BLE_DEBUG_CMD_INFO, "<CONNECTION_CTE_REQ_SET> Send to BLE stack fail\n");
         }
-        vPortFree(p_ble_tlv);
+        sys_free(p_ble_tlv);
     }
     else
     {
@@ -147,7 +147,7 @@ ble_err_t ble_cmd_connection_cte_response_enable(ble_connection_cte_rsp_enable_t
     ble_connection_cte_rsp_enable_t *p_cte_rsp_param;
 
     status = BLE_ERR_OK;
-    p_ble_tlv = pvPortMalloc(sizeof(ble_tlv_t) + sizeof(ble_connection_cte_rsp_enable_t));
+    p_ble_tlv = sys_malloc(sizeof(ble_tlv_t) + sizeof(ble_connection_cte_rsp_enable_t));
 
     if (p_ble_tlv != NULL)
     {
@@ -161,7 +161,7 @@ ble_err_t ble_cmd_connection_cte_response_enable(ble_connection_cte_rsp_enable_t
         {
             BLE_PRINTF(BLE_DEBUG_CMD_INFO, "<CONNECTION_CTE_RSP_SET> Send to BLE stack fail\n");
         }
-        vPortFree(p_ble_tlv);
+        sys_free(p_ble_tlv);
     }
     else
     {

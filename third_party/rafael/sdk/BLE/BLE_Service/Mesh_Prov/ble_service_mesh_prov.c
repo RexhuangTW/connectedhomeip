@@ -315,7 +315,7 @@ ble_err_t ble_svcs_mesh_prov_handles_get(uint8_t host_id, ble_svcs_mesh_prov_inf
     ble_tlv_t *p_tlv;
     ble_gatt_handle_table_param_t *ble_gatt_handle_table_param;
 
-    p_tlv = pvPortMalloc(sizeof(ble_tlv_t) + sizeof(ble_gatt_handle_table_param_t));
+    p_tlv = sys_malloc(sizeof(ble_tlv_t) + sizeof(ble_gatt_handle_table_param_t));
 
     if (p_tlv != NULL)
     {
@@ -332,7 +332,7 @@ ble_err_t ble_svcs_mesh_prov_handles_get(uint8_t host_id, ble_svcs_mesh_prov_inf
         {
             info_color(LOG_RED, "<TYPE_BLE_GATT_ATT_HANDLE_MAPPING_GET> Send msg to BLE stack fail\n");
         }
-        vPortFree(p_tlv);
+        sys_free(p_tlv);
     }
     else
     {

@@ -437,6 +437,7 @@ int mbedtls_ecdsa_sign(mbedtls_ecp_group * grp, mbedtls_mpi * r, mbedtls_mpi * s
     ret = rt582_ecdsa_p256_sign((uint8_t *) r->p, (uint8_t *) s->p, (uint8_t *) buf, (uint8_t *) d->p, (uint8_t *) modk.p);
 
 cleanup:
+    mbedtls_mpi_free(&modk);
     return (ret);
 
 #endif

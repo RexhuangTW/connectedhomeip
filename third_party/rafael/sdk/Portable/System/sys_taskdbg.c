@@ -15,22 +15,25 @@ void vApplicationMallocFailedHook(size_t xWantedSize)
     to query the size of free heap space that remains (although it does not
     provide information on how the remaining heap might be fragmented). */
     taskDISABLE_INTERRUPTS();
-    //malloc_info_printf();
+    // malloc_info_printf();
+    sys_malloc_info_printf();
     err("MallocFailed (%d)\n", xWantedSize);
-    for (;;);
+    for (;;)
+        ;
 }
 /*-----------------------------------------------------------*/
 
-void vApplicationStackOverflowHook(xTaskHandle pxTask, char *pcTaskName)
+void vApplicationStackOverflowHook(xTaskHandle pxTask, char * pcTaskName)
 {
     (void) pcTaskName;
     (void) pxTask;
-    err("stack overflow in task %08x %s", (unsigned int)pxTask, (portCHAR *)pcTaskName);
+    err("stack overflow in task %08x %s", (unsigned int) pxTask, (portCHAR *) pcTaskName);
     /* Run time stack overflow checking is performed if
     configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
     function is called if a stack overflow is detected. */
     taskDISABLE_INTERRUPTS();
-    for (;;);
+    for (;;)
+        ;
 }
 /*-----------------------------------------------------------*/
 
@@ -42,23 +45,18 @@ void vApplicationTickHook(void)
     code must not attempt to block, and only the interrupt safe FreeRTOS API
     functions can be used (those that end in FromISR()).  */
 
-#if ( mainCREATE_SIMPLE_BLINKY_DEMO_ONLY == 0 )
+#if (mainCREATE_SIMPLE_BLINKY_DEMO_ONLY == 0)
     {
         /* In this case the tick hook is used as part of the queue set test. */
         //        vQueueSetAccessQueueSetFromISR();
     }
 #endif /* mainCREATE_SIMPLE_BLINKY_DEMO_ONLY */
 }
-void vAssertCalled(const char *const pcFileName, unsigned long ulLine)
+void vAssertCalled(const char * const pcFileName, unsigned long ulLine)
 {
-    char *current_task_name = (char *)sys_current_thread_name();
+    char * current_task_name = (char *) sys_current_thread_name();
     err("assert: [%s] %s:%ld\n", current_task_name, pcFileName, ulLine);
-    while (1) {}
+    while (1)
+    {}
 }
 /*-----------------------------------------------------------*/
-
-
-
-
-
-

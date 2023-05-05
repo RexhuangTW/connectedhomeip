@@ -31,7 +31,7 @@
  * sections of the MSLA applicable to Source Code.
  *
  ******************************************************************************/
-
+#define __HEAP_SIZE 0x1000
 #ifdef __cplusplus
 extern "C" {
 #endif

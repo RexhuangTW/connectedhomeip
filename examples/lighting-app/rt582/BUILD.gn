@@ -184,7 +184,7 @@ rt582_executable("lighting_app") {
     ]
   }
 
-  ldscript = "${examples_plat_dir}/ldscript/rt58x.ld"
+  ldscript = "${examples_plat_dir}/ldscript/rt58x.lds"
 
   inputs = [ ldscript ]
 

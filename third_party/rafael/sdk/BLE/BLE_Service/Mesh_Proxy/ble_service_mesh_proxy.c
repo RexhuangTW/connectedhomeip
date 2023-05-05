@@ -332,7 +332,7 @@ ble_err_t ble_svcs_mesh_proxy_handles_get(uint8_t host_id, ble_svcs_mesh_proxy_i
         {
             info_color(LOG_RED, "<TYPE_BLE_GATT_ATT_HANDLE_MAPPING_GET> Send msg to BLE stack fail\n");
         }
-        vPortFree(p_tlv);
+        sys_free(p_tlv);
     }
     else
     {

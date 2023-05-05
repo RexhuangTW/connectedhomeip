@@ -16,7 +16,6 @@
 #include "sys_timer.h"
 #include "FreeRTOSConfig.h"
 #include "cm3_mcu.h"
-#include "mem_mgmt.h"
 #include "sys_arch.h"
 //=============================================================================
 //                Private Definitions of const value
@@ -56,9 +55,9 @@
 #define SYS_TIMER_DELETE_FROM_ISR(timer) timer_cmd_send(timer, SYS_TIMER_CMD_DELETE, 0, 1)
 #define SYS_TIMER_TASK_WAKE_UP_FROM_ISR timer_cmd_send((sys_timer_t *) 0x12345678, SYS_TIMER_CMD_TASK_WAKE_UP, 0, 1)
 
-//#define CONFIG_UNITTEST_ENABLE
+// #define CONFIG_UNITTEST_ENABLE
 //=============================================================================
-//                Private ENUM
+//                 Private ENUM
 //=============================================================================
 typedef enum SYS_TIMER_CMD
 {

@@ -22,6 +22,7 @@
 #include <matter_config.h>
 
 #include <FreeRTOS.h>
+#include "task.h"
 
 #include <mbedtls/platform.h>
 
@@ -66,6 +67,9 @@ using namespace ::chip::DeviceLayer;
 #include <openthread/tasklet.h>
 #include <openthread/thread.h>
 
+
+#include "cm3_mcu.h"
+#include "util_log.h"
 // ================================================================================
 // Matter Networking Callbacks
 // ================================================================================
@@ -82,4 +86,50 @@ extern "C" void vApplicationIdleHook(void)
 
     // Check CHIP Config nvm3 and repack flash if necessary.
     //Internal::RT582Config::RepackNvm3Flash();
+}
+
+extern "C" void vPortSuppressTicksAndSleep(TickType_t xExpectedIdleTime_ms)
+{
+    TickType_t xModifiableIdleTime;
+
+    __disable_irq();
+
+    if( eTaskConfirmSleepModeStatus() == eAbortSleep )
+    {
+        __enable_irq();
+    }
+    else
+    {
+        timern_t *TIMER;
+        uint32_t now_v;
+
+        if(xExpectedIdleTime_ms > 0)
+        {
+            TIMER = TIMER4;
+
+            TIMER->LOAD = (xExpectedIdleTime_ms * 40) -1;
+
+            TIMER->CLEAR = 1;
+            TIMER->CONTROL.bit.INT_ENABLE = 1;
+            TIMER->CONTROL.bit.EN = 1;
+
+            Lpm_Enter_Low_Power_Mode();
+
+            TIMER->CONTROL.bit.EN = 0;
+            TIMER->CONTROL.bit.INT_ENABLE = 0;
+            TIMER->CLEAR = 1;
+            Delay_us(250);
+            now_v = (TIMER->VALUE/40);
+
+            if(now_v > xExpectedIdleTime_ms)
+            {
+                now_v = 0;
+            }
+            xModifiableIdleTime = xExpectedIdleTime_ms - now_v;
+
+            vTaskStepTick( xModifiableIdleTime );
+
+            __enable_irq();
+        }
+    }
 }

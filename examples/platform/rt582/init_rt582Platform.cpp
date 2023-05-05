@@ -128,6 +128,7 @@ static void _timer_isr_handler(uint32_t timer_id)
 }
 void init_rt582Platform(void)
 {
+    timern_t *TIMER;
     timer_config_mode_t cfg;
     NVIC_SetPriority(CommSubsystem_IRQn, 0x04);
 
@@ -147,6 +148,25 @@ void init_rt582Platform(void)
     Timer_Start(2, 999);
 
     memset(flash_table, 0, sizeof(flash_table));    
+
+#if(CHIP_DEVICE_CONFIG_ENABLE_SED == 1)
+
+    TIMER = TIMER4;
+    NVIC_DisableIRQ((IRQn_Type)(Timer4_IRQn));
+    NVIC_SetPriority((IRQn_Type)(Timer4_IRQn), 1);
+
+    TIMER->LOAD = 0;
+    TIMER->CLEAR = 0;
+    TIMER->CONTROL.reg = 0;
+
+    TIMER->CONTROL.bit.PRESCALE = 0;
+    TIMER->CONTROL.bit.MODE = 0;
+    TIMER->CONTROL.bit.EN = 0;
+
+    Lpm_Set_Low_Power_Level(LOW_POWER_LEVEL_SLEEP0);
+    Lpm_Enable_Low_Power_Wakeup(LOW_POWER_WAKEUP_GPIO);
+    Lpm_Enable_Low_Power_Wakeup(LOW_POWER_WAKEUP_32K_TIMER);
+#endif
 }
 
 void init_rt582_led_flash(uint32_t pin, uint32_t onTimeMs, uint32_t offTimeMs)

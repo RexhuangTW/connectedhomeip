@@ -41,10 +41,10 @@
 #include "util_log.h"
 #include "util_queue.h"
 
-#include "mem_mgmt.h"
 #include "sys_arch.h"
 #include "task_hci.h"
 
+#include "mib_counters.h"
 //=============================================================================
 //                Private Definitions of const value
 //=============================================================================
@@ -101,6 +101,9 @@
 extern uint8_t rfb_port_ack_packet_read(uint8_t * rx_data_address);
 static void radioSendMessage(otInstance * aInstance);
 static bool hasFramePending(const otRadioFrame * aFrame);
+
+static sys_queue_t g_tx_done_handle;
+static sys_queue_t g_rx_done_handle;
 //=============================================================================
 //                Private ENUM
 //=============================================================================
@@ -178,12 +181,12 @@ static uint16_t sPANID         = 0xFFFF;
 static uint8_t sCoordinator    = 0;
 static uint8_t sCurrentChannel = kMinChannel;
 
-static bool sTxWait = false;
-static bool sTxDone = false;
-static bool sIsAck  = false;
-static otError sTransmitError;
-static otError sReceiveError = OT_ERROR_NONE;
-static otRadioState sState   = OT_RADIO_STATE_DISABLED;
+static volatile uint32_t sTxWait = false;
+static volatile uint32_t sTxDone = 0x0a0a;
+static bool sIsAck               = false;
+static otError sTransmitError    = 0xFF;
+static otError sReceiveError     = OT_ERROR_NONE;
+static otRadioState sState       = OT_RADIO_STATE_DISABLED;
 
 static rf_tx_msg_t sTransmitMessage;
 static otRadioFrame sTransmitFrame;
@@ -208,7 +211,7 @@ static uint32_t sCslPeriod;
 #endif
 
 static bool sAuto_State_Set = false;
-
+static otInstance * gaInstance;
 //=============================================================================
 //                Functions
 //=============================================================================
@@ -571,7 +574,7 @@ otError otPlatRadioDisable(otInstance *aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
     sDisable = true;
-    sState = OT_RADIO_STATE_SLEEP;
+    sState = OT_RADIO_STATE_DISABLED;
 
     return OT_ERROR_NONE;
 }
@@ -747,9 +750,9 @@ otError otPlatRadioReceive(otInstance *aInstance, uint8_t aChannel)
             sCurrentChannel        = aChannel;
             spRFBCtrl->frequency_set(ChannelFrequency);
         }
-
         if(sAuto_State_Set != true)
         {
+            
             spRFBCtrl->auto_state_set(true);
             sAuto_State_Set = true;
         }
@@ -823,7 +826,6 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
         //while (!platformRadioIsTransmitPending());
         if (platformRadioIsTransmitPending())
         {
-            //gpio_pin_write(20, 0);
             error           = OT_ERROR_NONE;
             sState          = OT_RADIO_STATE_TRANSMIT;
             
@@ -900,12 +902,7 @@ void otPlatRadioSetMacKey(otInstance             *aInstance,
     memcpy(&sPrevKey, aPrevKey, sizeof(otMacKeyMaterial));
     memcpy(&sCurrKey, aCurrKey, sizeof(otMacKeyMaterial));
     memcpy(&sNextKey, aNextKey, sizeof(otMacKeyMaterial));
-    printf("set key : ");
-    for(uint8_t i = 0 ; i < 8 ; i++)
-    {
-        printf("%02x",sCurrKey.mKeyMaterial.mKey.m8[i]);
-    }
-    printf("\n");
+
     spRFBCtrl->key_set(sCurrKey.mKeyMaterial.mKey.m8);
 exit:
     return;
@@ -1171,10 +1168,12 @@ static void radioSendMessage(otInstance *aInstance)
         tx_control ^= (1 << 1);
 
 
-    tx_ret = spRFBCtrl->data_send(temp, (sTransmitMessage.mLength + 4 - 2), tx_control, otMacFrameGetSequence(&sTransmitFrame));  
+    tx_ret = spRFBCtrl->data_send(temp, (sTransmitMessage.mLength + 4 - 2), tx_control, otMacFrameGetSequence(&sTransmitFrame));
+
 #else
     tx_ret = spRFBCtrl->data_send(sTransmitMessage.mPsdu, sTransmitMessage.mLength - 2, tx_control, otMacFrameGetSequence(&sTransmitFrame));
 #endif
+    mib_counter_increase(ThreadTXRequestCount);
     otPlatRadioTxStarted(aInstance, &sTransmitFrame);
 
     if(tx_ret != 0)
@@ -1184,7 +1183,7 @@ static void radioSendMessage(otInstance *aInstance)
     }
     // Wait for echo radio in virtual time mode.
     sTxWait = true;
-    //otLogWarnPlat("Tx Control %X\n", tx_control);
+    //info("Tx Control %X\n", tx_control);
     //otDumpWarnPlat("Tx Packet", temp, sTransmitMessage.mLength);
 exit:
     return;
@@ -1238,6 +1237,9 @@ void platformRadioProcess(otInstance *aInstance)
     uint32_t Enh_Ack_Index = MAC_RX_BUFFERS;
     queue_elem_t *rx_queue = NULL, *peek_queue = NULL;
     otRadioFrame *ReceiveFrame =NULL;
+
+    gaInstance = aInstance;
+#if 0
     peek_queue = queue_peek(&rf_rx_queue);
     if(peek_queue != NULL)
     {
@@ -1275,15 +1277,57 @@ exit:
         if (error != OT_ERROR_ABORT)
         {
             otPlatRadioReceiveDone(aInstance, error == OT_ERROR_NONE ? ReceiveFrame: NULL, error);
+            mib_counter_increase(ThreadRxNotifyCount);
         }
 
-        free(ReceiveFrame->mPsdu);
-        free(rx_queue);
-        ReceiveFrame->mPsdu = NULL;        
-        //gpio_pin_write(21, 1);     
+        sys_free(ReceiveFrame->mPsdu);
+        sys_free(rx_queue);
+        ReceiveFrame->mPsdu = NULL;          
                   
     }
-    if (sTxDone)
+    #else
+    if (sys_arch_queue_tryrecv(&g_rx_done_handle, &ReceiveFrame) != SYS_ARCH_TIMEOUT)
+    {
+        ReceiveFrame->mInfo.mRxInfo.mAckedWithFramePending = false;
+        ReceiveFrame->mInfo.mRxInfo.mAckedWithSecEnhAck    = false;
+        otEXPECT_ACTION(otMacFrameDoesAddrMatch(ReceiveFrame, sPANID, sShortAddress, &sExtAddress),
+                        error = OT_ERROR_ABORT);
+        if (
+#if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
+            // Determine if frame pending should be set
+            ((otMacFrameIsVersion2015(ReceiveFrame) && otMacFrameIsCommand(ReceiveFrame)) ||
+                /*otMacFrameIsData(ReceiveFrame) || */otMacFrameIsDataRequest(ReceiveFrame))
+#else
+            otMacFrameIsDataRequest(ReceiveFrame)
+#endif
+            && hasFramePending(ReceiveFrame))
+        {
+            ReceiveFrame->mInfo.mRxInfo.mAckedWithFramePending = true;
+        }
+#if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
+        if (otMacFrameIsVersion2015(ReceiveFrame) &&
+            otMacFrameIsSecurityEnabled(ReceiveFrame) &&
+            otMacFrameIsAckRequested(ReceiveFrame))
+        {
+            ReceiveFrame->mInfo.mRxInfo.mAckedWithSecEnhAck = true;
+            ReceiveFrame->mInfo.mRxInfo.mAckFrameCounter = ++sMacFrameCounter;
+        }
+#endif // OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
+exit:
+        if (error != OT_ERROR_ABORT)
+        {
+            otPlatRadioReceiveDone(aInstance, error == OT_ERROR_NONE ? ReceiveFrame: NULL, error);
+            mib_counter_increase(ThreadRxNotifyCount);
+        }
+
+        sys_free(ReceiveFrame->mPsdu);
+        sys_free(ReceiveFrame);
+
+    }
+
+    #endif
+
+    if (sys_arch_queue_tryrecv(&g_tx_done_handle, &sTransmitError) != SYS_ARCH_TIMEOUT)
     {
         do
         {
@@ -1305,27 +1349,25 @@ exit:
                 sTxWait = false;
                 break;
             }
-
-            if (otMacFrameIsAckRequested(&sTransmitFrame))
+            else if(sTransmitError == 0x40 || sTransmitError == 0x80)
             {
                 sTxWait = false;
                 pAckFrame = &sAckFrame;
-                sTransmitError = OT_ERROR_NONE;    
+                sTransmitError = OT_ERROR_NONE;
+                break;
             }
         } while (0);
 
         if (sTxWait == false)
         {
+            mib_counter_increase(ThreadTrigTxDoneCount);
             otPlatRadioTxDone(aInstance, &sTransmitFrame,
                               pAckFrame,
                               sTransmitError);
-
-            sTxDone = false;
-
-            sState = OT_RADIO_STATE_RECEIVE;
-        }
-    }    
-    
+            sTransmitError = 0xFF;
+            sTxDone = 0x0A0A;
+        }        
+    }
 }
 /* Rafael RFB functions */
 static otRadioFrame *_radio_rx_frame_buffer_find(void)
@@ -1349,14 +1391,15 @@ static otRadioFrame *_radio_rx_frame_buffer_find(void)
 static void rafael_tx_done(uint8_t u8_tx_status)
 {
     sTransmitError = u8_tx_status;
-    sTxDone = true;
-    if(sTransmitError == 0x40 || sTransmitError == 0x80)
+    if(u8_tx_status == 0x40 || u8_tx_status == 0x80)
     {
         sAckFrame.mLength = spRFBCtrl->ack_packet_read(sAckFrame.mPsdu,(uint8_t *)&sAckFrame.mInfo.mRxInfo.mTimestamp); 
         sAckFrame.mInfo.mRxInfo.mTimestamp = (uint32_t)(sAckFrame.mInfo.mRxInfo.mTimestamp-7000) ; //ack packet delay 110
     }
-    //gpio_pin_write(20, 1);    
-    otSysEventSignalPending();
+    sys_queue_send_with_timeout(&g_tx_done_handle, &sTransmitError, 10);
+    mib_counter_increase(ThreadTxDoneCount);    
+
+    otTaskletsSignalPending();
 }
 
 /**
@@ -1375,16 +1418,18 @@ static void rafael_rx_done(uint16_t packet_length, uint8_t *rx_data_address,
     static uint8_t rx_done_cnt = 0;
     queue_elem_t *rx_queue =NULL;
     otRadioFrame *ReceiveFrame = NULL;
+    uint8_t *pdata = NULL;
     
     if (crc_status == 0)
     {
+#if 0
         ReceiveFrame = _radio_rx_frame_buffer_find();
         if(NULL != ReceiveFrame) 
         {
-            ReceiveFrame->mPsdu = malloc(sizeof(uint8_t)*OT_RADIO_FRAME_MAX_SIZE);
+            ReceiveFrame->mPsdu = sys_malloc(sizeof(uint8_t)*OT_RADIO_FRAME_MAX_SIZE);
             if(NULL == ReceiveFrame->mPsdu)
             {
-                otLogNotePlat("ReceiveFrame mspu malloc fail \n");
+                err("ReceiveFrame mspu malloc fail \n");
                 return;
             }
             memset(ReceiveFrame->mPsdu,0x0,sizeof(uint8_t)*OT_RADIO_FRAME_MAX_SIZE);
@@ -1402,26 +1447,61 @@ static void rafael_rx_done(uint16_t packet_length, uint8_t *rx_data_address,
     #elif OPENTHREAD_CONFIG_RADIO_915MHZ_OQPSK_SUPPORT
             memcpy(ReceiveFrame->mPsdu, rx_data_address + 9, ReceiveFrame->mLength);
     #endif              
-            rx_queue = malloc(sizeof(queue_elem_t));            
+            rx_queue = sys_malloc(sizeof(queue_elem_t));            
             if(NULL == rx_queue)
             {
-                free(ReceiveFrame->mPsdu);
-                otLogNotePlat("rx_queue malloc fail \n");
+                sys_free(ReceiveFrame->mPsdu);
+                //err("rx_queue malloc fail \n");
                 return;
             }
             memset(rx_queue,0x0,sizeof(queue_elem_t));
             rx_queue->p_data = ReceiveFrame;
             queue_push(&rf_rx_queue,rx_queue);
-            //gpio_pin_write(21, 0);
+
+            mib_counter_increase(ThreadRxDoneCount);
         }
         else
         {
-            otLogNotePlat("sReceiveFrame buffer full \n");
+            //err("sReceiveFrame buffer full \n");
         }
+
+#else
+    do
+    {
+        ReceiveFrame = sys_malloc(sizeof(otRadioFrame));
+
+        if(ReceiveFrame == NULL)
+            break;
+
+        ReceiveFrame->mPsdu = sys_malloc(OT_RADIO_FRAME_MAX_SIZE);
+
+        if(ReceiveFrame->mPsdu == NULL)
+        {
+            sys_free(ReceiveFrame);
+            break;
+        }
+        ReceiveFrame->mLength = packet_length - 9;
+        memset(ReceiveFrame->mPsdu, 0x00, ReceiveFrame->mLength);
+        ReceiveFrame->mInfo.mRxInfo.mTimestamp = (uint32_t)(spRFBCtrl->rx_rtc_time_get(rx_done_cnt)-7000);
+        ReceiveFrame->mInfo.mRxInfo.mRssi = -rssi;
+        ReceiveFrame->mInfo.mRxInfo.mLqi = ((RAFAEL_RECEIVE_SENSITIVITY - rssi) * 0xFF) / RAFAEL_RECEIVE_SENSITIVITY;
+        ReceiveFrame->mChannel = sCurrentChannel;
+
+        memcpy(ReceiveFrame->mPsdu, rx_data_address + 8, ReceiveFrame->mLength);
+
+        sys_queue_send_with_timeout(&g_rx_done_handle, &ReceiveFrame, 5);
+        mib_counter_increase(ThreadRxDoneCount);
+
+    } while (0);
+    
+
+#endif
         
     }
     ++rx_done_cnt > 4 ? rx_done_cnt = 0 : rx_done_cnt;
-    otSysEventSignalPending();
+    //otSysEventSignalPending();
+    
+    otTaskletsSignalPending();
 }
 void rafael_radio_short_addr_ctrl(uint8_t ctrl_type, uint8_t *short_addr)
 {
@@ -1520,4 +1600,8 @@ void rafael_rfb_init(void)
                                   sExtendAddr_1,
                                   sPANID,
                                   sCoordinator);
+
+
+    sys_queue_new(&g_tx_done_handle, 4, sizeof(void *));
+    sys_queue_new(&g_rx_done_handle, 16, sizeof(otRadioFrame *));
 }

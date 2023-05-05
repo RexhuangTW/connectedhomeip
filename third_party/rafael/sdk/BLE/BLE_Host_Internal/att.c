@@ -29,7 +29,6 @@
 #include "ble_bonding.h"
 #include "ble_host_cmd.h"
 #include "ble_api.h"
-#include "mem_mgmt.h"
 #include "ble_printf.h"
 #include "ble_memory.h"
 

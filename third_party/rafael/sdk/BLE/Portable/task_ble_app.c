@@ -6,13 +6,12 @@
 /**************************************************************************************************
  *    INCLUDES
  *************************************************************************************************/
-#include <stdint.h>
-#include "lib_config.h"
-#include "mem_mgmt.h"
-#include "task_host.h"
 #include "task_ble_app.h"
 #include "ble_att_gatt.h"
 #include "ble_event_app.h"
+#include "lib_config.h"
+#include "task_host.h"
+#include <stdint.h>
 
 #if (BLE_MODULE_ENABLE(_CONN_SUPPORT_))
 #include "ble_profile.h"
@@ -40,18 +39,18 @@ sys_queue_t g_ble_cfm_queue;
 static sys_task_t g_app_notify_task;
 static sys_queue_t g_app_notify_queue;
 
-extern int ble_app_notify(sys_tlv_t *pt_tlv);
+extern int ble_app_notify(sys_tlv_t * pt_tlv);
 
 /**************************************************************************************************
  *    LOCAL FUNCTIONS
  *************************************************************************************************/
 
-static void notify_task_handle(void *arg)
+static void notify_task_handle(void * arg)
 {
-    task_queue_t notify_queue = {0};
-    ble_app_evt_param_t t_queue = {0};
+    task_queue_t notify_queue   = { 0 };
+    ble_app_evt_param_t t_queue = { 0 };
     uint32_t u32_time;
-    sys_tlv_t *pt_tlv;
+    sys_tlv_t * pt_tlv;
 
     configASSERT(&g_app_notify_queue != NULL);
     configASSERT(&g_ble_app_queue != NULL);
@@ -81,12 +80,12 @@ static void notify_task_handle(void *arg)
         else
         {
             // wait for the event
-            u32_time = sys_queue_recv(&g_ble_app_queue, (void *)&t_queue, 0);
+            u32_time = sys_queue_recv(&g_ble_app_queue, (void *) &t_queue, 0);
         }
 
         if (u32_time != SYS_ARCH_TIMEOUT)
         {
-            ble_app_evt_param_t *p_param = (ble_app_evt_param_t *)&t_queue;
+            ble_app_evt_param_t * p_param = (ble_app_evt_param_t *) &t_queue;
 
             switch (p_param->type)
             {
@@ -96,7 +95,7 @@ static void notify_task_handle(void *arg)
                 break;
 
             case BLE_APP_RETURN_PARAMETER_EVENT:
-                if (ble_event_post_to_notify(BLE_APP_GENERAL_EVENT, (void *)p_param->event_param.p_ble_evt_param) == BLE_ERR_OK)
+                if (ble_event_post_to_notify(BLE_APP_GENERAL_EVENT, (void *) p_param->event_param.p_ble_evt_param) == BLE_ERR_OK)
                 {
                     mem_free(t_queue.event_param.p_ble_evt_param);
                 }
@@ -109,7 +108,8 @@ static void notify_task_handle(void *arg)
 
 #if (BLE_MODULE_ENABLE(_CONN_SUPPORT_))
             case BLE_APP_SERVICE_EVENT:
-                if (ble_event_post_to_notify(BLE_APP_SERVICE_EVENT, (void *)p_param->event_param.p_ble_service_param) == BLE_ERR_OK)
+                if (ble_event_post_to_notify(BLE_APP_SERVICE_EVENT, (void *) p_param->event_param.p_ble_service_param) ==
+                    BLE_ERR_OK)
                 {
                     mem_free(t_queue.event_param.p_ble_service_param);
                 }
@@ -131,11 +131,11 @@ static void notify_task_handle(void *arg)
 /**************************************************************************************************
  *    PUBLIC FUNCTIONS
  *************************************************************************************************/
-uint32_t ble_wait_cfm(sys_tlv_t **pt_cfm_tlv, uint32_t u32_timeout)
+uint32_t ble_wait_cfm(sys_tlv_t ** pt_cfm_tlv, uint32_t u32_timeout)
 {
     uint32_t u32_time;
-    task_queue_t t_queue = {0};
-    u32_time = sys_queue_recv(&g_ble_cfm_queue, (void *)&t_queue, u32_timeout);
+    task_queue_t t_queue = { 0 };
+    u32_time             = sys_queue_recv(&g_ble_cfm_queue, (void *) &t_queue, u32_timeout);
     if (u32_time != SYS_ARCH_TIMEOUT)
     {
         *pt_cfm_tlv = t_queue.pt_tlv;
@@ -149,7 +149,7 @@ uint8_t get_app_queue_remaining_size(void)
     return sys_queue_remaining_size(&g_ble_app_queue);
 }
 
-ble_err_t notify_evt_queue_send(uint8_t type, uint16_t param_len, void *param)
+ble_err_t notify_evt_queue_send(uint8_t type, uint16_t param_len, void * param)
 {
     ble_err_t status = BLE_ERR_OK;
     task_queue_t p_queue;
@@ -159,11 +159,11 @@ ble_err_t notify_evt_queue_send(uint8_t type, uint16_t param_len, void *param)
     if (p_queue.pt_tlv != NULL)
     {
         p_queue.u32_send_systick = sys_now();
-        p_queue.pt_tlv->type = type; // BLE_APP_GENERAL_EVENT, BLE_APP_SERVICE_EVENT
-        p_queue.pt_tlv->length = param_len;
+        p_queue.pt_tlv->type     = type; // BLE_APP_GENERAL_EVENT, BLE_APP_SERVICE_EVENT
+        p_queue.pt_tlv->length   = param_len;
         memcpy(p_queue.pt_tlv->value, param, param_len);
 
-        sys_queue_send(&g_app_notify_queue, (void *)&p_queue);
+        sys_queue_send(&g_app_notify_queue, (void *) &p_queue);
     }
     else
     {
@@ -178,14 +178,11 @@ ble_err_t task_ble_app_queue_send(ble_app_evt_param_t p_param)
 {
     ble_err_t status = BLE_ERR_OK;
 
-    if ((p_param.type == BLE_APP_RETURN_PARAMETER_EVENT) ||
-        (p_param.type == BLE_APP_GENERAL_EVENT) ||
+    if ((p_param.type == BLE_APP_RETURN_PARAMETER_EVENT) || (p_param.type == BLE_APP_GENERAL_EVENT) ||
         (p_param.type == BLE_APP_SERVICE_EVENT))
     {
         // send
-        if (sys_queue_send_with_timeout(&g_ble_app_queue,
-                                        (void *)&p_param,
-                                        CONFIG_QUEUE_SEND_TIMEOUT_MS) == ERR_TIMEOUT)
+        if (sys_queue_send_with_timeout(&g_ble_app_queue, (void *) &p_param, CONFIG_QUEUE_SEND_TIMEOUT_MS) == ERR_TIMEOUT)
         {
             status = BLE_ERR_SENDTO_FAIL;
         }
@@ -198,7 +195,7 @@ ble_err_t task_ble_app_queue_send(ble_app_evt_param_t p_param)
     return status;
 }
 
-ble_err_t ble_queue_sendto(sys_tlv_t *pt_tlv)
+ble_err_t ble_queue_sendto(sys_tlv_t * pt_tlv)
 {
     ble_err_t t_return = BLE_ERR_OK;
 
@@ -218,11 +215,9 @@ ble_err_t ble_queue_sendto(sys_tlv_t *pt_tlv)
         task_queue_t t_queue;
 
         t_queue.u32_send_systick = sys_now();
-        t_queue.pt_tlv = pt_tlv;
+        t_queue.pt_tlv           = pt_tlv;
 
-        if (sys_queue_send_with_timeout(&g_cmd_transport_handle,
-                                        (void *)&t_queue,
-                                        CONFIG_QUEUE_SEND_TIMEOUT_MS) == ERR_TIMEOUT)
+        if (sys_queue_send_with_timeout(&g_cmd_transport_handle, (void *) &t_queue, CONFIG_QUEUE_SEND_TIMEOUT_MS) == ERR_TIMEOUT)
         {
             t_return = BLE_ERR_SENDTO_FAIL;
             break;
@@ -268,35 +263,25 @@ int task_ble_app_init(void)
 
     do
     {
-        if (sys_queue_new(&g_ble_app_queue,
-                          CONFIG_APP_QUEUE_SIZE,
-                          sizeof(ble_app_evt_param_t)) != ERR_OK)
+        if (sys_queue_new(&g_ble_app_queue, CONFIG_APP_QUEUE_SIZE, sizeof(ble_app_evt_param_t)) != ERR_OK)
         {
             i32_ret = -1;
             break;
         }
 
-        if (sys_queue_new(&g_app_notify_queue,
-                          NOTIFY_TASK_QUEUE_SIZE,
-                          sizeof(task_queue_t)) != ERR_OK)
+        if (sys_queue_new(&g_app_notify_queue, NOTIFY_TASK_QUEUE_SIZE, sizeof(task_queue_t)) != ERR_OK)
         {
             i32_ret = -1;
             break;
         }
 
-        if (sys_queue_new(&g_ble_cfm_queue,
-                          BLE_CFM_QUEUE_SIZE,
-                          sizeof(task_queue_t)) != ERR_OK)
+        if (sys_queue_new(&g_ble_cfm_queue, BLE_CFM_QUEUE_SIZE, sizeof(task_queue_t)) != ERR_OK)
         {
             i32_ret = -1;
             break;
         }
 
-        g_app_notify_task = sys_task_new("notify_t",
-                                         notify_task_handle,
-                                         NULL,
-                                         NOTIFY_TASK_SIZE,
-                                         NOTIFY_TASK_PRIORITY);
+        g_app_notify_task = sys_task_new("notify_t", notify_task_handle, NULL, NOTIFY_TASK_SIZE, NOTIFY_TASK_PRIORITY);
 
         if (g_app_notify_task == NULL)
         {

@@ -42,11 +42,11 @@
 
 
 #ifndef CHIP_DEVICE_CONFIG_SED_IDLE_INTERVAL
-#define CHIP_DEVICE_CONFIG_SED_IDLE_INTERVAL chip::System::Clock::Milliseconds32(500)
+#define CHIP_DEVICE_CONFIG_SED_IDLE_INTERVAL chip::System::Clock::Milliseconds32(650)
 #endif // CHIP_DEVICE_CONFIG_SED_IDLE_INTERVAL
 
 #ifndef CHIP_DEVICE_CONFIG_SED_ACTIVE_INTERVAL
-#define CHIP_DEVICE_CONFIG_SED_ACTIVE_INTERVAL chip::System::Clock::Milliseconds32(500)
+#define CHIP_DEVICE_CONFIG_SED_ACTIVE_INTERVAL chip::System::Clock::Milliseconds32(200)
 #endif // CHIP_DEVICE_CONFIG_SED_ACTIVE_INTERVAL
 
 // ========== Platform-specific Configuration =========

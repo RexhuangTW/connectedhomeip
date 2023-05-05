@@ -314,6 +314,8 @@ void AppTask::InitServer(intptr_t arg)
 
 void AppTask::UpdateStatusLED()
 {
+
+    #if(CHIP_DEVICE_CONFIG_ENABLE_SED == 0)
     if (sIsThreadBLEAdvertising && !sHaveBLEConnections)
     {
         init_rt582_led_flash(20, 250, 150);
@@ -330,6 +332,7 @@ void AppTask::UpdateStatusLED()
     {
         gpio_pin_clear(21);
     }
+    #endif
 }
 
 void AppTask::ChipEventHandler(const ChipDeviceEvent * aEvent, intptr_t /* arg */)
@@ -369,17 +372,16 @@ CHIP_ERROR AppTask::Init()
 {
     CHIP_ERROR err;
     ChipLogProgress(NotSpecified, "Current Software Version: %s", CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING);
-    
+
     err = ThreadStackMgr().InitThreadStack();
     if (err != CHIP_NO_ERROR)
     {
         ChipLogError(NotSpecified, "ThreadStackMgr().InitThreadStack() failed");
     }
-
+    
 #if CHIP_DEVICE_CONFIG_ENABLE_SED
     err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_SleepyEndDevice);
 #else
-ss
     //err = ConnectivityMgr().SetThreadDeviceType(ConnectivityManager::kThreadDeviceType_MinimalEndDevice);
 #endif
     if (err != CHIP_NO_ERROR)
@@ -405,7 +407,7 @@ ss
 CHIP_ERROR AppTask::StartAppTask()
 {
     CHIP_ERROR err;
-    bsp_init(BSP_INIT_LEDS | BSP_INIT_BUTTONS, ButtonEventHandler);
+    bsp_init(BSP_INIT_LEDS, ButtonEventHandler);
 
     sAppEventQueue = xQueueCreateStatic(APP_EVENT_QUEUE_SIZE, sizeof(AppEvent), 
                                     sAppEventQueueBuffer, &sAppEventQueueStruct);
@@ -564,7 +566,7 @@ void AppTask::AppTaskMain(void * pvParameter)
 
     while (true)
     {       
-        BaseType_t eventReceived = xQueueReceive(sAppEventQueue, &event, pdMS_TO_TICKS(10));
+        BaseType_t eventReceived = xQueueReceive(sAppEventQueue, &event, portMAX_DELAY);
        
         while (eventReceived == pdTRUE)
         {
