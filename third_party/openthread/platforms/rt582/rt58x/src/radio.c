@@ -256,7 +256,7 @@ otRadioCaps otPlatRadioGetCaps(otInstance * aInstance)
 
     /* clang-format off */
     otRadioCaps capabilities = (OT_RADIO_CAPS_ACK_TIMEOUT |
-                                //OT_RADIO_CAPS_TRANSMIT_RETRIES |
+                                OT_RADIO_CAPS_TRANSMIT_RETRIES |
 #if OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2
                                 OT_RADIO_CAPS_TRANSMIT_SEC      |
 #endif
@@ -1396,7 +1396,7 @@ static void rafael_tx_done(uint8_t u8_tx_status)
         sAckFrame.mLength = spRFBCtrl->ack_packet_read(sAckFrame.mPsdu,(uint8_t *)&sAckFrame.mInfo.mRxInfo.mTimestamp); 
         sAckFrame.mInfo.mRxInfo.mTimestamp = (uint32_t)(sAckFrame.mInfo.mRxInfo.mTimestamp-7000) ; //ack packet delay 110
     }
-    sys_queue_send_with_timeout(&g_tx_done_handle, &sTransmitError, 10);
+    sys_queue_send(&g_tx_done_handle, &sTransmitError);
     mib_counter_increase(ThreadTxDoneCount);    
 
     otTaskletsSignalPending();
@@ -1489,7 +1489,11 @@ static void rafael_rx_done(uint16_t packet_length, uint8_t *rx_data_address,
 
         memcpy(ReceiveFrame->mPsdu, rx_data_address + 8, ReceiveFrame->mLength);
 
-        sys_queue_send_with_timeout(&g_rx_done_handle, &ReceiveFrame, 5);
+        if(sys_queue_trysend(&g_rx_done_handle, &ReceiveFrame) != ERR_OK)
+        {
+            sys_free(ReceiveFrame->mPsdu);
+            sys_free(ReceiveFrame);
+        }
         mib_counter_increase(ThreadRxDoneCount);
 
     } while (0);
@@ -1511,6 +1515,14 @@ void rafael_radio_short_addr_ctrl(uint8_t ctrl_type, uint8_t *short_addr)
 void rafael_radio_extend_addr_ctrl(uint8_t ctrl_type, uint8_t *extend_addr)
 {
     spRFBCtrl->extend_addr_ctrl(ctrl_type, extend_addr);
+}
+
+static void rafael_otp_mac_addr(uint8_t *addr)
+{
+    uint8_t temp[256];
+
+    flash_read_sec_register((uint32_t)temp, 0x1100);
+    memcpy(addr, temp + OT_EXT_ADDRESS_SIZE, OT_EXT_ADDRESS_SIZE);
 }
 
 void rafael_rfb_init(void)
@@ -1541,6 +1553,8 @@ void rafael_rfb_init(void)
 #endif
 #endif
 
+    //rfb_debug_port_init();
+
     /* PHY PIB */
     
     spRFBCtrl->phy_pib_set(sTurnaroundTime,
@@ -1557,8 +1571,14 @@ void rafael_rfb_init(void)
                            sMacFrameRetris,
                            MAC_PIB_MAC_MIN_BE);
 
+    uint8_t err_addr[OT_EXT_ADDRESS_SIZE] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
-    flash_get_unique_id((uint32_t)sIEEE_EUI64Addr, 7);
+    rafael_otp_mac_addr(sIEEE_EUI64Addr);
+
+    if(!memcmp(err_addr, sIEEE_EUI64Addr, OT_EXT_ADDRESS_SIZE))
+    {
+        flash_get_unique_id((uint32_t)sIEEE_EUI64Addr, OT_EXT_ADDRESS_SIZE);
+    }
 
     /* Auto ACK */
     spRFBCtrl->auto_ack_set(true);
@@ -1583,7 +1603,7 @@ void rafael_rfb_init(void)
 #if 1
     /*
     * Set channel frequency :
-    * For band is subg, units is kHz
+    * For band is subg, units is 
     * For band is 2.4g, units is mHz
     */
 #if OPENTHREAD_CONFIG_RADIO_2P4GHZ_OQPSK_SUPPORT
@@ -1602,6 +1622,6 @@ void rafael_rfb_init(void)
                                   sCoordinator);
 
 
-    sys_queue_new(&g_tx_done_handle, 4, sizeof(void *));
+    sys_queue_new(&g_tx_done_handle, 16, sizeof(void *));
     sys_queue_new(&g_rx_done_handle, 16, sizeof(otRadioFrame *));
 }

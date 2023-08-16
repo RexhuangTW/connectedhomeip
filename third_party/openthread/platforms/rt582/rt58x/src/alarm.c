@@ -32,14 +32,15 @@
 static uint32_t sMsAlarm = 0;
 static bool sIsRunning   = false;
 static bool sMsisPending = false;
+static bool sMsIsFired   = false;
 
 static TimerHandle_t sAlarmTimer;
 static otInstance * sInstance;
 
 static void alarm_timer_handler(TimerHandle_t xTimer)
 {
+    sMsIsFired = true;
     otTaskletsSignalPending();
-    otPlatAlarmMilliFired(sInstance);
 }
 
 void rt58x_alarm_init()
@@ -47,7 +48,14 @@ void rt58x_alarm_init()
     sAlarmTimer = xTimerCreate("ThAlarm_T", 1, false, NULL, alarm_timer_handler);
 }
 
-void rt58x_alarm_process(otInstance * aInstance) {}
+void rt58x_alarm_process(otInstance * aInstance)
+{
+    if (sMsIsFired)
+    {
+        sMsIsFired = false;
+        otPlatAlarmMilliFired(aInstance);
+    }
+}
 
 uint32_t otPlatTimeGetXtalAccuracy(void)
 {
