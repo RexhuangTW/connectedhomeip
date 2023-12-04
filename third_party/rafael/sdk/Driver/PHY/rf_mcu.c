@@ -23,7 +23,11 @@
 #if (RF_MCU_CHIP_VER == RF_MCU_CHIP_VER_A)
 #include "rt569mxa_init.h"
 #elif (RF_MCU_CHIP_VER == RF_MCU_CHIP_VER_B)
+#if (RF_MCU_FW_TARGET == RF_MCU_FW_TARGET_MAC)
 #include "rt569mxb_init.h"
+#elif (RF_MCU_FW_TARGET == RF_MCU_FW_TARGET_BLE)
+#include "rt569mxb_ble_init.h"
+#endif
 #endif
 #endif
 #include "stdio.h"
@@ -35,22 +39,21 @@ RF_MCU_INIT_STATUS RfMcu_DefaultEntry(const uint8_t *patch_addr, uint32_t patch_
 const uint8_t *pPatchAddr = NULL;
 uint32_t uiPatchLength = 0;
 RF_MCU_PATCH_ENTRY vPatchEntry = RfMcu_DefaultEntry;
-
-const patch_cfg_ctrl_t PATCH_CFG_LIST[] =
-{
-    {0x0098, {0x01, 0x00, 0xFF, 0x00}},
-    {0x009C, {0x03, 0x00, 0x00, 0x00}},
-    {0x00A0, {0x1A, 0x01, 0x00, 0x00}},
-    {0x00C0, {0x12, 0xF0, 0x2A, 0x00}},
-};
-
-#define PATCH_CFG_NO (sizeof(PATCH_CFG_LIST)/sizeof(PATCH_CFG_LIST[0]))
 #endif
 
 #if (RF_MCU_CONST_LOAD_SUPPORTED)
 const uint8_t *pRfMcuConstAddr = NULL;
 uint32_t uiRfMcuConstLength = 0;
 #endif
+
+
+typedef struct __attribute__((packed)) hybrid_inst_cfg_ctrl_s
+{
+    uint16_t cfg_sfr;
+    uint8_t cfg_val[4];
+} hybrid_inst_cfg_ctrl_t;
+#define HYBRID_INST_CFG_NO     (sizeof(HYBRID_INST_MEM_CFG_LIST)/sizeof(HYBRID_INST_MEM_CFG_LIST[0]))
+
 
 #if (CFG_RF_MCU_CTRL_TYPE == RF_MCU_CTRL_BY_AHB)
 
@@ -585,6 +588,145 @@ uint32_t RfMcu_RegGet(uint16_t reg_address)
 }
 
 
+const hybrid_inst_cfg_ctrl_t HYBRID_INST_MEM_CFG_LIST[] =
+{
+    /* Instructions [I (1B) | L (1B) | P (2B)] */
+
+    //IL0 - host_cmd 0x80: host_mode_set_datalength (with TX_Data_Length_1)
+    {0x7000, {0xA2, 0x08, 0x78, 0x02}},
+    {0x7004, {0xA2, 0x08, 0x78, 0x0A}},
+    {0x7008, {0x00, 0x00, 0x00, 0x00}},
+
+    //IL1 - host_cmd 0x81: host_mode_set_datalength (with TX_Data_Length_2)
+    {0x7020, {0xA2, 0x08, 0x78, 0x12}},
+    {0x7024, {0xA2, 0x08, 0x78, 0x1A}},
+    {0x7028, {0x00, 0x00, 0x00, 0x00}},
+
+    //IL2 - host_cmd 0x82: host_mode_set_datalength (with TX_Data_Length_3)
+    {0x7040, {0xA2, 0x08, 0x78, 0x22}},
+    {0x7044, {0xA2, 0x08, 0x78, 0x2A}},
+    {0x7048, {0x00, 0x00, 0x00, 0x00}},
+
+    //IL3 - host_cmd 0x83: host_mode_set_datalength (with TX_Data_Length_4)
+    {0x7060, {0xA2, 0x08, 0x78, 0x32}},
+    {0x7064, {0xA2, 0x08, 0x78, 0x3A}},
+    {0x7068, {0x00, 0x00, 0x00, 0x00}},
+
+    //IL4 - host_cmd 0x84: host_mode_tx_enable
+    {0x7080, {0xA1, 0x0A, 0x78, 0x42}},
+    {0x7084, {0xA1, 0x0A, 0x78, 0x52}},
+    {0x7088, {0xA1, 0x0A, 0x78, 0x62}},
+    {0x708C, {0xA1, 0x0A, 0x78, 0x72}},
+    {0x7090, {0xA1, 0x04, 0x78, 0x7C}},
+    {0x7094, {0x00, 0x00, 0x00, 0x00}},
+
+    //IL5 - host_cmd 0x85: host_mode_tx_disable
+    {0x70A0, {0xA4, 0x04, 0x78, 0x80}},
+    {0x70A4, {0xA5, 0x04, 0x78, 0x84}},
+    {0x70A8, {0xA1, 0x04, 0x78, 0x88}},
+    {0x70AC, {0x00, 0x00, 0x00, 0x00}},
+
+    //IL6 - host_cmd 0x86: host_mode_rx_enable
+    {0x70C0, {0xA1, 0x0A, 0x78, 0x92}},
+    {0x70C4, {0xA1, 0x0A, 0x78, 0x52}},
+    {0x70C8, {0xA1, 0x0A, 0x78, 0x62}},
+    {0x70CC, {0xA1, 0x04, 0x78, 0x9C}},
+    {0x70D0, {0xA1, 0x04, 0x78, 0x7C}},
+    {0x70D4, {0x00, 0x00, 0x00, 0x00}},
+
+    //IL7 - host_cmd 0x87: host_mode_rx_disable
+    {0x70E0, {0xA3, 0x05, 0x78, 0xA2}},
+    {0x70E4, {0xA1, 0x04, 0x78, 0xA8}},
+    {0x70E8, {0xA5, 0x04, 0x78, 0xAC}},
+    {0x70EC, {0xA1, 0x04, 0x78, 0x88}},
+    {0x70F0, {0xA2, 0x06, 0x78, 0xB2}},
+    {0x70F4, {0x00, 0x00, 0x00, 0x00}},
+
+    //IL8 - host_cmd 0x88: host_mode_tx_queue_clear
+    {0x7100, {0xA1, 0x04, 0x78, 0xC0}},
+    {0x7104, {0x00, 0x00, 0x00, 0x00}},
+
+    //IL63 - host_cmd 0xBF: commands done check
+    {0x77E0, {0x00, 0x00, 0x00, 0x00}},
+
+    /* Parameters */
+    {0x7800, {0x00, 0x00, 0x81, 0x02}},
+    {0x7804, {0xFF, 0x07, 0x7E, 0x00}},
+    {0x7808, {0x00, 0x00, 0x81, 0x46}},
+    {0x780C, {0xFF, 0x07, 0x7E, 0x00}},
+
+    {0x7810, {0x00, 0x00, 0x81, 0x02}},
+    {0x7814, {0xFF, 0x07, 0x7E, 0x04}},
+    {0x7818, {0x00, 0x00, 0x81, 0x46}},
+    {0x781C, {0xFF, 0x07, 0x7E, 0x04}},
+
+    {0x7820, {0x00, 0x00, 0x81, 0x02}},
+    {0x7824, {0xFF, 0x07, 0x7E, 0x08}},
+    {0x7828, {0x00, 0x00, 0x81, 0x46}},
+    {0x782C, {0xFF, 0x07, 0x7E, 0x08}},
+
+    {0x7830, {0x00, 0x00, 0x81, 0x02}},
+    {0x7834, {0xFF, 0x07, 0x7E, 0x0C}},
+    {0x7838, {0x00, 0x00, 0x81, 0x46}},
+    {0x783C, {0xFF, 0x07, 0x7E, 0x0C}},
+
+    {0x7840, {0x00, 0x00, 0x81, 0x50}},
+    {0x7844, {0xFF, 0xFF, 0xFF, 0xFF}},
+    {0x7848, {0x01, 0x10, 0x00, 0x00}},
+
+    {0x7850, {0x00, 0x00, 0x81, 0x54}},
+    {0x7854, {0xFF, 0xFF, 0xFF, 0xFF}},
+    {0x7858, {0x00, 0x00, 0x00, 0x00}},
+
+    {0x7860, {0x00, 0x00, 0x81, 0x58}},
+    {0x7864, {0xFF, 0xFF, 0xFF, 0xFF}},
+    {0x7868, {0x00, 0x00, 0x00, 0x00}},
+
+    {0x7870, {0x00, 0x00, 0x81, 0x90}},
+    {0x7874, {0xFF, 0x00, 0x00, 0x02}},
+    {0x7878, {0x01, 0x00, 0x00, 0x02}},
+    {0x787C, {0x81, 0x90, 0xFF, 0x11}},
+
+    {0x7880, {0x80, 0x48, 0x01, 0x01}},
+    {0x7884, {0x81, 0x99, 0x07, 0x04}},
+    {0x7888, {0x81, 0x90, 0x67, 0x60}},
+
+    {0x7890, {0x00, 0x00, 0x81, 0x50}},
+    {0x7894, {0xFF, 0xFF, 0xFF, 0xFF}},
+    {0x7898, {0x21, 0x01, 0x00, 0x00}},
+    {0x789C, {0x81, 0x90, 0xFF, 0x01}},
+
+    {0x78A0, {0x00, 0x00, 0x82, 0x25}},
+    {0x78A4, {0x7F, 0x7E, 0x10, 0x00}},
+    {0x78A8, {0x82, 0x25, 0x7F, 0x3F}},
+    {0x78AC, {0x82, 0x77, 0x01, 0x01}},
+
+    {0x78B0, {0x00, 0x00, 0x82, 0x25}},
+    {0x78B4, {0x7F, 0x7E, 0x10, 0x00}},
+
+    {0x78C0, {0x80, 0x00, 0x10, 0x10}},
+
+    {0x7E00, {0x99, 0x00, 0x00, 0x00}}, // TX_Data_Length_1 [B0 | B1 | RSVD | RSVD] (LE)
+    {0x7E04, {0x9C, 0x00, 0x00, 0x00}}, // TX_Data_Length_2 [B0 | B1 | RSVD | RSVD] (LE)
+    {0x7E08, {0xCC, 0x00, 0x00, 0x00}}, // TX_Data_Length_3 [B0 | B1 | RSVD | RSVD] (LE)
+    {0x7E0C, {0x99, 0x01, 0x00, 0x00}}, // TX_Data_Length_4 [B0 | B1 | RSVD | RSVD] (LE)
+    {0x7E10, {0x00, 0x00, 0x00, 0x00}}, // Reserved for sync_bit_th in host_mode_rx_disable
+};
+
+
+void RfMcu_HybridInstCfg(void)
+{
+    uint32_t cfg_idx;
+
+    for (cfg_idx = 0 ; cfg_idx < HYBRID_INST_CFG_NO ; cfg_idx++)
+    {
+        RfMcu_MemorySet((uint16_t)HYBRID_INST_MEM_CFG_LIST[cfg_idx].cfg_sfr,
+                        (uint8_t *)HYBRID_INST_MEM_CFG_LIST[cfg_idx].cfg_val,
+                        (uint16_t)4);
+    }
+}
+
+
 void RfMcu_SysInitNotify(void)
 {
     while (RfMcu_McuStateRead() != RF_MCU_STATE_INIT_SUCCEED);
@@ -597,18 +739,29 @@ void RfMcu_PmPageSelect(RF_MCU_PM_PAGE_SEL page)
 {
     uint32_t pm_sel_reg;
 
+    pm_sel_reg = RfMcu_RegGet(RF_MCU_PM_SEL_REG_ADDR);
+#if (RF_MCU_CHIP_MODEL == RF_MCU_CHIP_569M0)
+    pm_sel_reg &= (~BIT0);
+#else
+    pm_sel_reg &= (~(BIT0 | BIT1));
+#endif
+
     if (page == RF_MCU_PM_PAGE_SEL_0)
     {
-        pm_sel_reg = RfMcu_RegGet(RF_MCU_PM_SEL_REG_ADDR);
-        pm_sel_reg &= (~1UL);
         RfMcu_RegSet(RF_MCU_PM_SEL_REG_ADDR, pm_sel_reg);
     }
     else if (page == RF_MCU_PM_PAGE_SEL_1)
     {
-        pm_sel_reg = RfMcu_RegGet(RF_MCU_PM_SEL_REG_ADDR);
-        pm_sel_reg |= 1UL;
+        pm_sel_reg |= BIT0;
         RfMcu_RegSet(RF_MCU_PM_SEL_REG_ADDR, pm_sel_reg);
     }
+#if (RF_MCU_CHIP_MODEL != RF_MCU_CHIP_569M0)
+    else if (page == RF_MCU_PM_PAGE_SEL_2)
+    {
+        pm_sel_reg |= BIT1;
+        RfMcu_RegSet(RF_MCU_PM_SEL_REG_ADDR, pm_sel_reg);
+    }
+#endif
     else
     {
         BREAK();
@@ -639,7 +792,25 @@ void RfMcu_ImageLoad(const uint8_t *fw_image, uint32_t image_size)
 {
     RfMcu_PmPageSelect(RF_MCU_PM_PAGE_SEL_0);
 
-    if (image_size > COMM_SUBSYS_FW_PAGE_SIZE)
+    if (image_size > 2 * COMM_SUBSYS_FW_PAGE_SIZE)
+    {
+        RfMcu_MemorySet(COMM_SUBSYS_PROGRAM_START_ADDR, fw_image, COMM_SUBSYS_FW_PAGE_SIZE);
+
+        RfMcu_PmPageSelect(RF_MCU_PM_PAGE_SEL_1);
+
+        RfMcu_MemorySet(COMM_SUBSYS_PROGRAM_START_ADDR,
+                        &fw_image[COMM_SUBSYS_FW_PAGE_SIZE],
+                        COMM_SUBSYS_FW_PAGE_SIZE);
+
+        RfMcu_PmPageSelect(RF_MCU_PM_PAGE_SEL_2);
+
+        RfMcu_MemorySet(COMM_SUBSYS_PROGRAM_START_ADDR,
+                        &fw_image[2 * COMM_SUBSYS_FW_PAGE_SIZE],
+                        image_size - 2 * COMM_SUBSYS_FW_PAGE_SIZE);
+
+        RfMcu_PmPageSelect(RF_MCU_PM_PAGE_SEL_0);
+    }
+    else if (image_size > COMM_SUBSYS_FW_PAGE_SIZE)
     {
         RfMcu_MemorySet(COMM_SUBSYS_PROGRAM_START_ADDR, fw_image, COMM_SUBSYS_FW_PAGE_SIZE);
 
@@ -723,7 +894,10 @@ void RfMcu_ConstLoad(const uint8_t *p_const, uint32_t const_size)
 #elif (RF_MCU_CHIP_MODEL == RF_MCU_CHIP_569MP)
     /* Please Design RF_MCU_MP_CONST_START_ADDR if needed to allocate const separatedly */
 #elif (RF_MCU_CHIP_MODEL == RF_MCU_CHIP_569M0)
-    RfMcu_MemorySet(RF_MCU_M0_CONST_START_ADDR, p_const, const_size);
+    if (const_size)
+    {
+        RfMcu_MemorySet(RF_MCU_M0_CONST_START_ADDR, p_const, const_size);
+    }
 #endif
 }
 #endif
@@ -732,6 +906,7 @@ void RfMcu_ConstLoad(const uint8_t *p_const, uint32_t const_size)
 #if (RF_MCU_CHIP_MODEL == RF_MCU_CHIP_569M0)
 void RfMcu_ImageLoadM0(const uint8_t *fw_image, uint32_t image_size)
 {
+#if 0
     uint16_t patch_cfg_reg0         = 0x0098;
     uint8_t patch_cfg_reg0_val[]    = {0x00, 0x00, 0xFF, 0x00};
     uint16_t patch_cfg_reg0_size    = 4;
@@ -765,6 +940,15 @@ void RfMcu_ImageLoadM0(const uint8_t *fw_image, uint32_t image_size)
     }
 
     RfMcu_PmToDmControl(TRUE);
+#else
+    RfMcu_PmToDmControl(TRUE);
+
+    RfMcu_PmPageSelect(RF_MCU_PM_PAGE_SEL_0);
+
+    RfMcu_MemorySet(COMM_SUBSYS_PROGRAM_START_ADDR,
+                    fw_image,
+                    image_size);
+#endif
 }
 
 
@@ -972,12 +1156,12 @@ void commsubsystem_handler(void)
 
 void BusFault_Handler (void)
 {
-    //printf(("BusFault_Handler\n");
+    printf("BusFault_Handler\n");
 }
 
 
 void UsageFault_Handler(void)
 {
-    //printf(("UsageFault_Handler\n");
+    printf("UsageFault_Handler\n");
 }
 

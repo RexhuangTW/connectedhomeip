@@ -2,11 +2,11 @@
 *
 * @File         ruci_cmn_hal_cmd.h
 * @Version
-* $Revision: 5065
-* $Date: 2022-09-08
+* $Revision: 6351
+* $Date: 2023-11-17
 * @Brief
 * @Note
-* Copyright (C) 2019 Rafael Microelectronics Inc. All rights reserved.
+* Copyright (C) 2023 Rafael Microelectronics Inc. All rights reserved.
 *
 ******************************************************************************/
 #ifndef _RUCI_CMN_HAL_CMD_H
@@ -238,9 +238,9 @@ typedef struct ruci_para_set_rssi_offset_s
 // RUCI: set_tx_power_compensation ---------------------------------------------
 #define RUCI_SET_TX_POWER_COMPENSATION          RUCI_NUM_SET_TX_POWER_COMPENSATION, ruci_elmt_type_set_tx_power_compensation, ruci_elmt_num_set_tx_power_compensation
 #define RUCI_CODE_SET_TX_POWER_COMPENSATION     0x08
-#define RUCI_LEN_SET_TX_POWER_COMPENSATION      6
-#define RUCI_NUM_SET_TX_POWER_COMPENSATION      6
-#define RUCI_PARA_LEN_SET_TX_POWER_COMPENSATION 3
+#define RUCI_LEN_SET_TX_POWER_COMPENSATION      7
+#define RUCI_NUM_SET_TX_POWER_COMPENSATION      7
+#define RUCI_PARA_LEN_SET_TX_POWER_COMPENSATION 4
 #if (RUCI_ENDIAN_INVERSE)
 extern const uint8_t ruci_elmt_type_set_tx_power_compensation[];
 extern const uint8_t ruci_elmt_num_set_tx_power_compensation[];
@@ -253,10 +253,11 @@ typedef struct ruci_para_set_tx_power_compensation_s
     uint8_t         tx_power_offset;
     uint8_t         tx_poly_gain;
     uint8_t         tx_pa_pw_pre;
+    uint8_t         modem_type;
 } ruci_para_set_tx_power_compensation_t;
 
 /* User should provide msg buffer is greater than sizeof(ruci_para_set_tx_power_compensation_t) */
-#define SET_RUCI_PARA_SET_TX_POWER_COMPENSATION(msg, tx_power_offset_in, tx_poly_gain_in, tx_pa_pw_pre_in)        \
+#define SET_RUCI_PARA_SET_TX_POWER_COMPENSATION(msg, tx_power_offset_in, tx_poly_gain_in, tx_pa_pw_pre_in, modem_type_in)        \
         do{                                                                                                            \
         ((ruci_para_set_tx_power_compensation_t *)msg)->ruci_header.u8                 = RUCI_CMN_HAL_CMD_HEADER;                \
         ((ruci_para_set_tx_power_compensation_t *)msg)->sub_header                     = RUCI_CODE_SET_TX_POWER_COMPENSATION;    \
@@ -264,14 +265,15 @@ typedef struct ruci_para_set_tx_power_compensation_s
         ((ruci_para_set_tx_power_compensation_t *)msg)->tx_power_offset                = tx_power_offset_in;                     \
         ((ruci_para_set_tx_power_compensation_t *)msg)->tx_poly_gain                   = tx_poly_gain_in;                        \
         ((ruci_para_set_tx_power_compensation_t *)msg)->tx_pa_pw_pre                   = tx_pa_pw_pre_in;                        \
+        ((ruci_para_set_tx_power_compensation_t *)msg)->modem_type                     = modem_type_in;                          \
         }while(0)
 
 // RUCI: set_tx_power_channel_compensation -------------------------------------
 #define RUCI_SET_TX_POWER_CHANNEL_COMPENSATION  RUCI_NUM_SET_TX_POWER_CHANNEL_COMPENSATION, ruci_elmt_type_set_tx_power_channel_compensation, ruci_elmt_num_set_tx_power_channel_compensation
 #define RUCI_CODE_SET_TX_POWER_CHANNEL_COMPENSATION 0x09
-#define RUCI_LEN_SET_TX_POWER_CHANNEL_COMPENSATION 7
-#define RUCI_NUM_SET_TX_POWER_CHANNEL_COMPENSATION 7
-#define RUCI_PARA_LEN_SET_TX_POWER_CHANNEL_COMPENSATION 4
+#define RUCI_LEN_SET_TX_POWER_CHANNEL_COMPENSATION 8
+#define RUCI_NUM_SET_TX_POWER_CHANNEL_COMPENSATION 8
+#define RUCI_PARA_LEN_SET_TX_POWER_CHANNEL_COMPENSATION 5
 #if (RUCI_ENDIAN_INVERSE)
 extern const uint8_t ruci_elmt_type_set_tx_power_channel_compensation[];
 extern const uint8_t ruci_elmt_num_set_tx_power_channel_compensation[];
@@ -285,10 +287,11 @@ typedef struct ruci_para_set_tx_power_channel_compensation_s
     uint8_t         tx_power_offset1;
     uint8_t         tx_power_offset2;
     uint8_t         tx_power_offset3;
+    uint8_t         modem_type;
 } ruci_para_set_tx_power_channel_compensation_t;
 
 /* User should provide msg buffer is greater than sizeof(ruci_para_set_tx_power_channel_compensation_t) */
-#define SET_RUCI_PARA_SET_TX_POWER_CHANNEL_COMPENSATION(msg, tx_power_offset0_in, tx_power_offset1_in, tx_power_offset2_in, tx_power_offset3_in)        \
+#define SET_RUCI_PARA_SET_TX_POWER_CHANNEL_COMPENSATION(msg, tx_power_offset0_in, tx_power_offset1_in, tx_power_offset2_in, tx_power_offset3_in, modem_type_in)        \
         do{                                                                                                            \
         ((ruci_para_set_tx_power_channel_compensation_t *)msg)->ruci_header.u8                 = RUCI_CMN_HAL_CMD_HEADER;                \
         ((ruci_para_set_tx_power_channel_compensation_t *)msg)->sub_header                     = RUCI_CODE_SET_TX_POWER_CHANNEL_COMPENSATION;\
@@ -297,14 +300,15 @@ typedef struct ruci_para_set_tx_power_channel_compensation_s
         ((ruci_para_set_tx_power_channel_compensation_t *)msg)->tx_power_offset1               = tx_power_offset1_in;                    \
         ((ruci_para_set_tx_power_channel_compensation_t *)msg)->tx_power_offset2               = tx_power_offset2_in;                    \
         ((ruci_para_set_tx_power_channel_compensation_t *)msg)->tx_power_offset3               = tx_power_offset3_in;                    \
+        ((ruci_para_set_tx_power_channel_compensation_t *)msg)->modem_type                     = modem_type_in;                          \
         }while(0)
 
 // RUCI: set_tx_power_channel_segment ------------------------------------------
 #define RUCI_SET_TX_POWER_CHANNEL_SEGMENT       RUCI_NUM_SET_TX_POWER_CHANNEL_SEGMENT, ruci_elmt_type_set_tx_power_channel_segment, ruci_elmt_num_set_tx_power_channel_segment
 #define RUCI_CODE_SET_TX_POWER_CHANNEL_SEGMENT  0x0A
-#define RUCI_LEN_SET_TX_POWER_CHANNEL_SEGMENT   6
-#define RUCI_NUM_SET_TX_POWER_CHANNEL_SEGMENT   6
-#define RUCI_PARA_LEN_SET_TX_POWER_CHANNEL_SEGMENT 3
+#define RUCI_LEN_SET_TX_POWER_CHANNEL_SEGMENT   7
+#define RUCI_NUM_SET_TX_POWER_CHANNEL_SEGMENT   7
+#define RUCI_PARA_LEN_SET_TX_POWER_CHANNEL_SEGMENT 4
 #if (RUCI_ENDIAN_INVERSE)
 extern const uint8_t ruci_elmt_type_set_tx_power_channel_segment[];
 extern const uint8_t ruci_elmt_num_set_tx_power_channel_segment[];
@@ -317,10 +321,11 @@ typedef struct ruci_para_set_tx_power_channel_segment_s
     uint8_t         segment_a;
     uint8_t         segment_b;
     uint8_t         segment_c;
+    uint8_t         modem_type;
 } ruci_para_set_tx_power_channel_segment_t;
 
 /* User should provide msg buffer is greater than sizeof(ruci_para_set_tx_power_channel_segment_t) */
-#define SET_RUCI_PARA_SET_TX_POWER_CHANNEL_SEGMENT(msg, segment_a_in, segment_b_in, segment_c_in)        \
+#define SET_RUCI_PARA_SET_TX_POWER_CHANNEL_SEGMENT(msg, segment_a_in, segment_b_in, segment_c_in, modem_type_in)        \
         do{                                                                                                            \
         ((ruci_para_set_tx_power_channel_segment_t *)msg)->ruci_header.u8                 = RUCI_CMN_HAL_CMD_HEADER;                \
         ((ruci_para_set_tx_power_channel_segment_t *)msg)->sub_header                     = RUCI_CODE_SET_TX_POWER_CHANNEL_SEGMENT; \
@@ -328,6 +333,7 @@ typedef struct ruci_para_set_tx_power_channel_segment_s
         ((ruci_para_set_tx_power_channel_segment_t *)msg)->segment_a                      = segment_a_in;                           \
         ((ruci_para_set_tx_power_channel_segment_t *)msg)->segment_b                      = segment_b_in;                           \
         ((ruci_para_set_tx_power_channel_segment_t *)msg)->segment_c                      = segment_c_in;                           \
+        ((ruci_para_set_tx_power_channel_segment_t *)msg)->modem_type                     = modem_type_in;                          \
         }while(0)
 
 // RUCI: set_pmu_mpk_setting ---------------------------------------------------
@@ -375,6 +381,95 @@ typedef struct ruci_para_set_pmu_mpk_setting_s
         ((ruci_para_set_pmu_mpk_setting_t *)msg)->ldomv_vosel_l                  = ldomv_vosel_l_in;                       \
         ((ruci_para_set_pmu_mpk_setting_t *)msg)->bg_os                          = bg_os_in;                               \
         ((ruci_para_set_pmu_mpk_setting_t *)msg)->bg_os_dir                      = bg_os_dir_in;                           \
+        }while(0)
+
+// RUCI: set_tx_power_oqpsk ----------------------------------------------------
+#define RUCI_SET_TX_POWER_OQPSK                 RUCI_NUM_SET_TX_POWER_OQPSK, ruci_elmt_type_set_tx_power_oqpsk, ruci_elmt_num_set_tx_power_oqpsk
+#define RUCI_CODE_SET_TX_POWER_OQPSK            0x0C
+#define RUCI_LEN_SET_TX_POWER_OQPSK             5
+#define RUCI_NUM_SET_TX_POWER_OQPSK             5
+#define RUCI_PARA_LEN_SET_TX_POWER_OQPSK        2
+#if (RUCI_ENDIAN_INVERSE)
+extern const uint8_t ruci_elmt_type_set_tx_power_oqpsk[];
+extern const uint8_t ruci_elmt_num_set_tx_power_oqpsk[];
+#endif /* RUCI_ENDIAN_INVERSE */
+typedef struct ruci_para_set_tx_power_oqpsk_s
+{
+    ruci_head_t     ruci_header;
+    uint8_t         sub_header;
+    uint8_t         length;
+    uint8_t         rf_band;
+    uint8_t         tx_power;
+} ruci_para_set_tx_power_oqpsk_t;
+
+/* User should provide msg buffer is greater than sizeof(ruci_para_set_tx_power_oqpsk_t) */
+#define SET_RUCI_PARA_SET_TX_POWER_OQPSK(msg, rf_band_in, tx_power_in)        \
+        do{                                                                                                            \
+        ((ruci_para_set_tx_power_oqpsk_t *)msg)->ruci_header.u8                 = RUCI_CMN_HAL_CMD_HEADER;                \
+        ((ruci_para_set_tx_power_oqpsk_t *)msg)->sub_header                     = RUCI_CODE_SET_TX_POWER_OQPSK;           \
+        ((ruci_para_set_tx_power_oqpsk_t *)msg)->length                         = RUCI_PARA_LEN_SET_TX_POWER_OQPSK;       \
+        ((ruci_para_set_tx_power_oqpsk_t *)msg)->rf_band                        = rf_band_in;                             \
+        ((ruci_para_set_tx_power_oqpsk_t *)msg)->tx_power                       = tx_power_in;                            \
+        }while(0)
+
+// RUCI: set_pmu_op_mode -------------------------------------------------------
+#define RUCI_SET_PMU_OP_MODE                    RUCI_NUM_SET_PMU_OP_MODE, ruci_elmt_type_set_pmu_op_mode, ruci_elmt_num_set_pmu_op_mode
+#define RUCI_CODE_SET_PMU_OP_MODE               0x0D
+#define RUCI_LEN_SET_PMU_OP_MODE                4
+#define RUCI_NUM_SET_PMU_OP_MODE                4
+#define RUCI_PARA_LEN_SET_PMU_OP_MODE           1
+#if (RUCI_ENDIAN_INVERSE)
+extern const uint8_t ruci_elmt_type_set_pmu_op_mode[];
+extern const uint8_t ruci_elmt_num_set_pmu_op_mode[];
+#endif /* RUCI_ENDIAN_INVERSE */
+typedef struct ruci_para_set_pmu_op_mode_s
+{
+    ruci_head_t     ruci_header;
+    uint8_t         sub_header;
+    uint8_t         length;
+    uint8_t         pmu_op_mode;
+} ruci_para_set_pmu_op_mode_t;
+
+/* User should provide msg buffer is greater than sizeof(ruci_para_set_pmu_op_mode_t) */
+#define SET_RUCI_PARA_SET_PMU_OP_MODE(msg, pmu_op_mode_in)        \
+        do{                                                                                                            \
+        ((ruci_para_set_pmu_op_mode_t *)msg)->ruci_header.u8                 = RUCI_CMN_HAL_CMD_HEADER;                \
+        ((ruci_para_set_pmu_op_mode_t *)msg)->sub_header                     = RUCI_CODE_SET_PMU_OP_MODE;              \
+        ((ruci_para_set_pmu_op_mode_t *)msg)->length                         = RUCI_PARA_LEN_SET_PMU_OP_MODE;          \
+        ((ruci_para_set_pmu_op_mode_t *)msg)->pmu_op_mode                    = pmu_op_mode_in;                         \
+        }while(0)
+
+// RUCI: set_tx_power_by -------------------------------------------------------
+#define RUCI_SET_TX_POWER_BY                    RUCI_NUM_SET_TX_POWER_BY, ruci_elmt_type_set_tx_power_by, ruci_elmt_num_set_tx_power_by
+#define RUCI_CODE_SET_TX_POWER_BY               0x0E
+#define RUCI_LEN_SET_TX_POWER_BY                7
+#define RUCI_NUM_SET_TX_POWER_BY                7
+#define RUCI_PARA_LEN_SET_TX_POWER_BY           4
+#if (RUCI_ENDIAN_INVERSE)
+extern const uint8_t ruci_elmt_type_set_tx_power_by[];
+extern const uint8_t ruci_elmt_num_set_tx_power_by[];
+#endif /* RUCI_ENDIAN_INVERSE */
+typedef struct ruci_para_set_tx_power_by_s
+{
+    ruci_head_t     ruci_header;
+    uint8_t         sub_header;
+    uint8_t         length;
+    uint8_t         rf_band;
+    uint8_t         modulation_type;
+    uint8_t         gain_table;
+    uint8_t         tx_power;
+} ruci_para_set_tx_power_by_t;
+
+/* User should provide msg buffer is greater than sizeof(ruci_para_set_tx_power_by_t) */
+#define SET_RUCI_PARA_SET_TX_POWER_BY(msg, rf_band_in, modulation_type_in, gain_table_in, tx_power_in)        \
+        do{                                                                                                            \
+        ((ruci_para_set_tx_power_by_t *)msg)->ruci_header.u8                 = RUCI_CMN_HAL_CMD_HEADER;                \
+        ((ruci_para_set_tx_power_by_t *)msg)->sub_header                     = RUCI_CODE_SET_TX_POWER_BY;              \
+        ((ruci_para_set_tx_power_by_t *)msg)->length                         = RUCI_PARA_LEN_SET_TX_POWER_BY;          \
+        ((ruci_para_set_tx_power_by_t *)msg)->rf_band                        = rf_band_in;                             \
+        ((ruci_para_set_tx_power_by_t *)msg)->modulation_type                = modulation_type_in;                     \
+        ((ruci_para_set_tx_power_by_t *)msg)->gain_table                     = gain_table_in;                          \
+        ((ruci_para_set_tx_power_by_t *)msg)->tx_power                       = tx_power_in;                            \
         }while(0)
 
 #pragma pack(pop)

@@ -32,7 +32,7 @@ const uint32_t firmware_size_ruci = 0;
 const uint32_t firmware_size_ble = sizeof(firmware_program_ble);
 #else
 const uint8_t firmware_program_ble[] = {0};
-const uint32_t firmware_size_ruci = 0;
+const uint32_t firmware_size_ble = 0;
 #endif
 
 #if (RF_FW_INCLUDE_MULTI_2P4G == TRUE)
@@ -63,7 +63,7 @@ const uint32_t firmware_size_ruci = 0;
 const uint32_t firmware_size_ble = sizeof(firmware_program_ble);
 #else
 const uint8_t firmware_program_ble[] = {0};
-const uint32_t firmware_size_ruci = 0;
+const uint32_t firmware_size_ble = 0;
 #endif
 
 #if (RF_FW_INCLUDE_MULTI_2P4G == TRUE)
@@ -79,11 +79,25 @@ const uint32_t firmware_size_it = 0;
 const uint8_t firmware_const_it[] = {0};
 const uint32_t const_size_it = 0;
 
+const uint8_t firmware_program_mac_acc[] = {0};
+const uint32_t firmware_size_mac_acc = 0;
+const uint8_t firmware_const_mac_acc[] = {0};
+const uint32_t const_size_mac_acc = 0;
+
+const uint8_t firmware_program_hyb_inst[] = {0};
+const uint32_t firmware_size_hyb_inst = 0;
+const uint8_t firmware_const_hyb_inst[] = {0};
+const uint32_t const_size_hyb_inst = 0;
+
 #elif (RF_MCU_CHIP_BASE == BASE_ROM_TYPE)
 
 #if (RF_FW_INCLUDE_INTERNAL_TEST == TRUE)
 #if (RF_MCU_CHIP_VER == RF_MCU_CHIP_VER_A)
 #include "prg_m0a_it_fw.h"
+const uint32_t firmware_size_it = sizeof(firmware_program_it);
+const uint32_t const_size_it = sizeof(firmware_const_it);
+#elif (RF_MCU_CHIP_VER == RF_MCU_CHIP_VER_B)
+#include "prg_m0b_it_fw.h"
 const uint32_t firmware_size_it = sizeof(firmware_program_it);
 const uint32_t const_size_it = sizeof(firmware_const_it);
 #else
@@ -92,6 +106,18 @@ const uint32_t firmware_size_it = 0;
 const uint8_t firmware_const_it[] = {0};
 const uint32_t const_size_it = 0;
 #endif
+#endif
+
+#if (RF_FW_INCLUDE_MAC_ACC == TRUE)
+#include "prg_mx_mac_acc_fw.h"
+const uint32_t firmware_size_mac_acc = sizeof(firmware_program_mac_acc);
+const uint32_t const_size_mac_acc = 0;
+#endif
+
+#if (RF_FW_INCLUDE_HYBRID_INST == TRUE)
+#include "prg_mx_hyb_inst_fw.h"
+const uint32_t firmware_size_hyb_inst = sizeof(firmware_program_hyb_inst);
+const uint32_t const_size_hyb_inst = 0;
 #endif
 
 #else

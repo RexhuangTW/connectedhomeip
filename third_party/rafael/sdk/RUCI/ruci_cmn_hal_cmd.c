@@ -2,11 +2,11 @@
 *
 * @File         ruci_cmn_hal_cmd.c
 * @Version
-* $Revision:5065
-* $Date: 2022-09-08
+* $Revision:6351
+* $Date: 2023-11-17
 * @Brief
 * @Note
-* Copyright (C) 2019 Rafael Microelectronics Inc. All rights reserved.
+* Copyright (C) 2023 Rafael Microelectronics Inc. All rights reserved.
 *
 *****************************************************************************/
 
@@ -94,31 +94,31 @@ const uint8_t ruci_elmt_num_set_rssi_offset[] =
 // RUCI: set_tx_power_compensation ---------------------------------------------
 const uint8_t ruci_elmt_type_set_tx_power_compensation[] =
 {
-    1, 1, 1, 1, 1, 1
+    1, 1, 1, 1, 1, 1, 1
 };
 const uint8_t ruci_elmt_num_set_tx_power_compensation[] =
 {
-    1, 1, 1, 1, 1, 1
+    1, 1, 1, 1, 1, 1, 1
 };
 
 // RUCI: set_tx_power_channel_compensation -------------------------------------
 const uint8_t ruci_elmt_type_set_tx_power_channel_compensation[] =
 {
-    1, 1, 1, 1, 1, 1, 1
+    1, 1, 1, 1, 1, 1, 1, 1
 };
 const uint8_t ruci_elmt_num_set_tx_power_channel_compensation[] =
 {
-    1, 1, 1, 1, 1, 1, 1
+    1, 1, 1, 1, 1, 1, 1, 1
 };
 
 // RUCI: set_tx_power_channel_segment ------------------------------------------
 const uint8_t ruci_elmt_type_set_tx_power_channel_segment[] =
 {
-    1, 1, 1, 1, 1, 1
+    1, 1, 1, 1, 1, 1, 1
 };
 const uint8_t ruci_elmt_num_set_tx_power_channel_segment[] =
 {
-    1, 1, 1, 1, 1, 1
+    1, 1, 1, 1, 1, 1, 1
 };
 
 // RUCI: set_pmu_mpk_setting ---------------------------------------------------
@@ -129,6 +129,36 @@ const uint8_t ruci_elmt_type_set_pmu_mpk_setting[] =
 const uint8_t ruci_elmt_num_set_pmu_mpk_setting[] =
 {
     1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1
+};
+
+// RUCI: set_tx_power_oqpsk ----------------------------------------------------
+const uint8_t ruci_elmt_type_set_tx_power_oqpsk[] =
+{
+    1, 1, 1, 1, 1
+};
+const uint8_t ruci_elmt_num_set_tx_power_oqpsk[] =
+{
+    1, 1, 1, 1, 1
+};
+
+// RUCI: set_pmu_op_mode -------------------------------------------------------
+const uint8_t ruci_elmt_type_set_pmu_op_mode[] =
+{
+    1, 1, 1, 1
+};
+const uint8_t ruci_elmt_num_set_pmu_op_mode[] =
+{
+    1, 1, 1, 1
+};
+
+// RUCI: set_tx_power_by -------------------------------------------------------
+const uint8_t ruci_elmt_type_set_tx_power_by[] =
+{
+    1, 1, 1, 1, 1, 1, 1
+};
+const uint8_t ruci_elmt_num_set_tx_power_by[] =
+{
+    1, 1, 1, 1, 1, 1, 1
 };
 
 #endif /* RUCI_ENABLE_CMN */

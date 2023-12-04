@@ -9,7 +9,9 @@
 #define __RT569MXB_INIT_H__
 
 #include "rf_mcu_chip.h"
+#include "rf_mcu_types.h"
 
+#if ((RF_MCU_CHIP_MODEL == RF_MCU_CHIP_569M0) && (RF_MCU_CHIP_VER == RF_MCU_CHIP_VER_B) && (RF_MCU_FW_TARGET == RF_MCU_FW_TARGET_MAC))
 #ifdef __cplusplus
 extern "C"
 {
@@ -18,7 +20,6 @@ extern "C"
 /*******************************************************************************
 *   CONSTANT AND DEFINE
 *******************************************************************************/
-#if ((RF_MCU_CHIP_MODEL == RF_MCU_CHIP_569M0) && (RF_MCU_CHIP_VER == RF_MCU_CHIP_VER_B))
 
 /* HAL operation mode */
 #define HAL_BLE_SUPPORT             (0x01)
@@ -36,6 +37,11 @@ extern "C"
 #define HAL_16M_CLK_SUPPORT         (0x01)
 #define HAL_32M_CLK_SUPPORT         (0x02)
 #define HAL_CLK_CFG                 (HAL_16M_CLK_SUPPORT|HAL_32M_CLK_SUPPORT)
+
+/* TX power */
+#define RF_TX_POWER_0DBM                    (0)
+#define RF_TX_POWER_10DBM                   (1)
+#define RF_TX_POWER_TYPE                    (RF_TX_POWER_0DBM)
 
 /* Data BW */
 #define HAL_BW_2M_SUPPORT           (0x0001)
@@ -80,6 +86,7 @@ extern "C"
 #define PHY_TAB_LNA_GAIN_LEN        (16)
 #define PHY_TAB_TIA_GAIN_LEN        (16)
 #define PHY_TAB_VGA_GAIN_LEN        (16)
+#define REG_PATCH_MAX               (16)
 
 #pragma pack(push)
 #pragma pack(1)
@@ -729,7 +736,7 @@ typedef struct HAL_REG_PATCH
     uint16_t    enable;
 
     /* Patch memory info. */
-    sHAL_REG_PATCH_MEM  mem[15];
+    sHAL_REG_PATCH_MEM  mem[REG_PATCH_MAX];
 } sHAL_REG_PATCH, *pHAL_REG_PATCH;
 
 /* HAL memory indicater */
@@ -788,17 +795,23 @@ typedef struct HAL_PARA_IND
 } sHAL_PARA_IND, *pHAL_PARA_IND;
 
 #pragma pack(pop)
+
+/**************************************************************************************************
+ *    Global Variables
+ *************************************************************************************************/
+#if (RF_MCU_PATCH_SUPPORTED)
+extern const patch_cfg_ctrl_t PATCH_CFG_LIST[];
+extern const uint32_t PATCH_CFG_NO;
 #endif
 
 /**************************************************************************************************
  *    Global Prototypes
  *************************************************************************************************/
-#if ((RF_MCU_CHIP_MODEL == RF_MCU_CHIP_569M0) && (RF_MCU_CHIP_VER == RF_MCU_CHIP_VER_B))
 void RfMcu_PhyExtMemInit(void);
-#endif
 
 #ifdef __cplusplus
 }
+#endif
 #endif
 #endif /* __RT569MXB_INIT_H__ */
 

@@ -2,11 +2,11 @@
 *
 * @File         ruci_cmn_sys_cmd.h
 * @Version
-* $Revision: 5065
-* $Date: 2022-09-08
+* $Revision: 6351
+* $Date: 2023-11-17
 * @Brief
 * @Note
-* Copyright (C) 2019 Rafael Microelectronics Inc. All rights reserved.
+* Copyright (C) 2023 Rafael Microelectronics Inc. All rights reserved.
 *
 ******************************************************************************/
 #ifndef _RUCI_CMN_SYS_CMD_H
@@ -47,6 +47,35 @@ typedef struct ruci_para_get_fw_ver_s
         ((ruci_para_get_fw_ver_t *)msg)->ruci_header.u8                 = RUCI_CMN_SYS_CMD_HEADER;                \
         ((ruci_para_get_fw_ver_t *)msg)->sub_header                     = RUCI_CODE_GET_FW_VER;                   \
         ((ruci_para_get_fw_ver_t *)msg)->length                         = RUCI_PARA_LEN_GET_FW_VER;               \
+        }while(0)
+
+// RUCI: set_pta_default -------------------------------------------------------
+#define RUCI_SET_PTA_DEFAULT                    RUCI_NUM_SET_PTA_DEFAULT, ruci_elmt_type_set_pta_default, ruci_elmt_num_set_pta_default
+#define RUCI_CODE_SET_PTA_DEFAULT               0x02
+#define RUCI_LEN_SET_PTA_DEFAULT                5
+#define RUCI_NUM_SET_PTA_DEFAULT                5
+#define RUCI_PARA_LEN_SET_PTA_DEFAULT           2
+#if (RUCI_ENDIAN_INVERSE)
+extern const uint8_t ruci_elmt_type_set_pta_default[];
+extern const uint8_t ruci_elmt_num_set_pta_default[];
+#endif /* RUCI_ENDIAN_INVERSE */
+typedef struct ruci_para_set_pta_default_s
+{
+    ruci_head_t     ruci_header;
+    uint8_t         sub_header;
+    uint8_t         length;
+    uint8_t         enable_flag;
+    uint8_t         inverse_ctrl;
+} ruci_para_set_pta_default_t;
+
+/* User should provide msg buffer is greater than sizeof(ruci_para_set_pta_default_t) */
+#define SET_RUCI_PARA_SET_PTA_DEFAULT(msg, enable_flag_in, inverse_ctrl_in)        \
+        do{                                                                                                            \
+        ((ruci_para_set_pta_default_t *)msg)->ruci_header.u8                 = RUCI_CMN_SYS_CMD_HEADER;                \
+        ((ruci_para_set_pta_default_t *)msg)->sub_header                     = RUCI_CODE_SET_PTA_DEFAULT;              \
+        ((ruci_para_set_pta_default_t *)msg)->length                         = RUCI_PARA_LEN_SET_PTA_DEFAULT;          \
+        ((ruci_para_set_pta_default_t *)msg)->enable_flag                    = enable_flag_in;                         \
+        ((ruci_para_set_pta_default_t *)msg)->inverse_ctrl                   = inverse_ctrl_in;                        \
         }while(0)
 
 #pragma pack(pop)

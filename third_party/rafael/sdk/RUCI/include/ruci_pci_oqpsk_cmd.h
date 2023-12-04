@@ -2,11 +2,11 @@
 *
 * @File         ruci_pci_oqpsk_cmd.h
 * @Version
-* $Revision: 5065
-* $Date: 2022-09-08
+* $Revision: 6351
+* $Date: 2023-11-17
 * @Brief
 * @Note
-* Copyright (C) 2019 Rafael Microelectronics Inc. All rights reserved.
+* Copyright (C) 2023 Rafael Microelectronics Inc. All rights reserved.
 *
 ******************************************************************************/
 #ifndef _RUCI_PCI_OQPSK_CMD_H
@@ -27,9 +27,9 @@
 // RUCI: initiate_oqpsk --------------------------------------------------------
 #define RUCI_INITIATE_OQPSK                     RUCI_NUM_INITIATE_OQPSK, ruci_elmt_type_initiate_oqpsk, ruci_elmt_num_initiate_oqpsk
 #define RUCI_CODE_INITIATE_OQPSK                0x01
-#define RUCI_LEN_INITIATE_OQPSK                 3
-#define RUCI_NUM_INITIATE_OQPSK                 3
-#define RUCI_PARA_LEN_INITIATE_OQPSK            0
+#define RUCI_LEN_INITIATE_OQPSK                 4
+#define RUCI_NUM_INITIATE_OQPSK                 4
+#define RUCI_PARA_LEN_INITIATE_OQPSK            1
 #if (RUCI_ENDIAN_INVERSE)
 extern const uint8_t ruci_elmt_type_initiate_oqpsk[];
 extern const uint8_t ruci_elmt_num_initiate_oqpsk[];
@@ -39,14 +39,16 @@ typedef struct ruci_para_initiate_oqpsk_s
     ruci_head_t     ruci_header;
     uint8_t         sub_header;
     uint8_t         length;
+    uint8_t         band_type;
 } ruci_para_initiate_oqpsk_t;
 
 /* User should provide msg buffer is greater than sizeof(ruci_para_initiate_oqpsk_t) */
-#define SET_RUCI_PARA_INITIATE_OQPSK(msg)        \
+#define SET_RUCI_PARA_INITIATE_OQPSK(msg, band_type_in)        \
         do{                                                                                                            \
         ((ruci_para_initiate_oqpsk_t *)msg)->ruci_header.u8                 = RUCI_PCI_OQPSK_CMD_HEADER;              \
         ((ruci_para_initiate_oqpsk_t *)msg)->sub_header                     = RUCI_CODE_INITIATE_OQPSK;               \
         ((ruci_para_initiate_oqpsk_t *)msg)->length                         = RUCI_PARA_LEN_INITIATE_OQPSK;           \
+        ((ruci_para_initiate_oqpsk_t *)msg)->band_type                      = band_type_in;                           \
         }while(0)
 
 // RUCI: set_oqpsk_modem -------------------------------------------------------

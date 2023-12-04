@@ -88,6 +88,12 @@ extern "C"
 #define COMMUMICATION_SUBSYSTEM_HOSTMODE     (1 << 24)
 #define COMMUMICATION_SUBSYSTEM_RESET        (1 << 11)
 
+#define SUBSYSTEM_CFG_WAIT_32K_DONE                     0x418
+#define SUBSYSTEM_CFG_WAIT_32K_DONE_DISABLE     0x04
+
+#define SUBSYSTEM_CFG_PMU_MODE                          0x4B0
+#define SUBSYSTEM_CFG_LDO_MODE_DISABLE              0x02
+
 typedef enum
 {
     LOW_POWER_PLATFORM_ENTER_SLEEP       = (1 << 0), /**< platform system enter sleep mode */
@@ -168,6 +174,10 @@ extern void Lpm_Set_Comparator_Deepsleep_Wakeup_Invert(uint32_t value);
 extern void Lpm_Set_Sram_Normal_Shutdown(uint32_t value);
 extern void Lpm_Set_Sram_Sleep_Deepsleep_Shutdown(uint32_t value);
 extern void Lpm_Enter_Low_Power_Mode(void);
+extern void Lpm_Comm_Subsystem_Disable_LDO_Mode(void);
+
+void Lpm_Comm_Subsystem_Check_System_Ready(void);
+void Lpm_Comm_Subsystem_Disable_Wait_32k_Done(void);
 
 
 #ifdef __cplusplus

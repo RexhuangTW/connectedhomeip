@@ -2,11 +2,11 @@
 *
 * @File         ruci_pci_fsk_cmd.c
 * @Version
-* $Revision:5065
-* $Date: 2022-09-08
+* $Revision:6351
+* $Date: 2023-11-17
 * @Brief
 * @Note
-* Copyright (C) 2019 Rafael Microelectronics Inc. All rights reserved.
+* Copyright (C) 2023 Rafael Microelectronics Inc. All rights reserved.
 *
 *****************************************************************************/
 

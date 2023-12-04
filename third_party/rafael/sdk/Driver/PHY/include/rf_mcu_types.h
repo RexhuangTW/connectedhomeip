@@ -150,6 +150,7 @@ typedef enum rf_mcu_pm_page_sel_e
 {
     RF_MCU_PM_PAGE_SEL_0            = 0,
     RF_MCU_PM_PAGE_SEL_1,
+    RF_MCU_PM_PAGE_SEL_2,
 } RF_MCU_PM_PAGE_SEL;
 
 

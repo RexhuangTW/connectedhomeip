@@ -561,7 +561,10 @@ uint32_t flash_read_otp_sec_page(uint32_t buf_addr);
  */
 
 /*check Flash command Finish*/
-uint32_t flash_check_busy();
+__STATIC_INLINE uint32_t flash_check_busy()
+{
+    return ((FLASH->START)&BUSYBIT) ? 1 : 0 ;
+}
 
 /**
  * @brief Get flash read page verification CRC8 value
@@ -644,6 +647,41 @@ __STATIC_INLINE void flush_cache(void)
     CACHE->CCR.reg = CACHE->CCR.reg | (3 << 8);
 }
 
+/**
+ * @brief enable suspend
+ *
+ * @param    NONE
+ *
+ * @retval   NONE
+ *
+ * @details  This function enable flash suspend.
+ *
+ */
+void flash_enable_suspend(void);
+
+/**
+ * @brief disable suspend
+ *
+ * @param    NONE
+ *
+ * @retval   NONE
+ *
+ * @details  This function disable flash suspend.
+ *
+ */
+void flash_disable_suspend(void);
+
+/**
+ * @brief get flash control register
+ *
+ * @param    NONE
+ *
+ * @retval   control register value
+ *
+ * @details  This function get flash control register.
+ *
+ */
+uint32_t flash_get_control_reg(void);
 
 /*@}*/ /* end of peripheral_group Flash_Drver */
 
@@ -652,3 +690,5 @@ __STATIC_INLINE void flush_cache(void)
 #endif
 
 #endif /* end of ___FLASHCTL_H__ */
+
+

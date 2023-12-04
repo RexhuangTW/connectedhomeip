@@ -82,8 +82,9 @@ void otPlatAlarmMilliStartAt(otInstance * aInstance, uint32_t aT0, uint32_t aDt)
 
     if (remain <= 0)
     {
+        sMsIsFired = true;
         otTaskletsSignalPending();
-        otPlatAlarmMilliFired(aInstance);
+        // otPlatAlarmMilliFired(aInstance);
     }
     else
     {

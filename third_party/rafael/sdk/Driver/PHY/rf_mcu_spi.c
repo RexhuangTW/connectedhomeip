@@ -297,20 +297,20 @@ void RfMcu_InterruptDisableSpi(void)
 
 uint16_t RfMcu_InterruptEnGetSpi(void)
 {
-    return RfMcu_SpiGetSFR(RF_MCU_SPI_SFR_ADDR_ISR_ENABLE_MASK);
+    return (uint16_t)(RfMcu_SpiGetSFR(RF_MCU_SPI_SFR_ADDR_ISR_ENABLE_MASK) & COMM_SUBSYSTEM_INT_ALL_MASK);
 }
 
 
 void RfMcu_InterruptEnSetSpi(uint16_t int_enable)
 {
-    uint8_t value = (RfMcu_SpiGetSFR(RF_MCU_SPI_SFR_ADDR_ISR_ENABLE_MASK) | int_enable);
+    uint8_t value = (RfMcu_SpiGetSFR(RF_MCU_SPI_SFR_ADDR_ISR_ENABLE_MASK) & (~COMM_SUBSYSTEM_INT_ALL_MASK)) | int_enable;
     RfMcu_SpiSetSFR(RF_MCU_SPI_SFR_ADDR_ISR_ENABLE_MASK, value);
 }
 
 
 void RfMcu_InterruptClearSpi(uint32_t value)
 {
-    RfMcu_SpiSetSFR(RF_MCU_SPI_SFR_ADDR_ISR_STATE_CLR, (value & 0xFF));
+    RfMcu_SpiSetSFR(RF_MCU_SPI_SFR_ADDR_ISR_STATE_CLR, (value & COMM_SUBSYSTEM_INT_ALL_MASK));
 }
 
 
@@ -372,7 +372,8 @@ uint16_t RfMcu_EvtQueueReadSpi(uint8_t *evt, RF_MCU_RX_CMDQ_ERROR *rx_evt_error)
     RfMcu_IoGetSpi(RF_MCU_RX_EVENT_Q_ID, evt, length);
 
     *rx_evt_error = RF_MCU_RX_CMDQ_GET_SUCCESS;
-    return 0;
+
+    return length;
 }
 
 
@@ -470,6 +471,10 @@ void RfMcu_SpiIsrHandler(COMM_SUBSYSTEM_ISR_t isr_cb)
     {
         isr_cb(state);
     }
+    else
+    {
+        RfMcu_InterruptClearSpi(state);
+    }
 }
 
 void RfMcu_SpiInit(void)
@@ -491,15 +496,17 @@ void RfMcu_SpiInit(void)
     qspi_init(RF_MCU_SPI_SELECT, &spi0_config_mode);
 
 #if (RF_MCU_SPI_PORT_SELECT == SPI_PORT_SELECT_SET_1)
-    pin_set_mode(6, MODE_QSPI0);     /*SPI SCLK*/
-    pin_set_mode(7, MODE_QSPI0);     /*SPI CS*/
-    pin_set_mode(8, MODE_QSPI0);     /*SPI DATA0*/
-    pin_set_mode(9, MODE_QSPI0);     /*SPI DATA1*/
+    pin_set_mode(6, MODE_QSPI0);    /*SPI SCLK*/
+    pin_set_mode(7, MODE_QSPI0);    /*SPI CS*/
+    pin_set_mode(8, MODE_QSPI0);    /*SPI DATA0*/
+    pin_set_mode(9, MODE_QSPI0);    /*SPI DATA1*/
+    pin_set_drvopt(6, 2);           /* Make driving strength weaker to avoid that glitch influence SPI operation */
 #elif (RF_MCU_SPI_PORT_SELECT == SPI_PORT_SELECT_SET_2)
-    pin_set_mode(28, MODE_QSPI0);     /*SPI SCLK*/
-    pin_set_mode(29, MODE_QSPI0);     /*SPI CS*/
-    pin_set_mode(30, MODE_QSPI0);     /*SPI DATA0*/
-    pin_set_mode(31, MODE_QSPI0);     /*SPI DATA1*/
+    pin_set_mode(28, MODE_QSPI0);   /*SPI SCLK*/
+    pin_set_mode(29, MODE_QSPI0);   /*SPI CS*/
+    pin_set_mode(30, MODE_QSPI0);   /*SPI DATA0*/
+    pin_set_mode(31, MODE_QSPI0);   /*SPI DATA1*/
+    pin_set_drvopt(28, 2);          /* Make driving strength weaker to avoid that glitch influence SPI operation */
 #endif
 }
 #endif /* CFG_RF_MCU_CTRL_TYPE */

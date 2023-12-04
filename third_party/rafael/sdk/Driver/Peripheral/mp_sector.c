@@ -36,25 +36,28 @@
 static mp_sector_cal_t otp_cal;
 const mp_sector_cal_t otp_cal_t =
 {
-    { {MP_ID_DCDC,              MP_VALID, MP_CNT_DCDC},             2,    0,   0,     0,    0,    1, 1200,   10, 1100,   10, 1300,   10 },    /* DCDC */
-    { {MP_ID_LLDO,              MP_VALID, MP_CNT_LLDO},             2,    0,   0,     0,    0,    1, 1200,   10, 1100,   10, 1300,   10 },    /* LLDO */
-    { {MP_ID_IOLDO,             MP_VALID, MP_CNT_IOLDO},            2,    0,   0,     0,    0,    1, 1800,    7, 1700,    7, 1900,    7 },    /* IOLDO */
-    { {MP_ID_SLDO,              MP_VALID, MP_CNT_SLDO},             2,    0,   0,     0,    0,    1,  820,    0,  800,    0,  900,    0 },    /* SLDO */
-    { {MP_ID_SIOLDO,            MP_VALID, MP_CNT_SIOLDO},           2,    0,   0,     0,    0,    1, 1500,    0, 1400,    0, 1600,    0 },    /* SIOLDO */
-    { {MP_ID_VBATADC,           MP_VALID, MP_CNT_VBATADC},          2,    0,   0,     0,    0, 2000, 1766, 2500, 1931, 3300, 2194 },          /* VBAT_ADC */
-    { {MP_ID_AIOADC,            MP_VALID, MP_CNT_AIOADC},           2,    0,   0,     0,    0, 2000, 2464, 2500, 2810, 3300, 3363 },          /* AIO_ADC */
-    { {MP_ID_VCMADC,            MP_VALID, MP_CNT_VCMADC},           2,    0,   0 },                                                           /* VCM_ADC */
-    { {MP_ID_TEMPADC,           MP_VALID, MP_CNT_TEMPADC},          2,    0 },                                                                /* TEMP_ADC */
-    { {MP_ID_POWERFAIL,         MP_VALID, MP_CNT_POWERFAIL},        2,    0,   0,     0,    0,    1, 2000,    6, 2100,    8, 2200,   10 },    /* POWER_FAIL */
-    { {MP_ID_CRYSTALTRIM,       MP_VALID, MP_CNT_CRYSTALTRIM},      2,  384 },                                                                /* CRYSTAL_TRIM */
-    { {MP_ID_RF_BAND_SUPPORT,   MP_VALID, MP_CNT_RF_BAND_SUPPORT},  2,    1 },                                                                /* RF_BAND_SUPPORT */
-    { {MP_ID_RFTRIM_2P4G,       MP_VALID, MP_CNT_RFTRIM},           2,    0, 65535, 65535, 65535, 65535, 65535, 65535, 65535 },               /* RF_TRIM_2P4G */
-    { {MP_ID_RFTRIM_SUBG0,      MP_VALID, MP_CNT_RFTRIM},           2,    0, 65535, 65535, 65535, 65535, 65535, 65535, 65535 },               /* RF_TRIM_SUBG0 */
-    { {MP_ID_RFTRIM_SUBG1,      MP_VALID, MP_CNT_RFTRIM},           2,    0, 65535, 65535, 65535, 65535, 65535, 65535, 65535 },               /* RF_TRIM SUGG1 */
-    { {MP_ID_RFTRIM_SUBG2,      MP_VALID, MP_CNT_RFTRIM},           2,    0, 65535, 65535, 65535, 65535, 65535, 65535, 65535 },               /* RF_TRIM SUBG2 */
-    { {MP_ID_TX_POWER_TRIM,     MP_VALID, MP_CNT_TX_POWER_TRIM},    0,    0,    0,    0,    0,    0 },                                        /* TX_POWER_TRIM */
-    { {MP_ID_RSSI_TRIM,         MP_VALID, MP_CNT_RSSI_TRIM},        0,    0,    0,    0,    0,    0 },                                        /* RSSI_TRIM */
-    { {MP_ID_TEMPK,             MP_VALID, MP_CNT_TEMPK},            2,    0},                                                                 /* TEMPERATURE K*/
+    { {MP_ID_DCDC,                  MP_VALID, MP_CNT_DCDC},                 2,    0,   0,     0,    0,    1, 1200,   10, 1100,   10, 1300,   10 },    /* DCDC */
+    { {MP_ID_LLDO,                  MP_VALID, MP_CNT_LLDO},                 2,    0,   0,     0,    0,    1, 1200,   10, 1100,   10, 1300,   10 },    /* LLDO */
+    { {MP_ID_IOLDO,                 MP_VALID, MP_CNT_IOLDO},                2,    0,   0,     0,    0,    1, 1800,    7, 1700,    7, 1900,    7 },    /* IOLDO */
+    { {MP_ID_SLDO,                  MP_VALID, MP_CNT_SLDO},                 2,    0,   0,     0,    0,    1,  820,    0,  800,    0,  900,    0 },    /* SLDO */
+    { {MP_ID_SIOLDO,                MP_VALID, MP_CNT_SIOLDO},               2,    0,   0,     0,    0,    1, 1500,    0, 1400,    0, 1600,    0 },    /* SIOLDO */
+    { {MP_ID_VBATADC,               MP_VALID, MP_CNT_VBATADC},              2,    0,   0,     0,    0, 2000, 1766, 2500, 1931, 3300, 2194 },          /* VBAT_ADC */
+    { {MP_ID_AIOADC,                MP_VALID, MP_CNT_AIOADC},               2,    0,   0,     0,    0, 2000, 2464, 2500, 2810, 3300, 3363 },          /* AIO_ADC */
+    { {MP_ID_VCMADC,                MP_VALID, MP_CNT_VCMADC},               2,    0,   0 },                                                           /* VCM_ADC */
+    { {MP_ID_TEMPADC,               MP_VALID, MP_CNT_TEMPADC},              2,    0 },                                                                /* TEMP_ADC */
+    { {MP_ID_POWERFAIL,             MP_VALID, MP_CNT_POWERFAIL},            2,    0,   0,     0,    0,    1, 2000,    6, 2100,    8, 2200,   10 },    /* POWER_FAIL */
+    { {MP_ID_CRYSTALTRIM,           MP_VALID, MP_CNT_CRYSTALTRIM},          2,  384 },                                                                /* CRYSTAL_TRIM */
+    { {MP_ID_RF_BAND_SUPPORT,       MP_VALID, MP_CNT_RF_BAND_SUPPORT},      2,    1 },                                                                /* RF_BAND_SUPPORT */
+    { {MP_ID_RFTRIM_2P4G,           MP_VALID, MP_CNT_RFTRIM},               2,    0, 65535, 65535, 65535, 65535, 65535, 65535, 65535 },               /* RF_TRIM_2P4G */
+    { {MP_ID_RFTRIM_SUBG0,          MP_VALID, MP_CNT_RFTRIM},               2,    0, 65535, 65535, 65535, 65535, 65535, 65535, 65535 },               /* RF_TRIM_SUBG0 */
+    { {MP_ID_RFTRIM_SUBG1,          MP_VALID, MP_CNT_RFTRIM},               2,    0, 65535, 65535, 65535, 65535, 65535, 65535, 65535 },               /* RF_TRIM SUGG1 */
+    { {MP_ID_RFTRIM_SUBG2,          MP_VALID, MP_CNT_RFTRIM},               2,    0, 65535, 65535, 65535, 65535, 65535, 65535, 65535 },               /* RF_TRIM SUBG2 */
+    { {MP_ID_TX_POWER_TRIM,         MP_VALID, MP_CNT_TX_POWER_TRIM},        0,    0,    0,    0,    0,    0 },                                        /* TX_POWER_TRIM */
+    { {MP_ID_RSSI_TRIM,             MP_VALID, MP_CNT_RSSI_TRIM},            0,    0,    0,    0,    0,    0 },                                        /* RSSI_TRIM */
+    { {MP_ID_TEMPK,                 MP_VALID, MP_CNT_TEMPK},                2,    0},                                                                 /* TEMPERATURE K*/
+    { {MP_ID_TX_POWER_TRIM_2,       MP_VALID, MP_CNT_TX_POWER_TRIM_2},      0,    0,    0,    0,    0 },                                              /* TX_POWER_TRIM_2 */
+    { {MP_ID_RFTRIM_SUBG3,          MP_VALID, MP_CNT_RFTRIM},               2,    0, 65535, 65535, 65535, 65535, 65535, 65535, 65535 },               /* RF_TRIM SUBG3 */
+    { {MP_ID_TX_POWER_TRIM_3_RSSI_TRIM_2,   MP_VALID, MP_CNT_TX_POWER_TRIM_3_RSSI_TRIM_2},    0,    0,    0,    0,    0,    0 },                      /* TX_POWER_TRIM_3_RSSI_TRIM_2 */
 };
 
 uint8_t mp_cal_vbatadc_flag = 0;
@@ -1464,6 +1467,7 @@ uint32_t OtpAdcDataCheck(uint16_t *OtpAdcAry, uint8_t OtpAdcIdx)
 
 uint32_t OtpToMpCalibration()
 {
+#if (!MODULE_ENABLE(MP_SECTOR_SW_CAL_ENABLE))
     static uint32_t otp_rd_buf_addr[64];
 
     otp_cal_regulator_t     OtpPmuTemp;
@@ -1755,6 +1759,12 @@ uint32_t OtpToMpCalibration()
     }
 
     return STATUS_SUCCESS;
+#else
+
+    return STATUS_INVALID_PARAM;
+
+#endif
+
 
 }
 

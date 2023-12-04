@@ -105,14 +105,14 @@ void Tx_Power_Compensation_Sadc_Int_Handler(sadc_cb_t *p_cb)
         sadc_comp_value = p_cb->data.sample.value;
 
 #if (TX_PWR_COMP_DEBUG == 1)
-        //printf(("\nADC CH%d: adc = %d, comp = %d, cal = %d\n", p_cb->data.sample.channel, p_cb->raw.conversion_value, p_cb->raw.compensation_value, p_cb->raw.calibration_value);
+        printf("\nADC CH%d: adc = %d, comp = %d, cal = %d\n", p_cb->data.sample.channel, p_cb->raw.conversion_value, p_cb->raw.compensation_value, p_cb->raw.calibration_value);
 #endif
 
         if (sadc_comp_input == SADC_COMP_TEMPERATURE)
         {
 #if (TX_PWR_COMP_DEBUG == 1)
             gpio_pin_toggle(1);
-            //printf(("\nTemperature ADC = %d\n", sadc_comp_value);
+            printf("\nTemperature ADC = %d\n", sadc_comp_value);
 #endif
 
             tx_pwr_comp_value_temperature = sadc_comp_value;
@@ -121,7 +121,7 @@ void Tx_Power_Compensation_Sadc_Int_Handler(sadc_cb_t *p_cb)
         {
 #if (TX_PWR_COMP_DEBUG == 1)
             gpio_pin_toggle(2);
-            //printf(("\nVbat ADC = %d\n", sadc_comp_value);
+            printf("\nVbat ADC = %d\n", sadc_comp_value);
 #endif
 
             tx_pwr_comp_value_vbat = sadc_comp_value;
@@ -156,7 +156,7 @@ void Tx_Power_Compensation_Update(sadc_value_t temperature, sadc_value_t vbat)
     }
 
     tx_pwr_comp = ptr_tx_pwr_comp_table[tx_pwr_comp_vbat_index][tx_pwr_comp_temperature_index];
-    rf_common_tx_pwr_comp_set(tx_pwr_comp.offset, tx_pwr_comp.poly_gain, tx_pwr_comp.pa_pw_pre);
+    rf_common_tx_pwr_comp_set(tx_pwr_comp.offset, tx_pwr_comp.poly_gain, tx_pwr_comp.pa_pw_pre, 0);
 
 #if (TX_PWR_COMP_DEBUG == 1)
     SYSCTRL->SYS_SCRATCH[4] = temperature;
@@ -223,24 +223,24 @@ void Tx_Power_Compensation_Init(uint32_t xPeriodicTimeInSec)
     {
         if (((sTx_power_trim.flag == 1) || (sTx_power_trim.flag == 2)) && (sTx_power_trim.mode & RF_BAND_SUPP(RF_BAND_2P4G)))
         {
-            switch (sTx_power_trim.tx_gain_idx_2g >> 6)
+            switch (sTx_power_trim.tx_gain_idx_2g_fsk >> 6)
             {
             case (0):
                 ptr_tx_pwr_comp_table = tx_pwr_comp_table_10dbm;
 #if (TX_PWR_COMP_DEBUG == 1)
-                //printf(("\nUsing 10dBm power compensation table\n");
+                printf("\nUsing 10dBm power compensation table\n");
 #endif
                 break;
             case (1):
                 ptr_tx_pwr_comp_table = tx_pwr_comp_table_4dbm;
 #if (TX_PWR_COMP_DEBUG == 1)
-                //printf(("\nUsing 4dBm power compensation table\n");
+                printf("\nUsing 4dBm power compensation table\n");
 #endif
                 break;
             case (2):
                 ptr_tx_pwr_comp_table = tx_pwr_comp_table_0dbm;
 #if (TX_PWR_COMP_DEBUG == 1)
-                //printf(("\nUsing 0dBm power compensation table\n");
+                printf("\nUsing 0dBm power compensation table\n");
 #endif
                 break;
             }

@@ -231,8 +231,6 @@ CHIP_ERROR RT582Config::Init()
 
     ds_init_cfg.start_address = RT582CONFIG_BASE_ADDR;
     ds_init_cfg.end_address = RT582CONFIG_END_ADDR;	
-    ds_init_cfg.ds_page_mode = DS_ONE_PAGE_MODE;	
-    ds_init_cfg.page_size = DATA_ONE_PAGE_SIZE;
     ds_ret = ds_initinal(ds_init_cfg);
 
     if(ds_ret != STATUS_SUCCESS)

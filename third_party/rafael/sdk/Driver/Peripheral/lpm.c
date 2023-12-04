@@ -7,15 +7,17 @@
 *****************************************************************************/
 
 #include "cm3_mcu.h"
+#include "rf_mcu_ahb.h"
 
-uint32_t low_power_mask_status = LOW_POWER_NO_MASK;
-uint32_t comm_subsystem_wakeup_mask_status = COMM_SUBSYS_WAKEUP_NO_MASK;
-low_power_level_cfg_t low_power_level = LOW_POWER_LEVEL_NORMAL;
-low_power_wakeup_cfg_t low_power_wakeup = LOW_POWER_WAKEUP_NULL;
-uint32_t low_power_wakeup_update = 0;
-uint32_t low_power_wakeup_uart = 0;
-uint32_t low_power_wakeup_gpio = 0;
+static volatile  uint32_t low_power_mask_status = LOW_POWER_NO_MASK;
+static volatile  uint32_t comm_subsystem_wakeup_mask_status = COMM_SUBSYS_WAKEUP_NO_MASK;
+static volatile  low_power_level_cfg_t low_power_level = LOW_POWER_LEVEL_NORMAL;
+static volatile  low_power_wakeup_cfg_t low_power_wakeup = LOW_POWER_WAKEUP_NULL;
+static volatile  uint32_t low_power_wakeup_update = 0;
+static volatile  uint32_t low_power_wakeup_uart = 0;
+static volatile  uint32_t low_power_wakeup_gpio = 0;
 
+#define LPM_SRAM0_RETAIN 0x1E
 
 void Lpm_Low_Power_Mask(uint32_t mask)
 {
@@ -52,6 +54,14 @@ void Lpm_Comm_Subsystem_Check_System_Ready(void)
 
 }
 
+void Lpm_Comm_Subsystem_Disable_Wait_32k_Done(void)
+{
+    uint8_t reg_buf[4];
+
+    RfMcu_MemoryGetAhb(SUBSYSTEM_CFG_WAIT_32K_DONE, reg_buf, 4);
+    reg_buf[3] &= ~SUBSYSTEM_CFG_WAIT_32K_DONE_DISABLE;                 //Clear Communication System Register 0x418 Bit26
+    RfMcu_MemorySetAhb(SUBSYSTEM_CFG_WAIT_32K_DONE, reg_buf, 4);
+}
 
 void Lpm_Comm_Subsystem_Check_System_DeepSleep(void)
 {
@@ -244,7 +254,6 @@ void Lpm_Set_Sram_Sleep_Deepsleep_Shutdown(uint32_t value)
     set_sram_shutdown_sleep(value);                                   /* SRAM shut-down control in Low Power Mode, set the corresponding bit0~bit4 to shut-down SRAM0~SRAM4 in Sleep/DeepSleep Mode */
 }
 
-
 void Lpm_Enter_Low_Power_Mode(void)
 {
     pmu_dcdc_ctrl1_t pmu_cdcd_ctrl1_buf;
@@ -261,28 +270,27 @@ void Lpm_Enter_Low_Power_Mode(void)
             COMM_SUBSYSTEM_AHB->COMM_SUBSYSTEM_HOST |= COMMUMICATION_SUBSYSTEM_HOSTMODE;   /* enable host mode */
             COMM_SUBSYSTEM_AHB->COMM_SUBSYSTEM_HOST |= COMMUMICATION_SUBSYSTEM_RESET;      /* communication system host control reset */
             Lpm_Comm_Subsystem_Check_System_Ready();
+            Lpm_Comm_Subsystem_Disable_Wait_32k_Done();
             COMM_SUBSYSTEM_AHB->COMM_SUBSYSTEM_HOST |= COMMUMICATION_SUBSYSTEM_DEEPSLEEP;  /* communication system enter deep sleep mode */
             Lpm_Comm_Subsystem_Check_System_DeepSleep();
-
+            Lpm_Set_Sram_Sleep_Deepsleep_Shutdown(LPM_SRAM0_RETAIN);
+            sys_set_retention_reg(6, 0x00);     //Disable CM3 peripherals/APBGPIO and Remap/communication subsystem/ reset wdt triggered.
             Lpm_Set_Platform_Low_Power_Wakeup(LOW_POWER_PLATFORM_ENTER_DEEP_SLEEP);        /* set platform system wakeup source when entering deep sleep mode*/
             SYSCTRL->POWER_STATE_CTRL = LOW_POWER_PLATFORM_ENTER_DEEP_SLEEP;               /* platform system enter deep sleep mode */
-            __DSB();
             __WFI();
-            __ISB();
         }
         else if (low_power_level == LOW_POWER_LEVEL_SLEEP2)
         {
             COMM_SUBSYSTEM_AHB->COMM_SUBSYSTEM_HOST |= COMMUMICATION_SUBSYSTEM_HOSTMODE;   /* enable host mode */
             COMM_SUBSYSTEM_AHB->COMM_SUBSYSTEM_HOST |= COMMUMICATION_SUBSYSTEM_RESET;      /* communication system host control reset */
             Lpm_Comm_Subsystem_Check_System_Ready();
+            Lpm_Comm_Subsystem_Disable_Wait_32k_Done();
             COMM_SUBSYSTEM_AHB->COMM_SUBSYSTEM_HOST |= COMMUMICATION_SUBSYSTEM_DEEPSLEEP;  /* communication system enter deep sleep mode */
             Lpm_Comm_Subsystem_Check_System_DeepSleep();
 
             Lpm_Set_Platform_Low_Power_Wakeup(LOW_POWER_PLATFORM_ENTER_SLEEP);             /* set platform system wakeup source when entering sleep mode*/
             SYSCTRL->POWER_STATE_CTRL = LOW_POWER_PLATFORM_ENTER_SLEEP;                    /* platform system enter sleep mode */
-            __DSB();
             __WFI();
-            __ISB();
 
             if (comm_subsystem_wakeup_mask_status != COMM_SUBSYS_WAKEUP_NO_MASK)
             {
@@ -299,9 +307,7 @@ void Lpm_Enter_Low_Power_Mode(void)
 
             Lpm_Set_Platform_Low_Power_Wakeup(LOW_POWER_PLATFORM_ENTER_SLEEP);             /* set platform system wakeup source when entering sleep mode*/
             SYSCTRL->POWER_STATE_CTRL = LOW_POWER_PLATFORM_ENTER_SLEEP;                    /* platform system enter sleep mode */
-            __DSB();
             __WFI();
-            __ISB();
 
             if (comm_subsystem_wakeup_mask_status != COMM_SUBSYS_WAKEUP_NO_MASK)
             {
@@ -313,9 +319,13 @@ void Lpm_Enter_Low_Power_Mode(void)
         {
             Lpm_Set_Platform_Low_Power_Wakeup(LOW_POWER_PLATFORM_ENTER_SLEEP);                 /* set platform system wakeup source when entering sleep mode*/
             SYSCTRL->POWER_STATE_CTRL = LOW_POWER_PLATFORM_ENTER_SLEEP;                        /* platform system enter sleep mode */
-            __DSB();
             __WFI();
-            __ISB();
+            __NOP();
+            __NOP();
+            __NOP();
+            __NOP();
+            __NOP();
+            __NOP();
         }
 
         PMU->PMU_DCDC_CTRL1.bit.DCDC_EN_COMP_LIGHT = pmu_cdcd_ctrl1_buf.bit.DCDC_EN_COMP_LIGHT;

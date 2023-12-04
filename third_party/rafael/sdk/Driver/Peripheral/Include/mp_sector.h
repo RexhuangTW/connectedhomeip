@@ -157,6 +157,9 @@ extern "C" {
 #define MP_ID_TX_POWER_TRIM         (0x5A010011)
 #define MP_ID_RSSI_TRIM             (0x5A010012)
 #define MP_ID_TEMPK                 (0x5A010013)
+#define MP_ID_TX_POWER_TRIM_2       (0x5A010014)
+#define MP_ID_RFTRIM_SUBG3          (0x5A010015)
+#define MP_ID_TX_POWER_TRIM_3_RSSI_TRIM_2       (0x5A010016)
 #define MP_ID_NULL                  (0xFFFFFFFF)
 
 #define MP_CNT_DCDC                 (sizeof(mp_cal_regulator_t))
@@ -175,7 +178,8 @@ extern "C" {
 #define MP_CNT_TX_POWER_TRIM        (sizeof(mp_tx_power_trim_t))
 #define MP_CNT_RSSI_TRIM            (sizeof(mp_rssi_trim_t))
 #define MP_CNT_TEMPK                (sizeof(mp_temp_k_t))
-
+#define MP_CNT_TX_POWER_TRIM_2      (sizeof(mp_tx_power_trim_2_t))
+#define MP_CNT_TX_POWER_TRIM_3_RSSI_TRIM_2      (sizeof(mp_tx_power_trim_3_rssi_trim_2_t))
 
 #define  OTP_DCDC_OFFSET            0x08
 #define  OTP_LLDO_OFFSET            0x0C
@@ -294,10 +298,10 @@ typedef struct __attribute__((packed))
     mp_sector_head_t head;
     uint8_t  flag;
     uint8_t  mode;
-    uint8_t  tx_gain_idx_2g;
-    uint8_t  tx_gain_idx_subg0;
-    uint8_t  tx_gain_idx_subg1;
-    uint8_t  tx_gain_idx_subg2;
+    uint8_t  tx_gain_idx_2g_fsk;
+    uint8_t  tx_gain_idx_subg0_fsk;
+    uint8_t  tx_gain_idx_subg1_fsk;
+    uint8_t  tx_gain_idx_subg2_fsk;
 }
 mp_tx_power_trim_t;
 
@@ -306,10 +310,10 @@ typedef struct __attribute__((packed))
     mp_sector_head_t head;
     uint8_t  flag;
     uint8_t  mode;
-    uint8_t  offset_2g;
-    uint8_t  offset_subg0;
-    uint8_t  offset_subg1;
-    uint8_t  offset_subg2;
+    uint8_t  rssi_trim_2g;
+    uint8_t  rssi_trim_subg0;
+    uint8_t  rssi_trim_subg1;
+    uint8_t  rssi_trim_subg2;
 }
 mp_rssi_trim_t;
 
@@ -321,6 +325,31 @@ typedef struct __attribute__((packed))
     uint16_t ktvalue;
 }
 mp_temp_k_t;
+
+
+typedef struct __attribute__((packed))
+{
+    mp_sector_head_t head;
+    uint8_t  flag;
+    uint8_t  tx_gain_idx_2g_oqpsk;
+    uint8_t  tx_gain_idx_subg0_oqpsk;
+    uint8_t  tx_gain_idx_subg1_oqpsk;
+    uint8_t  tx_gain_idx_subg2_oqpsk;
+}
+mp_tx_power_trim_2_t;
+
+
+typedef struct __attribute__((packed))
+{
+    mp_sector_head_t head;
+    uint8_t  flag;
+    uint8_t  tx_gain_idx_subg3_fsk;
+    uint8_t  tx_gain_idx_subg3_oqpsk;
+    uint8_t  tx_gain_idx_subg4_fsk;
+    uint8_t  tx_gain_idx_subg4_oqpsk;
+    uint8_t  rssi_trim_subg3;
+}
+mp_tx_power_trim_3_rssi_trim_2_t;
 /*
 typedef struct __attribute__((packed)) {
     __IO  uint8_t  RESERVED[0x4000];               //offset: 0x0000
@@ -339,25 +368,28 @@ typedef struct __attribute__((packed)) {
 
 typedef struct __attribute__((packed))
 {
-    __IO  mp_cal_regulator_t DCDC;                      //offset: 0x0000
-    __IO  mp_cal_regulator_t LLDO;                      //offset: 0x0018
-    __IO  mp_cal_regulator_t IOLDO;                     //offset: 0x0030
-    __IO  mp_cal_regulator_t SLDO;                      //offset: 0x0048
-    __IO  mp_cal_regulator_t SIOLDO;                    //offset: 0x0060
-    __IO  mp_cal_adc_t VBAT_ADC;                        //offset: 0x0078
-    __IO  mp_cal_adc_t AIO_ADC;                         //offset: 0x0094
-    __IO  mp_cal_vcm_adc_t VCM_ADC;                     //offset: 0x00B0
-    __IO  mp_cal_temp_adc_t TEMP_ADC;                   //offset: 0x00BB
-    __IO  mp_cal_regulator_t POWER_FAIL;                //offset: 0x00C5
-    __IO  mp_cal_xtal_trim_t CRYSTAL_TRIM;              //offset: 0x00DD
-    __IO  mp_cal_rf_band_support_t RF_BAND_SUPPORT;     //offset: 0x00E7
-    __IO  mp_cal_rf_trim_t RF_TRIM_2P4G;                //offset: 0x00F0
-    __IO  mp_cal_rf_trim_t RF_TRIM_SUBG0;               //offset: 0x0107
-    __IO  mp_cal_rf_trim_t RF_TRIM_SUBG1;               //offset: 0x011E
-    __IO  mp_cal_rf_trim_t RF_TRIM_SUBG2;               //offset: 0x0135
-    __IO  mp_tx_power_trim_t TX_POWER_TRIM;             //offset: 0x014C
-    __IO  mp_rssi_trim_t RSSI_TRIM;                     //offset: 0x0158
-    __IO  mp_temp_k_t     TEMP_K;                       //offset: 0x0162
+    __IO  mp_cal_regulator_t        DCDC;                   //offset: 0x0000
+    __IO  mp_cal_regulator_t        LLDO;                   //offset: 0x0018
+    __IO  mp_cal_regulator_t        IOLDO;                  //offset: 0x0030
+    __IO  mp_cal_regulator_t        SLDO;                   //offset: 0x0048
+    __IO  mp_cal_regulator_t        SIOLDO;                 //offset: 0x0060
+    __IO  mp_cal_adc_t              VBAT_ADC;               //offset: 0x0078
+    __IO  mp_cal_adc_t              AIO_ADC;                //offset: 0x0094
+    __IO  mp_cal_vcm_adc_t          VCM_ADC;                //offset: 0x00B0
+    __IO  mp_cal_temp_adc_t         TEMP_ADC;               //offset: 0x00BB
+    __IO  mp_cal_regulator_t        POWER_FAIL;             //offset: 0x00C5
+    __IO  mp_cal_xtal_trim_t        CRYSTAL_TRIM;           //offset: 0x00DD
+    __IO  mp_cal_rf_band_support_t  RF_BAND_SUPPORT;        //offset: 0x00E7
+    __IO  mp_cal_rf_trim_t          RF_TRIM_2P4G;           //offset: 0x00F0
+    __IO  mp_cal_rf_trim_t          RF_TRIM_SUBG0;          //offset: 0x0107
+    __IO  mp_cal_rf_trim_t          RF_TRIM_SUBG1;          //offset: 0x011E
+    __IO  mp_cal_rf_trim_t          RF_TRIM_SUBG2;          //offset: 0x0135
+    __IO  mp_tx_power_trim_t        TX_POWER_TRIM;          //offset: 0x014C
+    __IO  mp_rssi_trim_t            RSSI_TRIM;              //offset: 0x0159
+    __IO  mp_temp_k_t               TEMP_K;                 //offset: 0x0166
+    __IO  mp_tx_power_trim_2_t      TX_POWER_TRIM_2;        //offset: 0x0170
+    __IO  mp_cal_rf_trim_t          RF_TRIM_SUBG3;          //offset: 0x017C
+    __IO  mp_tx_power_trim_3_rssi_trim_2_t      TX_POWER_TRIM_3_RSSI_TRIM_2;        //offset: 0x0193
     /*
         __IO  uint8_t  RESERVED[0xEB9];                     //offset: 0x0147
     */

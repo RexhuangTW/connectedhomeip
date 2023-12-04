@@ -2,11 +2,11 @@
 *
 * @File         ruci.h
 * @Version
-* $Revision: 5065
-* $Date: 2022-09-08
+* $Revision: 6351
+* $Date: 2023-11-17
 * @Brief
 * @Note
-* Copyright (C) 2019 Rafael Microelectronics Inc. All rights reserved.
+* Copyright (C) 2023 Rafael Microelectronics Inc. All rights reserved.
 *
 ******************************************************************************/
 #ifndef RUCI_H
@@ -24,6 +24,8 @@
 #include "ruci_pci_slink_cmd.h"
 #include "ruci_pci_event.h"
 #include "ruci_pci_data.h"
+#include "ruci_pci_zwave_cmd.h"
+#include "ruci_pci_ook_cmd.h"
 #include "ruci_cmn_sys_cmd.h"
 #include "ruci_cmn_hal_cmd.h"
 #include "ruci_cmn_event.h"
@@ -35,7 +37,7 @@
 /*****************************************************************************
 * DEFINES
 ******************************************************************************/
-#define RUCI_VERSION  (5065)
+#define RUCI_VERSION  (6351)
 
 #if (RUCI_ENDIAN_INVERSE)
 #define RUCI_ENDIAN_CONVERT(pData, para)        RUCI_endianConvert(pData, para)
