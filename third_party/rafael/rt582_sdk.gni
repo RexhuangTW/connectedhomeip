@@ -202,11 +202,11 @@ template("rt582_sdk") {
     ]
     if(use_static_sdk_lib)
     { 
-      libs=["${chip_root}/third_party/rafael/rt58x_sdk/librt582sdk.a"]
+      libs=["${chip_root}/third_party/rafael/rt58x_sdk/librt58xsdk.a"]
     }
     else
     {
-      output_name = "librt582sdk"
+      output_name = "librt58xsdk"
       output_dir = "${root_out_dir}/lib"
 
       sources += [

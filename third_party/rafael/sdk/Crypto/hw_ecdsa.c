@@ -12,7 +12,7 @@ static void endian_swap(uint8_t * dst, uint8_t * src, uint32_t size)
     }
 }
 
-int rt582_ecdsa_p256_sign(uint8_t * s_r, uint8_t * s_s, uint8_t * hash, uint8_t * pri_k, uint8_t * mod_k)
+int rt583_ecdsa_p256_sign(uint8_t * s_r, uint8_t * s_s, uint8_t * hash, uint8_t * pri_k, uint8_t * mod_k)
 {
     /* sha 256 size is 32 bytes */
     uint8_t buf[32];
@@ -32,7 +32,7 @@ int rt582_ecdsa_p256_sign(uint8_t * s_r, uint8_t * s_s, uint8_t * hash, uint8_t 
     return 0;
 }
 
-int rt582_ecdsa_p256_verify(uint8_t * s_r, uint8_t * s_s, uint8_t * hash, uint8_t * key_x, uint8_t * key_y)
+int rt583_ecdsa_p256_verify(uint8_t * s_r, uint8_t * s_s, uint8_t * hash, uint8_t * key_x, uint8_t * key_y)
 {
     /* sha 256 size is 32 bytes */
     uint8_t buf[32];

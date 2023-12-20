@@ -16,7 +16,7 @@
 /*Remark: data is little endian format. that is MSB is the last byte. */
 
 /* spake2+ compute the L for verifier*/
-int rt582_spake2p_compute_L(uint8_t * L, uint8_t * w1)
+int rt583_spake2p_compute_L(uint8_t * L, uint8_t * w1)
 {
 
     /*computer L = w1*P ... P is generator...*/
@@ -37,7 +37,7 @@ int rt582_spake2p_compute_L(uint8_t * L, uint8_t * w1)
 }
 
 /* doing the (R =  m * P + n * Q ) */
-int rt582_ecc_multi_add(uint8_t * R_x, uint8_t * R_y, uint8_t * m, uint8_t * P_x, uint8_t * P_y, uint8_t * n, uint8_t * Q_x,
+int rt583_ecc_multi_add(uint8_t * R_x, uint8_t * R_y, uint8_t * m, uint8_t * P_x, uint8_t * P_y, uint8_t * n, uint8_t * Q_x,
                         uint8_t * Q_y)
 
 {
@@ -77,7 +77,7 @@ int rt582_ecc_multi_add(uint8_t * R_x, uint8_t * R_y, uint8_t * m, uint8_t * P_x
 
 /* special function for SPAKE2+ , Z = y*(X-w0*M) */
 
-int rt582_spake2p_compute_Z(uint8_t * Z_x, uint8_t * Z_y, uint8_t * y, uint8_t * X_x, uint8_t * X_y, uint8_t * w0, uint8_t * M_x,
+int rt583_spake2p_compute_Z(uint8_t * Z_x, uint8_t * Z_y, uint8_t * y, uint8_t * X_x, uint8_t * X_y, uint8_t * w0, uint8_t * M_x,
                             uint8_t * M_y)
 {
     ECPoint_P256 Z, X, M, tmp_1, tmp_2;
@@ -111,7 +111,7 @@ int rt582_spake2p_compute_Z(uint8_t * Z_x, uint8_t * Z_y, uint8_t * y, uint8_t *
 }
 
 /* special function for SPAKE2+ , V = y*L */
-int rt582_spake2p_verifier_V(uint8_t * V_x, uint8_t * V_y, uint8_t * y, uint8_t * L_x, uint8_t * L_y)
+int rt583_spake2p_verifier_V(uint8_t * V_x, uint8_t * V_y, uint8_t * y, uint8_t * L_x, uint8_t * L_y)
 {
 
     ECPoint_P256 V, L;
@@ -143,7 +143,7 @@ int rt582_spake2p_verifier_V(uint8_t * V_x, uint8_t * V_y, uint8_t * y, uint8_t 
 }
 
 /* special function for SPAKE2+ , V = w1*(Y-w0*N) */
-int rt582_spake2p_prover_V(uint8_t * V_x, uint8_t * V_y, uint8_t * w0, uint8_t * w1, uint8_t * Y_x, uint8_t * Y_y, uint8_t * N_x,
+int rt583_spake2p_prover_V(uint8_t * V_x, uint8_t * V_y, uint8_t * w0, uint8_t * w1, uint8_t * Y_x, uint8_t * Y_y, uint8_t * N_x,
                            uint8_t * N_y)
 {
     ECPoint_P256 V, Y, N, tmp_1, tmp_2;

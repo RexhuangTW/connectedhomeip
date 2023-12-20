@@ -15,7 +15,7 @@
 
 /*Remark: data is little endian format. that is MSB is the last byte. */
 
-int rt582_ecc_public_key_gen(uint8_t * pt_pri_k, uint8_t * pt_pub_k_x, uint8_t * pt_pub_k_y)
+int rt583_ecc_public_key_gen(uint8_t * pt_pri_k, uint8_t * pt_pub_k_x, uint8_t * pt_pub_k_y)
 {
 
     ECPoint_P256 Public_key;
@@ -32,7 +32,7 @@ int rt582_ecc_public_key_gen(uint8_t * pt_pri_k, uint8_t * pt_pub_k_x, uint8_t *
     return 0;
 }
 
-int rt582_ecc_shared_secert_gen(uint8_t * pt_sh_k_x, uint8_t * pt_sh_k_y, uint8_t * pt_pub_k_x, uint8_t * pt_pub_k_y,
+int rt583_ecc_shared_secert_gen(uint8_t * pt_sh_k_x, uint8_t * pt_sh_k_y, uint8_t * pt_pub_k_x, uint8_t * pt_pub_k_y,
                                 uint8_t * pt_prv_k_y)
 {
 

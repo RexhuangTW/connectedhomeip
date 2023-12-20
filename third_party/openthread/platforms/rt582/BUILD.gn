@@ -64,9 +64,9 @@ static_library("openthread-rt582-platform") {
   }
 
   if (use_static_sdk_lib) {
-    libs = [ "${chip_root}/third_party/rafael/rt58x_sdk/libotrt582platform.a" ]
+    libs = [ "${chip_root}/third_party/rafael/rt58x_sdk/libotrt58xplatform.a" ]
   } else {
-    output_name = "libotrt582platform"
+    output_name = "libotrt58xplatform"
     output_dir = "${root_out_dir}/lib"
 
     sources = [
@@ -102,9 +102,9 @@ static_library("openthread-rt582-root") {
   }
 
   if (use_static_sdk_lib) {
-    libs = [ "${chip_root}/third_party/rafael/rt58x_sdk/libotrt582.a" ]
+    libs = [ "${chip_root}/third_party/rafael/rt58x_sdk/libotrt58x.a" ]
   } else {
-    output_name = "libotrt582"
+    output_name = "libotrt58x"
     output_dir = "${root_out_dir}/lib"
 
     sources = [

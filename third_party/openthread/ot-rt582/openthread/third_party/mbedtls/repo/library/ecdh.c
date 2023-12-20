@@ -36,8 +36,8 @@
 
 #define RT582_HW_CRYPTO_ENGINE_ENABLE
 
-extern int rt582_ecc_public_key_gen(uint8_t * pt_pri_k, uint8_t * pt_pub_k_x, uint8_t * pt_pub_k_y);
-extern int rt582_ecc_shared_secert_gen(uint8_t * pt_sh_k_x, uint8_t * pt_sh_k_y, uint8_t * pt_pub_k_x, uint8_t * pt_pub_k_y,
+extern int rt583_ecc_public_key_gen(uint8_t * pt_pri_k, uint8_t * pt_pub_k_x, uint8_t * pt_pub_k_y);
+extern int rt583_ecc_shared_secert_gen(uint8_t * pt_sh_k_x, uint8_t * pt_sh_k_y, uint8_t * pt_pub_k_x, uint8_t * pt_pub_k_y,
                                        uint8_t * pt_prv_k_y);
 
 /* Parameter validation macros based on platform_util.h */
@@ -98,7 +98,7 @@ static int ecdh_gen_public_restartable(mbedtls_ecp_group * grp, mbedtls_mpi * d,
     MBEDTLS_MPI_CHK(mbedtls_mpi_grow(&Q->X, 32));
     MBEDTLS_MPI_CHK(mbedtls_mpi_grow(&Q->Y, 32));
 
-    rt582_ecc_public_key_gen((uint8_t *) d->p, (uint8_t *) Q->X.p, (uint8_t *) Q->Y.p);
+    rt583_ecc_public_key_gen((uint8_t *) d->p, (uint8_t *) Q->X.p, (uint8_t *) Q->Y.p);
 #endif
 
 cleanup:
@@ -146,7 +146,7 @@ static int ecdh_compute_shared_restartable(mbedtls_ecp_group * grp, mbedtls_mpi 
     MBEDTLS_MPI_CHK(mbedtls_mpi_grow(&P.X, 32));
     MBEDTLS_MPI_CHK(mbedtls_mpi_grow(&P.Y, 32));
 
-    rt582_ecc_shared_secert_gen((uint8_t *) P.X.p, (uint8_t *) P.Y.p, (uint8_t *) Q->X.p, (uint8_t *) Q->Y.p, (uint8_t *) d->p);
+    rt583_ecc_shared_secert_gen((uint8_t *) P.X.p, (uint8_t *) P.Y.p, (uint8_t *) Q->X.p, (uint8_t *) Q->Y.p, (uint8_t *) d->p);
 #endif
 
     if (mbedtls_ecp_is_zero(&P))
